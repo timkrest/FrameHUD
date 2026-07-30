@@ -6,13 +6,19 @@
 
 [English](README.md) · [Русский](README.ru.md)
 
-A draggable debug panel that breaks every frame down by pipeline stage — input, animation, layout,
-draw, sync, command issue, buffer swap, GPU — and names the stage that is actually limiting your
-frame rate.
-
-The panel renders in its own window, so it never shows up in the metrics of the window it measures.
+A draggable debug panel that breaks every frame down by pipeline stage and points at the stage that
+limits your frame rate.
 
 <img src="docs/panel.png" alt="The panel over the sample app, GPU bound while scrolling" width="420">
+
+Every stage gets its own row: `input`, `anim`, `layout` and `draw` on the main thread, then `sync`,
+`command` and `swap` on the render thread, with `gpu` above them. Each row shows the current frame,
+the average over the window and the peak since the last reset.
+
+The panel does more than print numbers. It names the stage the frame rate is stuck on, and when
+frames are dropped it says why: thermal throttling, GC pauses, missing vsync ticks, or a frame that
+started late. The panel gets a window of its own, so it stays out of the metrics of the window it
+measures.
 
 ## Install
 
@@ -23,38 +29,41 @@ dependencies {
 }
 ```
 
-`framehud-noop` mirrors the API exactly with empty implementations, so your calls still compile in
-release builds while nothing is measured and no window is added.
-
-> **The `framehud` artifact declares `SYSTEM_ALERT_WINDOW`**, and manifest merging pulls it into any
-> app that depends on it. That is why release builds should depend on `framehud-noop` — otherwise
-> your users will see the permission.
-
 Requires `minSdk` 24. Frame phases come from `FrameMetrics`; GPU timings need API 31+.
 
-There is no code to write: the library installs itself in the main process and follows the resumed
-activity.
+There is nothing to call. A `ContentProvider` starts the panel in the main process, and it follows
+whichever activity is resumed.
+
+Keep `framehud-noop` in release builds. It mirrors the API with empty bodies, so your calls still
+compile while nothing is measured and no window is added. It also keeps `SYSTEM_ALERT_WINDOW` out of
+your APK: the `framehud` artifact declares that permission, and manifest merging pulls it into any app
+that depends on it.
 
 ## Configure
 
-Settings live in one immutable config — assign a copy and it takes effect at once.
+Settings live in one immutable config. Assign a copy and it takes effect at once.
 
 ```kotlin
-FrameHud.config = FrameHud.config.copy(
-    enabled = false,                       // start hidden; show() flips it back
-    overlayMode = OverlayMode.APP_WINDOW,  // never use SYSTEM_ALERT_WINDOW
-    metricsSampleWindowSize = 240,
-)
+FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
 ```
+
+| Option | Default | What it controls |
+| --- | --- | --- |
+| `enabled` | `true` | While false, no window is added and no frames are collected. |
+| `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` keeps the panel inside the app window and never uses the permission. |
+| `eventListeners` | `[LogcatEventListener]` | Who receives jank burst, frozen frame, thermal and screen summary events. |
+| `metricsSampleWindowSize` | `120` | Frames the rolling window keeps, behind `avg` and the percentiles. |
+| `metricsThrottleIntervalMs` | `400` | How often the panel may redraw. Lower values cost more to render. |
+| `fallbackRefreshRateHz` | `60` | Refresh rate assumed when the display reports none. |
+| `metricsThreadName` | `framehud-metrics` | Name of the collecting thread, as it shows up in traces. |
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`. The panel is not the only way to read
 the numbers: `FrameHud.metrics`, `memoryStats`, `thermalStats` and `vsyncRate` are plain `StateFlow`s.
 
 ## Jank events
 
-Listeners are notified once per jank burst — not once per frame — with the cause already attributed:
-thermal throttling, GC pauses, vsync starvation, late frame start, or the bottleneck stage. The
-default listener writes to logcat.
+Listeners are notified once per jank burst rather than once per frame, with the cause already
+attributed. The default listener writes to logcat.
 
 ```kotlin
 FrameHud.config = FrameHud.config.copy(
@@ -65,11 +74,9 @@ FrameHud.config = FrameHud.config.copy(
 )
 ```
 
-Events arrive on the metrics thread — don't block, don't touch views.
+Events arrive on the metrics thread. Don't block it and don't touch views from it.
 
 ## Fail tests on jank
-
-`framehud-instrumentation` turns the panel into a CI gate:
 
 ```kotlin
 androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.1.0")
@@ -79,17 +86,22 @@ androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.1.0")
 @get:Rule val noJank = DetectJankAfterTestSuccess(JankThresholds(maxJankPercent = 2f))
 ```
 
-The rule resets the collector before each test and asserts once the test passes — a failing test is
-reported as-is. Annotate a test or class with `@SkipJankDetection` to opt out, or call
-`JankAssertions.assertNoJank("scroll")` at a point you choose.
+The rule resets the collector before each test and checks the thresholds once the test passes, so a
+failing test keeps its own error. To opt out, annotate a test or class with `@SkipJankDetection`, or
+call `JankAssertions.assertNoJank("scroll")` at a point you choose.
 
 ## Overlay permission
 
-Without `SYSTEM_ALERT_WINDOW` the panel lives inside the app window and shows a `⧉` button that opens
-the permission screen; the library never opens it on its own. A system overlay window keeps the panel
-out of the metrics it measures, so granting the permission gives cleaner numbers.
+With `SYSTEM_ALERT_WINDOW` granted, the panel lives in a system window and survives navigation
+between screens. Without it the window belongs to the current activity, so the panel is torn down and
+recreated on every screen change, and a `⧉` button shows up that opens the permission screen. The
+library never opens it on its own. Set `overlayMode = APP_WINDOW` to stay in the app window and hide
+that button.
 
-To install by hand instead, drop the provider and call `FrameHud.install(application)`:
+<details>
+<summary>Installing by hand instead of the provider</summary>
+
+Drop the provider and call `FrameHud.install(application)` yourself:
 
 ```xml
 <provider
@@ -98,13 +110,7 @@ To install by hand instead, drop the provider and call `FrameHud.install(applica
     tools:node="remove" />
 ```
 
-## Documentation
-
-- [Reading the panel](docs/metrics.md) — what every row means, how to measure a screen, and what to
-  do when something turns red
-- [API reference](https://javadoc.io/doc/io.github.timkrest/framehud) — generated from the sources of
-  each release
-- [Roadmap](ROADMAP.md) — what is planned next, and what is deliberately not
+</details>
 
 ## Sample
 
@@ -112,14 +118,18 @@ To install by hand instead, drop the provider and call `FrameHud.install(applica
 ./gradlew :sample:installDebug
 ```
 
-A 300-row list with five toggles — blocking the main thread, overdrawing, allocating per row, nesting
-layouts, churning garbage — so you can watch each one move a different metric.
+A 300-row list with five toggles: blocking the main thread, overdrawing, allocating per row, nesting
+layouts, churning garbage. Each one moves a different metric.
 
-## Contributing
+## Documentation
 
-Pull requests are welcome — [CONTRIBUTING.md](CONTRIBUTING.md) covers how to build and what to check
-before opening one. Contributions are covered by a [CLA](CLA.md), which a bot will ask you to sign on
-your first pull request.
+- [Reading the panel](docs/metrics.md) — what every row means, how to measure a screen, and what to
+  do when something turns red
+- [API reference](https://javadoc.io/doc/io.github.timkrest/framehud) — generated from the sources of
+  each release
+- [Roadmap](ROADMAP.md) — what is planned next, and what is deliberately not
+- [Contributing](CONTRIBUTING.md) — how to build, and what to check before opening a pull request.
+  Contributions are covered by a [CLA](CLA.md), which a bot will ask you to sign.
 
 ## License
 
