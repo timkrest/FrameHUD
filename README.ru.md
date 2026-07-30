@@ -101,6 +101,8 @@ androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.1.0")
 
 - [Как читать панель](docs/metrics.ru.md) — что означает каждая строка, как замерять экран и что
   делать, когда что-то красное
+- [Справочник API](https://javadoc.io/doc/io.github.timkrest/framehud) — генерируется из исходников
+  каждого релиза
 - [Карта развития](ROADMAP.ru.md) — что планируется дальше и что сделано не будет
 
 ## Пример
@@ -114,7 +116,8 @@ androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.1.0")
 
 ## Вклад в проект
 
-Pull request'ы приветствуются. Вклад покрывается [CLA](CLA.md) — бот попросит подписать его при
+Pull request'ы приветствуются — в [CONTRIBUTING.md](CONTRIBUTING.md) описано, как собрать проект и
+что проверить перед отправкой. Вклад покрывается [CLA](CLA.md) — бот попросит подписать его при
 первом pull request.
 
 ## Лицензия

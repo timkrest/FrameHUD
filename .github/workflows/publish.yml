@@ -3,10 +3,9 @@ name: Publish
 on:
   push:
     tags: [ 'v*' ]
-  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -22,35 +21,52 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      # A tag publishes a release under the tag's version; a manual run publishes the snapshot
-      # version from gradle.properties. Without this the tag would republish that snapshot.
+      # The tag is the only source of a released version; VERSION_NAME in gradle.properties stays a
+      # snapshot so that a local build is never mistaken for a release.
       - name: Resolve version
         id: version
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            version="${GITHUB_REF_NAME#v}"
-            if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-              echo "::error::Tag ${GITHUB_REF_NAME} is not a semantic version"
-              exit 1
-            fi
-            if [[ "${version}" == *-SNAPSHOT ]]; then
-              echo "::error::Refusing to publish a snapshot from a tag"
-              exit 1
-            fi
-            echo "gradle-args=-PVERSION_NAME=${version}" >> "$GITHUB_OUTPUT"
-            echo "Publishing release ${version}"
-          else
-            echo "gradle-args=" >> "$GITHUB_OUTPUT"
-            echo "Publishing the snapshot from gradle.properties"
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} is not a semantic version"
+            exit 1
           fi
+          if [[ "${version}" == *-SNAPSHOT ]]; then
+            echo "::error::Refusing to publish a snapshot"
+            exit 1
+          fi
+          if ! grep -q "^## \[${version}\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no section for ${version}"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Publishing ${version}"
 
       - name: Verify before publishing
-        run: ./gradlew build ${{ steps.version.outputs.gradle-args }} --stacktrace
+        run: ./gradlew build -PVERSION_NAME=${{ steps.version.outputs.version }} --stacktrace
 
+      # Uploads a deployment to the Central Portal, which waits to be released by hand.
       - name: Publish to Maven Central
-        run: ./gradlew publishToMavenCentral ${{ steps.version.outputs.gradle-args }} --no-configuration-cache --stacktrace
+        run: >
+          ./gradlew publishToMavenCentral
+          -PVERSION_NAME=${{ steps.version.outputs.version }}
+          --no-configuration-cache --stacktrace
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          notes=$(awk -v header="## [${VERSION}]" '
+            index($0, header) == 1 { inside = 1; next }
+            inside && /^## \[/ { exit }
+            inside { print }
+          ' CHANGELOG.md)
+          gh release create "${GITHUB_REF_NAME}" --verify-tag \
+            --title "FrameHUD ${VERSION}" \
+            --notes "${notes:-See CHANGELOG.md}"

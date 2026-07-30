@@ -102,6 +102,8 @@ To install by hand instead, drop the provider and call `FrameHud.install(applica
 
 - [Reading the panel](docs/metrics.md) — what every row means, how to measure a screen, and what to
   do when something turns red
+- [API reference](https://javadoc.io/doc/io.github.timkrest/framehud) — generated from the sources of
+  each release
 - [Roadmap](ROADMAP.md) — what is planned next, and what is deliberately not
 
 ## Sample
@@ -115,8 +117,9 @@ layouts, churning garbage — so you can watch each one move a different metric.
 
 ## Contributing
 
-Pull requests are welcome. Contributions are covered by a [CLA](CLA.md), which a bot will ask you to
-sign on your first pull request.
+Pull requests are welcome — [CONTRIBUTING.md](CONTRIBUTING.md) covers how to build and what to check
+before opening one. Contributions are covered by a [CLA](CLA.md), which a bot will ask you to sign on
+your first pull request.
 
 ## License
 
