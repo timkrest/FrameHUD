@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # A limit of 0 keeps Dependabot quiet about new versions while still reporting
+  # security advisories. Raise it when you want the upgrade pull requests back.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 0

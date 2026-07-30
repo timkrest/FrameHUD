@@ -1,0 +1,41 @@
+name: Bug report
+description: Something in the panel or the metrics is wrong
+labels: [ bug ]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: FrameHUD version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      description: The panel's behaviour depends on the API level; GPU timings need API 31+.
+      placeholder: "Pixel 7, Android 14 (API 34)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: panel
+    attributes:
+      label: What the panel showed
+      description: A screenshot of the expanded panel, or the values you read from it.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logcat
+      description: Anything tagged `FrameHud`.
+      render: text

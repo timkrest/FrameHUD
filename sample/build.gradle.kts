@@ -1,0 +1,60 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
+}
+
+val javaTarget = JavaVersion.toVersion(libs.versions.jvmTarget.get())
+
+android {
+    namespace = "io.github.timkrest.framehud.sample"
+    compileSdk = libs.versions.androidCompileSdk.get().toInt()
+
+    defaultConfig {
+        applicationId = "io.github.timkrest.framehud.sample"
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        targetSdk = libs.versions.androidCompileSdk.get().toInt()
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = javaTarget
+        targetCompatibility = javaTarget
+    }
+
+    buildFeatures {
+        compose = true
+    }
+
+    lint {
+        abortOnError = true
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+    }
+}
+
+kotlin {
+    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget(javaTarget.toString())
+    }
+}
+
+dependencies {
+    debugImplementation(project(":framehud"))
+    releaseImplementation(project(":framehud-noop"))
+
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.activity.compose)
+}

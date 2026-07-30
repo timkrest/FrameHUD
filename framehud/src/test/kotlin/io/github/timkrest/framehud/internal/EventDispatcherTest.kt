@@ -1,0 +1,100 @@
+package io.github.timkrest.framehud.internal
+
+import io.github.timkrest.framehud.FrameHudEvent
+import io.github.timkrest.framehud.FrameHudEventListener
+import io.github.timkrest.framehud.MemoryStats
+import io.github.timkrest.framehud.MetricValue
+import io.github.timkrest.framehud.PerformanceMetrics
+import io.github.timkrest.framehud.SessionStats
+import io.github.timkrest.framehud.ThermalLevel
+import io.github.timkrest.framehud.ThermalStats
+import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+class EventDispatcherTest {
+
+    private val dispatcher = EventDispatcher()
+    private val events = mutableListOf<FrameHudEvent>()
+    private val listeners = listOf(FrameHudEventListener { events += it })
+
+    @Test
+    fun `a burst is reported once until it clears`() {
+        sample(jankPercent = 30f)
+        sample(jankPercent = 40f)
+        assertEquals(1, events.count { it is FrameHudEvent.JankBurst })
+
+        sample(jankPercent = 0f)
+        sample(jankPercent = 30f)
+        assertEquals(2, events.count { it is FrameHudEvent.JankBurst })
+    }
+
+    @Test
+    fun `only newly frozen frames are reported`() {
+        sample(frozenFrames = 2)
+        sample(frozenFrames = 3)
+        val counts = events.filterIsInstance<FrameHudEvent.FrozenFrames>().map { it.count }
+        assertEquals(listOf(2, 1), counts)
+    }
+
+    @Test
+    fun `the first thermal reading stays quiet unless it throttles`() {
+        sample(thermal = ThermalStats(level = ThermalLevel.NONE, headroom = null))
+        assertTrue(events.isEmpty())
+
+        sample(thermal = ThermalStats(level = ThermalLevel.MODERATE, headroom = null))
+        val event = assertIs<FrameHudEvent.ThermalChanged>(events.single())
+        assertEquals(ThermalLevel.MODERATE, event.level)
+    }
+
+    @Test
+    fun `throttling on the first reading is reported`() {
+        sample(thermal = ThermalStats(level = ThermalLevel.SEVERE, headroom = null))
+        assertIs<FrameHudEvent.ThermalChanged>(events.single())
+    }
+
+    @Test
+    fun `a screen without frames ends without a summary`() {
+        dispatcher.onScreenEnded(listeners = listeners, stats = SessionStats.EMPTY, screen = SCREEN)
+        assertTrue(events.isEmpty())
+
+        dispatcher.onScreenEnded(listeners, SessionStats.EMPTY.copy(frames = 12), SCREEN)
+        assertIs<FrameHudEvent.ScreenEnded>(events.single())
+    }
+
+    @Test
+    fun `a finished screen does not restart burst tracking`() {
+        sample(jankPercent = 30f, frozenFrames = 4)
+        dispatcher.onScreenEnded(listeners, SessionStats.EMPTY.copy(frames = 4), SCREEN)
+        events.clear()
+
+        sample(jankPercent = 30f, frozenFrames = 4)
+        assertTrue(events.isEmpty())
+    }
+
+    private fun sample(
+        jankPercent: Float = 0f,
+        frozenFrames: Int = 0,
+        thermal: ThermalStats = ThermalStats.EMPTY,
+        vsyncRate: Int = 60,
+    ) {
+        dispatcher.onSample(
+            listeners = listeners,
+            metrics = PerformanceMetrics(
+                bottleneck = MetricValue(average = 12f),
+                windowJankPercent = jankPercent,
+                session = SessionStats.EMPTY.copy(frames = 100, durationMs = 1_000L, frozenFrames = frozenFrames),
+                refreshRate = 60f,
+            ),
+            memory = MemoryStats.EMPTY,
+            thermal = thermal,
+            vsyncRate = vsyncRate,
+            screen = SCREEN,
+        )
+    }
+
+    private companion object {
+        const val SCREEN = "SampleActivity"
+    }
+}

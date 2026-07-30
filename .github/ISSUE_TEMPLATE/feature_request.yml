@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest a metric, a panel change, or an API
+labels: [ enhancement ]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to find out
+      description: The performance question you cannot answer today.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+      description: A metric, a panel affordance, an API — whatever you have in mind.
+    validations:
+      required: true
