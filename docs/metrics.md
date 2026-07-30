@@ -3,12 +3,13 @@
 [English](metrics.md) · [Русский](metrics.ru.md)
 
 Rows read `now avg peak` in milliseconds: the current frame, the average over the sampling window
-(the last 120 frames), and the peak since the last reset.
+(120 frames by default), and the peak since the last reset.
 
 The frame budget is `FrameMetrics.DEADLINE` (API 31+, what the system allotted the frame) or
 `1000 / refreshRate`. At 60 Hz that is 16.7 ms. It is shown in the header.
 
-On a static screen the numbers stop moving — that is expected, no frames are being produced.
+On a static screen the numbers stop moving. No frames are being produced, so there is nothing to
+report.
 
 ## Controls
 
@@ -60,7 +61,7 @@ older devices show `n/a`.
   rate when the main thread is busy; fluctuates on LTPO displays (60↔120)
 - **jank** — a frame that missed the system deadline (`FrameMetrics.DEADLINE` on API 31+;
   `TOTAL > budget` before that)
-- **win** — the last 120 frames: jank share, p95 and worst frame
+- **win** — the sampling window: jank share, p95 and worst frame
 - **ses** — since the last reset: p50/p95/p99, frame count and collection time (background time
   excluded), jank share, `frz` for frozen frames (TOTAL > 700 ms, as in Play Vitals), `run` for the
   longest streak of consecutive janky frames
@@ -87,7 +88,7 @@ Metric rows: green means TOTAL is within budget, grey is normal, red means the w
 above budget.
 
 FPS against the display refresh rate: green at 95% of target or better, grey at 75% or better, red
-below that. Grey `idle` means no frames are being drawn.
+below that.
 
 Jank: below 5% is fine, 5–20% stutters, 20% and up is bad.
 
@@ -97,7 +98,7 @@ The current value jumps around; that is fine. Read the average.
 
 1. **FPS against the refresh rate** — matching means smooth
 2. **TOTAL average** — below budget is good
-3. **jank** — under 5% is fine, over 20% is bad
+3. **jank** — the share of frames that missed the deadline
 4. **p95** — sustained drops
 5. **max** — one-off spikes. A high max with a healthy p95 is a single hitch, not a problem
 6. **pipe** — which stage caps the frame rate under load
