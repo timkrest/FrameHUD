@@ -9,11 +9,11 @@
 A draggable debug panel that breaks every frame down by pipeline stage and points at the stage that
 limits your frame rate.
 
-<img src="docs/panel.png" alt="The panel over the sample app, GPU bound while scrolling" width="420">
+<img src="docs/panel.png" alt="The panel over the sample app while scrolling a list at 120 Hz" width="420">
 
 Every stage gets its own row: `input`, `anim`, `layout` and `draw` on the main thread, then `sync`,
-`command` and `swap` on the render thread, with `gpu` above them. Each row shows the current frame,
-the average over the window and the peak since the last reset.
+`command` and `swap` on the render thread, with `gpu` above them. Each row shows the current frame
+and the average over the window; measured phases add the peak since the last reset.
 
 The panel does more than print numbers. It names the stage the frame rate is stuck on, and when
 frames are dropped it says why: thermal throttling, GC pauses, missing vsync ticks, or a frame that
@@ -24,12 +24,13 @@ measures.
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.timkrest:framehud:0.1.0")
-    releaseImplementation("io.github.timkrest:framehud-noop:0.1.0")
+    debugImplementation("io.github.timkrest:framehud:0.2.0")
+    releaseImplementation("io.github.timkrest:framehud-noop:0.2.0")
 }
 ```
 
-Requires `minSdk` 24. Frame phases come from `FrameMetrics`; GPU timings need API 31+.
+Requires `minSdk` 24. Frame phases come from `FrameMetrics`; GPU timings need API 31+ and a driver
+that reports them.
 
 There is nothing to call. A `ContentProvider` starts the panel in the main process, and it follows
 whichever activity is resumed.
@@ -38,6 +39,11 @@ Keep `framehud-noop` in release builds. It mirrors the API with empty bodies, so
 compile while nothing is measured and no window is added. It also keeps `SYSTEM_ALERT_WINDOW` out of
 your APK: the `framehud` artifact declares that permission, and manifest merging pulls it into any app
 that depends on it.
+
+On an emulator the render thread and the GPU belong to the host machine, so those rows describe your
+desktop rather than a device. The panel marks the header `EMU`, labels those sections `· host` and
+greys them out. Main-thread phases, jank and the session aggregates stay meaningful, which is what a
+jank gate on CI reads.
 
 ## Configure
 
@@ -59,6 +65,8 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`. The panel is not the only way to read
 the numbers: `FrameHud.metrics`, `memoryStats`, `thermalStats` and `vsyncRate` are plain `StateFlow`s.
+A reading groups into `phases` (per-stage timings), `window` (fps, jank and p95 over the sampling
+window), `session` (since the last reset) and `display` (refresh rate and frame budget).
 
 ## Jank events
 
@@ -79,7 +87,7 @@ Events arrive on the metrics thread. Don't block it and don't touch views from i
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.1.0")
+androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.2.0")
 ```
 
 ```kotlin
@@ -87,8 +95,9 @@ androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.1.0")
 ```
 
 The rule resets the collector before each test and checks the thresholds once the test passes, so a
-failing test keeps its own error. To opt out, annotate a test or class with `@SkipJankDetection`, or
-call `JankAssertions.assertNoJank("scroll")` at a point you choose.
+failing test keeps its own error. Session aggregates outlive the panel, so the check still has
+numbers after `ActivityScenario` has closed the activity. To opt out, annotate a test or class with
+`@SkipJankDetection`, or call `JankAssertions.assertNoJank("scroll")` at a point you choose.
 
 ## Overlay permission
 

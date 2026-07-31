@@ -9,11 +9,11 @@
 Перетаскиваемая debug-панель, которая раскладывает каждый кадр по стадиям конвейера и показывает, на
 какой из них упирается fps.
 
-<img src="docs/panel.png" alt="Панель поверх sample-приложения, узкое место — GPU при прокрутке" width="420">
+<img src="docs/panel.png" alt="Панель поверх sample-приложения во время прокрутки списка на 120 Гц" width="420">
 
 У каждой стадии своя строка: `input`, `anim`, `layout` и `draw` на main thread, дальше `sync`,
-`command` и `swap` на render thread, над ними `gpu`. В каждой строке текущий кадр, среднее по окну и
-пик с последнего сброса.
+`command` и `swap` на render thread, над ними `gpu`. В каждой строке текущий кадр и среднее по окну,
+а у измеряемых фаз ещё и пик с последнего сброса.
 
 Панель не просто печатает числа. Она называет стадию, в которую упёрся fps, а когда кадры теряются,
 объясняет причину: троттлинг, паузы GC, нехватка vsync-тиков или поздний старт кадра. Панель получает
@@ -23,12 +23,13 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.timkrest:framehud:0.1.0")
-    releaseImplementation("io.github.timkrest:framehud-noop:0.1.0")
+    debugImplementation("io.github.timkrest:framehud:0.2.0")
+    releaseImplementation("io.github.timkrest:framehud-noop:0.2.0")
 }
 ```
 
-Требуется `minSdk` 24. Фазы кадра берутся из `FrameMetrics`, тайминги GPU — с API 31+.
+Требуется `minSdk` 24. Фазы кадра берутся из `FrameMetrics`, тайминги GPU — с API 31+ и только если
+драйвер их сообщает.
 
 Вызывать ничего не нужно. `ContentProvider` поднимает панель в главном процессе, дальше она следует
 за той activity, которая сейчас на экране.
@@ -37,6 +38,10 @@ dependencies {
 компилируются, но ничего не измеряется и окно не добавляется. Заодно он не пускает
 `SYSTEM_ALERT_WINDOW` в APK — артефакт `framehud` объявляет это разрешение, и manifest merging тянет
 его в любое приложение, которое от него зависит.
+
+На эмуляторе render thread и GPU принадлежат хост-машине, поэтому эти строки описывают ваш десктоп,
+а не устройство. Панель ставит в шапке `EMU`, помечает эти секции `· host` и гасит их строки. Фазы
+main thread, jank и итоги сессии остаются осмысленными — именно их читает jank-гейт на CI.
 
 ## Настройка
 
@@ -58,6 +63,8 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
 
 `show()`, `hide()` и `toggle()` — сокращения для `enabled`. Панель не единственный способ читать
 метрики: `FrameHud.metrics`, `memoryStats`, `thermalStats` и `vsyncRate` — обычные `StateFlow`.
+Показание разложено на `phases` (тайминги по стадиям), `window` (fps, jank и p95 по окну выборки),
+`session` (с последнего сброса) и `display` (герцовка и бюджет кадра).
 
 ## События о jank
 
@@ -78,15 +85,17 @@ FrameHud.config = FrameHud.config.copy(
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.1.0")
+androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.2.0")
 ```
 
 ```kotlin
 @get:Rule val noJank = DetectJankAfterTestSuccess(JankThresholds(maxJankPercent = 2f))
 ```
 
-Правило сбрасывает сборщик перед каждым тестом и проверяет пороги после того, как тест прошёл, так что
-упавший тест остаётся с собственной ошибкой. Чтобы отключить проверку, пометьте тест или класс
+Правило сбрасывает сборщик перед каждым тестом и проверяет пороги после того, как тест прошёл, и
+упавший тест остаётся с собственной ошибкой. Итоги сессии переживают закрытие панели, поэтому
+проверке есть что читать и после того, как `ActivityScenario` закрыл activity. Чтобы отключить
+проверку, пометьте тест или класс
 `@SkipJankDetection` либо вызовите `JankAssertions.assertNoJank("scroll")` в нужный момент сами.
 
 ## Разрешение на оверлей
