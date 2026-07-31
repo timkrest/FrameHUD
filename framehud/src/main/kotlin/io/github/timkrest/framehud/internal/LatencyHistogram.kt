@@ -27,7 +27,7 @@ internal class LatencyHistogram {
             return
         }
         val tailIndex = (ln(valueMs / FINE_RANGE_MS) / LN_TAIL_RATIO).toInt()
-        if (tailIndex in tailBuckets.indices) tailBuckets[tailIndex]++
+        tailBuckets[tailIndex.coerceIn(0, tailBuckets.lastIndex)]++
     }
 
     fun percentile(percent: Float): Float {
@@ -62,6 +62,13 @@ internal class LatencyHistogram {
         private const val TAIL_BUCKET_COUNT = 188
 
         private val LN_TAIL_RATIO = ln(TAIL_RATIO)
-        private val TAIL_BOUNDS_MS = FloatArray(TAIL_BUCKET_COUNT) { FINE_RANGE_MS * TAIL_RATIO.pow(it + 1) }
+        private val TAIL_BOUNDS_MS = FloatArray(TAIL_BUCKET_COUNT) { index ->
+            // The last bucket is open-ended, so its bound is whatever the longest frame turned out to be.
+            if (index == TAIL_BUCKET_COUNT - 1) {
+                Float.POSITIVE_INFINITY
+            } else {
+                FINE_RANGE_MS * TAIL_RATIO.pow(index + 1)
+            }
+        }
     }
 }

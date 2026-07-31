@@ -23,6 +23,13 @@ class PanelFormatterTest {
     }
 
     @Test
+    fun `a timing that never went positive still prints its peak column`() {
+        val row = formatMetricLine(label = "over", value = MetricValue(current = -6.7f, average = -5.2f, peak = -1.1f))
+        assertEquals(CPU_COLUMNS_HEADER_LINE.length, row.length)
+        assertTrue(row.contains("-1.1"), row)
+    }
+
+    @Test
     fun `derived timings stop after two columns`() {
         val row = formatMetricLine(label = "other", value = MetricValue(current = 1.2f, average = 3.4f))
         assertTrue(row.length < CPU_COLUMNS_HEADER_LINE.length)

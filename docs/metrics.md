@@ -3,7 +3,8 @@
 [English](metrics.md) · [Русский](metrics.ru.md)
 
 Rows read `now avg peak` in milliseconds: the current frame, the average over the sampling window
-(120 frames by default), and the peak since the last reset.
+(120 frames by default), and the peak since the last reset. Rows summed from other rows — `other`
+and `pipe` — stop after `avg`, since they track no peak of their own.
 
 The frame budget is `FrameMetrics.DEADLINE` (API 31+, what the system allotted the frame) or
 `1000 / refreshRate`. At 60 Hz that is 16.7 ms. It is shown in the header.
@@ -40,8 +41,9 @@ The Android thread that takes the display list from the UI thread and turns it i
 
 ## GPU
 
-`gpu` — time the GPU spends rasterizing the frame: shaders, textures, layer blending. Needs API 31+;
-older devices show `n/a`.
+`gpu` — time the GPU spends rasterizing the frame: shaders, textures, layer blending. Needs API 31+
+and a driver that reports it. The row reads `n/a` until real timings arrive, which some drivers never
+send.
 
 ## Everything else
 
@@ -134,7 +136,22 @@ The current value jumps around; that is fine. Read the average.
 The panel renders in its own window, so it does not appear in the metrics of the window being
 measured.
 
-Two things do distort readings, and the panel tells you about both: `drop` above zero means the
-system discarded reports before delivery, so averages and percentiles are undersampled; `therm`
+Three things do distort readings, and the panel tells you about all of them: `drop` above zero means
+the system discarded reports before delivery, so averages and percentiles are undersampled; `therm`
 showing throttling means the device has clocked itself down and the timings are not comparable to a
-cold device.
+cold device; `EMU` in the header means an emulator.
+
+## On an emulator
+
+An emulator renders through the host machine, so `sync`, `command`, `swap` and `gpu` time a desktop
+GPU and say nothing about a phone. Their section headers read `RENDER · host` and `GPU · host`, the
+rows are greyed out, and the verdict skips them — as does `pipe` when the bottleneck lands there.
+
+<img src="panel-emulator.png" alt="The panel on an emulator: an EMU badge and greyed-out host rows" width="340">
+
+What survives is everything the app itself is responsible for: `input`, `anim`, `layout`, `draw`,
+`delay`, TOTAL, jank and the session aggregates. Those are the numbers a jank gate reads, which is
+why the gate is worth running on CI even though the rendering is not a device's.
+
+Expect a large `other`: an emulator leaves more of the frame outside the phases the platform reports,
+so the verdict often lands on that remainder rather than on a stage.

@@ -6,6 +6,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import io.github.timkrest.framehud.FramePhases
 import io.github.timkrest.framehud.MemoryStats
 import io.github.timkrest.framehud.MetricValue
 import io.github.timkrest.framehud.PerformanceMetrics
@@ -44,35 +45,45 @@ internal fun buildPanelLines(
     metrics: PerformanceMetrics,
     memory: MemoryStats,
     thermal: ThermalStats,
+    isEmulator: Boolean = false,
 ): PanelLines {
-    val verdict = panelVerdict(metrics)
+    val phases = metrics.phases
+    val window = metrics.window
+    val session = metrics.session
+    val verdict = panelVerdict(phases = phases, jankPercent = window.jankPercent, isEmulator = isEmulator)
     val rowContext = MetricRowContext(
-        frameBudgetMs = metrics.frameBudgetMs,
+        frameBudgetMs = metrics.display.frameBudgetMs,
         attentionLabel = (verdict as? PanelVerdict.Attention)?.phaseLabel,
     )
     return buildList {
         addText(formatVerdict(verdict), verdictColor(verdict))
         addText(CPU_COLUMNS_HEADER_LINE, TextHeader)
         stagePhases(PipelineStage.CPU).forEach { phase ->
-            addMetric(phase.label, phase.select(metrics), rowContext)
+            addMetric(phase.label, phase.select(phases), rowContext)
         }
-        addStage(header = LABEL_RENDER_SECTION, stage = PipelineStage.RENDER, metrics = metrics, rowContext = rowContext)
-        if (metrics.isGpuAvailable) {
-            addStage(header = LABEL_GPU_SECTION, stage = PipelineStage.GPU, metrics = metrics, rowContext = rowContext)
+        addStage(LABEL_RENDER_SECTION, PipelineStage.RENDER, phases, rowContext, dimmed = isEmulator)
+        if (phases.isGpuAvailable) {
+            addStage(LABEL_GPU_SECTION, PipelineStage.GPU, phases, rowContext, dimmed = isEmulator)
         } else {
-            addText(LABEL_GPU_SECTION, TextHeader)
+            addText(sectionHeader(LABEL_GPU_SECTION, isHostMeasured = isEmulator), TextHeader)
             addText(GPU_UNAVAILABLE_LINE, TextHeader)
         }
-        addMetric(LABEL_DELAY, metrics.unknownDelay, rowContext, separatorAbove = true)
-        addMetric(LABEL_OTHER, metrics.other, rowContext)
-        addMetric(LABEL_TOTAL, metrics.total, rowContext, MetricRowKind.TOTAL)
-        addMetric(LABEL_OVERRUN, metrics.overrun, rowContext)
-        addMetric(pipeLabel(metrics.bottleneckStage), metrics.bottleneck, rowContext)
-        addText(formatWindowSummary(metrics), jankColor(metrics.windowJankPercent), separatorAbove = true)
-        addText(formatSessionLatency(metrics.session), TextNormal)
-        addText(formatSessionTotals(metrics.session), jankColor(metrics.session.jankPercent))
-        if (metrics.session.droppedReports > 0) {
-            addText(formatDroppedReports(metrics.session.droppedReports), TextCaution)
+        addMetric(LABEL_DELAY, phases.unknownDelay, rowContext, separatorAbove = true)
+        addMetric(LABEL_OTHER, phases.other, rowContext)
+        addMetric(LABEL_TOTAL, phases.total, rowContext, MetricRowKind.TOTAL)
+        addMetric(LABEL_OVERRUN, phases.overrun, rowContext)
+        val bottleneckStage = phases.bottleneckStage
+        addMetric(
+            label = pipeLabel(bottleneckStage),
+            value = phases.bottleneck,
+            rowContext = rowContext,
+            dimmed = isEmulator && bottleneckStage != PipelineStage.CPU,
+        )
+        addText(formatWindowSummary(window), jankColor(window.jankPercent), separatorAbove = true)
+        addText(formatSessionLatency(session), TextNormal)
+        addText(formatSessionTotals(session), jankColor(session.jankPercent))
+        if (session.droppedReports > 0) {
+            addText(formatDroppedReports(session.droppedReports), TextCaution)
         }
         addText(formatMemory(memory), TextHeader)
         addText(formatGc(memory), TextHeader)
@@ -82,14 +93,18 @@ internal fun buildPanelLines(
     }.let(::PanelLines)
 }
 
-internal fun buildCollapsedLine(metrics: PerformanceMetrics): AnnotatedString = buildAnnotatedString {
-    appendColored(text = formatFps(metrics.fps), color = fpsColor(metrics))
-    append(COLLAPSED_SEPARATOR)
+internal fun buildCollapsedLine(
+    metrics: PerformanceMetrics,
+    isEmulator: Boolean = false,
+): AnnotatedString = buildAnnotatedString {
+    val window = metrics.window
     appendColored(
-        text = formatJankShort(metrics.windowJankPercent),
-        color = jankColor(metrics.windowJankPercent),
+        text = formatFps(window.fps),
+        color = fpsColor(fps = window.fps, refreshRateHz = metrics.display.refreshRateHz),
     )
-    val verdict = panelVerdict(metrics)
+    append(COLLAPSED_SEPARATOR)
+    appendColored(text = formatJankShort(window.jankPercent), color = jankColor(window.jankPercent))
+    val verdict = panelVerdict(phases = metrics.phases, jankPercent = window.jankPercent, isEmulator = isEmulator)
     if (verdict is PanelVerdict.Attention) {
         append(COLLAPSED_SEPARATOR)
         appendColored(text = formatVerdictShort(verdict), color = verdictColor(verdict))
@@ -111,14 +126,19 @@ private fun AnnotatedString.Builder.appendColored(text: String, color: Color) {
 private fun MutableList<PanelLine>.addStage(
     header: String,
     stage: PipelineStage,
-    metrics: PerformanceMetrics,
+    phases: FramePhases,
     rowContext: MetricRowContext,
+    dimmed: Boolean = false,
 ) {
-    addText(header, TextHeader)
+    addText(sectionHeader(header, isHostMeasured = dimmed), TextHeader)
     stagePhases(stage).forEach { phase ->
-        addMetric(label = phase.label, value = phase.select(metrics), rowContext = rowContext)
+        addMetric(phase.label, phase.select(phases), rowContext, dimmed = dimmed)
     }
 }
+
+/** Says whose hardware the dimmed rows below actually measure, since the numbers still move. */
+private fun sectionHeader(label: String, isHostMeasured: Boolean): String =
+    if (isHostMeasured) label + LABEL_HOST_SECTION else label
 
 private fun MutableList<PanelLine>.addMetric(
     label: String,
@@ -126,18 +146,23 @@ private fun MutableList<PanelLine>.addMetric(
     rowContext: MetricRowContext,
     kind: MetricRowKind = MetricRowKind.PHASE,
     separatorAbove: Boolean = false,
+    dimmed: Boolean = false,
 ) {
-    val isAttention = label == rowContext.attentionLabel
+    val isAttention = label == rowContext.attentionLabel && !dimmed
     val text = formatMetricLine(label = label, value = value)
     add(
         PanelLine(
             text = if (isAttention) text + ATTENTION_MARKER else text,
-            color = metricRowColor(
-                valueMs = value.average,
-                frameBudgetMs = rowContext.frameBudgetMs,
-                kind = kind,
-                isAttention = isAttention,
-            ),
+            color = if (dimmed) {
+                TextDimmed
+            } else {
+                metricRowColor(
+                    valueMs = value.average,
+                    frameBudgetMs = rowContext.frameBudgetMs,
+                    kind = kind,
+                    isAttention = isAttention,
+                )
+            },
             loadFraction = rowContext.loadFractionOf(value),
             hasSeparatorAbove = separatorAbove,
         ),

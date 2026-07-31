@@ -88,21 +88,27 @@ class JankDiagnosisTest {
         vsyncRate: Int = 60,
     ): JankDiagnosis = JankDiagnosis.of(metrics = metrics, memory = memory, thermal = thermal, vsyncRate = vsyncRate)
 
+    /** Bottleneck is derived — load the phase that should win. */
     private fun metrics(
         jankPercent: Float,
         unknownDelayMs: Float = 0f,
         bottleneckMs: Float = 0f,
         bottleneckStage: PipelineStage = PipelineStage.CPU,
         sessionDurationMs: Long = 1_000L,
-    ) = PerformanceMetrics(
-        unknownDelay = MetricValue(average = unknownDelayMs),
-        bottleneck = MetricValue(average = bottleneckMs),
-        bottleneckStage = bottleneckStage,
-        windowJankPercent = jankPercent,
-        session = SessionStats.EMPTY.copy(durationMs = sessionDurationMs),
-        refreshRate = 60f,
-        frameBudgetMs = 16.7f,
-    )
+    ): PerformanceMetrics {
+        val busiest = MetricValue(average = bottleneckMs)
+        val unknownDelay = MetricValue(average = unknownDelayMs)
+        return PerformanceMetrics(
+            phases = when (bottleneckStage) {
+                PipelineStage.CPU -> FramePhases(unknownDelay = unknownDelay, draw = busiest)
+                PipelineStage.RENDER -> FramePhases(unknownDelay = unknownDelay, sync = busiest)
+                PipelineStage.GPU -> FramePhases(unknownDelay = unknownDelay, gpu = busiest)
+            },
+            window = FrameWindowStats(jankPercent = jankPercent),
+            session = SessionStats.EMPTY.copy(durationMs = sessionDurationMs),
+            display = DisplayInfo(refreshRateHz = 60f, frameBudgetMs = 16.7f),
+        )
+    }
 
     private companion object {
         const val TOLERANCE = 0.0001f

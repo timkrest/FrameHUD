@@ -1,11 +1,10 @@
 package io.github.timkrest.framehud.internal
 
-import android.os.SystemClock
 import io.github.timkrest.framehud.SessionStats
 import kotlin.math.max
 
-/** Confined to the metrics thread, like the collector that owns it. */
-internal class SessionAccumulator {
+/** Confined to the metrics thread, like the aggregator that owns it. */
+internal class SessionAccumulator(private val clock: MetricsClock) {
 
     private val totals = LatencyHistogram()
     private var collectingSinceMs = 0L
@@ -33,12 +32,12 @@ internal class SessionAccumulator {
     }
 
     fun startCollecting() {
-        if (collectingSinceMs == 0L) collectingSinceMs = SystemClock.elapsedRealtime()
+        if (collectingSinceMs == 0L) collectingSinceMs = clock.elapsedRealtimeMs()
     }
 
     fun stopCollecting() {
         if (collectingSinceMs == 0L) return
-        collectedMs += SystemClock.elapsedRealtime() - collectingSinceMs
+        collectedMs += clock.elapsedRealtimeMs() - collectingSinceMs
         collectingSinceMs = 0L
     }
 
@@ -65,12 +64,12 @@ internal class SessionAccumulator {
         currentJankStreak = 0
         maxJankStreak = 0
         collectedMs = 0L
-        if (collectingSinceMs != 0L) collectingSinceMs = SystemClock.elapsedRealtime()
+        if (collectingSinceMs != 0L) collectingSinceMs = clock.elapsedRealtimeMs()
     }
 
     private fun collectedDurationMs(): Long {
         val startedMs = collectingSinceMs
-        return collectedMs + if (startedMs == 0L) 0L else SystemClock.elapsedRealtime() - startedMs
+        return collectedMs + if (startedMs == 0L) 0L else clock.elapsedRealtimeMs() - startedMs
     }
 
     companion object {

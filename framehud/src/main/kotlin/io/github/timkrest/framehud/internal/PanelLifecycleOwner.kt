@@ -23,6 +23,15 @@ internal class PanelLifecycleOwner :
         lifecycleRegistry.currentState = Lifecycle.State.RESUMED
     }
 
+    /**
+     * Drops below `STARTED` while the panel is off screen, so the lifecycle-aware collection inside
+     * it stops rather than recomposing a hidden window.
+     */
+    fun setVisible(visible: Boolean) {
+        if (lifecycleRegistry.currentState == Lifecycle.State.DESTROYED) return
+        lifecycleRegistry.currentState = if (visible) Lifecycle.State.RESUMED else Lifecycle.State.CREATED
+    }
+
     fun stop() {
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
     }

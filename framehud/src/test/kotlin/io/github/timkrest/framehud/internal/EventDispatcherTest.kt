@@ -1,7 +1,10 @@
 package io.github.timkrest.framehud.internal
 
+import io.github.timkrest.framehud.DisplayInfo
 import io.github.timkrest.framehud.FrameHudEvent
 import io.github.timkrest.framehud.FrameHudEventListener
+import io.github.timkrest.framehud.FramePhases
+import io.github.timkrest.framehud.FrameWindowStats
 import io.github.timkrest.framehud.MemoryStats
 import io.github.timkrest.framehud.MetricValue
 import io.github.timkrest.framehud.PerformanceMetrics
@@ -82,10 +85,10 @@ class EventDispatcherTest {
         dispatcher.onSample(
             listeners = listeners,
             metrics = PerformanceMetrics(
-                bottleneck = MetricValue(average = 12f),
-                windowJankPercent = jankPercent,
+                phases = FramePhases(draw = MetricValue(average = 12f)),
+                window = FrameWindowStats(jankPercent = jankPercent),
                 session = SessionStats.EMPTY.copy(frames = 100, durationMs = 1_000L, frozenFrames = frozenFrames),
-                refreshRate = 60f,
+                display = DisplayInfo(refreshRateHz = 60f),
             ),
             memory = MemoryStats.EMPTY,
             thermal = thermal,

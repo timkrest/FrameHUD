@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import io.github.timkrest.framehud.PerformanceMetrics
 
 internal fun Modifier.dragHandle(onDrag: (dx: Float, dy: Float) -> Unit): Modifier = pointerInput(Unit) {
     detectDragGestures { change, dragAmount ->
@@ -34,8 +33,8 @@ internal fun Modifier.tapAndHold(onTap: () -> Unit, onHold: () -> Unit): Modifie
 )
 
 @Composable
-internal fun FpsText(metrics: PerformanceMetrics) {
-    MetricText(text = formatFps(metrics.fps), color = fpsColor(metrics))
+internal fun FpsText(fps: Int, refreshRateHz: Float) {
+    MetricText(text = formatFps(fps), color = fpsColor(fps = fps, refreshRateHz = refreshRateHz))
 }
 
 @Composable

@@ -11,7 +11,7 @@ public data class FrameHudConfig(
     /** How often the panel is allowed to update. Lower values cost more to render. */
     val metricsThrottleIntervalMs: Long = DEFAULT_METRICS_THROTTLE_INTERVAL_MS,
     /** Refresh rate assumed when the display reports none. */
-    val fallbackRefreshRateHz: Float = PerformanceMetrics.DEFAULT_REFRESH_RATE_HZ,
+    val fallbackRefreshRateHz: Float = DisplayInfo.DEFAULT_REFRESH_RATE_HZ,
     val metricsThreadName: String = DEFAULT_METRICS_THREAD_NAME,
 ) {
     public companion object {

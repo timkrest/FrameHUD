@@ -2,17 +2,13 @@ package io.github.timkrest.framehud.ui
 
 import androidx.compose.ui.graphics.Color
 import io.github.timkrest.framehud.JankSeverity
-import io.github.timkrest.framehud.PerformanceMetrics
 import io.github.timkrest.framehud.ThermalLevel
 
-internal fun fpsColor(metrics: PerformanceMetrics): Color {
-    if (metrics.fps == 0) return TextHeader
-    val targetFps = metrics.effectiveRefreshRate
-    return when {
-        metrics.fps >= targetFps * FPS_GOOD_THRESHOLD -> TextGood
-        metrics.fps >= targetFps * FPS_WARN_THRESHOLD -> TextNormal
-        else -> TextWarning
-    }
+internal fun fpsColor(fps: Int, refreshRateHz: Float): Color = when {
+    fps == 0 -> TextHeader
+    fps >= refreshRateHz * FPS_GOOD_THRESHOLD -> TextGood
+    fps >= refreshRateHz * FPS_WARN_THRESHOLD -> TextNormal
+    else -> TextWarning
 }
 
 internal fun jankColor(jankPercent: Float): Color = when (JankSeverity.of(jankPercent)) {

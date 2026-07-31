@@ -1,9 +1,13 @@
 package io.github.timkrest.framehud.ui
 
 internal const val LABEL_HEADER_FROZEN = "FROZEN"
+internal const val LABEL_EMULATOR = "EMU"
 internal const val LABEL_CPU_SECTION = "CPU"
 internal const val LABEL_RENDER_SECTION = "RENDER"
 internal const val LABEL_GPU_SECTION = "GPU"
+
+/** Marks the sections an emulator measures on the host machine rather than on a device. */
+internal const val LABEL_HOST_SECTION = " · host"
 internal const val LABEL_INPUT = "input"
 internal const val LABEL_ANIMATION = "anim"
 internal const val LABEL_LAYOUT = "layout"

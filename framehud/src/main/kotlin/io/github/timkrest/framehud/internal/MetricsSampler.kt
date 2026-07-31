@@ -8,26 +8,43 @@ import android.view.Window
 /**
  * Owns the thread `FrameMetrics` callbacks arrive on, plus the tick that keeps readings fresh once
  * the screen goes idle and no more callbacks come.
+ *
+ * The thread outlives a single screen: stopping only unbinds the window and stops the tick, so
+ * leaving a screen never waits on it. It is torn down only when the configured thread name changes,
+ * and even then the replacement waits for it on its own thread — never on the caller's.
+ *
+ * Main thread only, apart from [post].
  */
 internal class MetricsSampler(
     threadName: String,
     private val listener: Window.OnFrameMetricsAvailableListener,
     private val tickIntervalMs: () -> Long,
     private val onTick: () -> Unit,
+    predecessor: Thread? = null,
 ) {
 
     private val thread = HandlerThread(threadName).apply { start() }
     private val handler = Handler(thread.looper)
-    private var boundWindow: Window? = null
 
-    fun start() {
-        val tick = object : Runnable {
-            override fun run() {
-                onTick()
-                handler.postDelayed(this, tickIntervalMs())
-            }
-        }
-        handler.postDelayed(tick, tickIntervalMs())
+    var boundWindow: Window? = null
+        private set
+
+    /** Metrics thread only. Bumped to retire a tick that is already in flight. */
+    private var tickGeneration = 0
+
+    init {
+        // The aggregator is shared with the thread being replaced; keep the two from overlapping.
+        if (predecessor != null) handler.post { awaitTermination(predecessor) }
+    }
+
+    val metricsThread: Thread get() = thread
+
+    fun startTicking() {
+        handler.post { postTick(++tickGeneration) }
+    }
+
+    fun stopTicking() {
+        handler.post { tickGeneration++ }
     }
 
     /** False when [window] is already bound. */
@@ -51,13 +68,24 @@ internal class MetricsSampler(
         return true
     }
 
-    fun post(action: () -> Unit): Boolean = handler.post(action)
+    fun post(action: () -> Unit): Boolean = handler.post { guarded("running a metrics task", action) }
 
-    /** Runs what is already queued and drops the pending tick, so a final [post] still gets through. */
+    /** Runs what is already queued, then lets the thread finish. Never blocks the caller. */
     fun quit() {
         unbind()
+        stopTicking()
         thread.quitSafely()
-        awaitTermination(thread)
+    }
+
+    private fun postTick(generation: Int) {
+        handler.postDelayed(
+            {
+                if (generation != tickGeneration) return@postDelayed
+                guarded("sampling metrics", onTick)
+                postTick(generation)
+            },
+            tickIntervalMs(),
+        )
     }
 
     private fun awaitTermination(thread: Thread) {
@@ -67,7 +95,7 @@ internal class MetricsSampler(
                 thread.join()
             } catch (e: InterruptedException) {
                 interrupted = true
-                Log.w(LOG_TAG, "Interrupted while joining the metrics thread, retrying", e)
+                Log.w(LOG_TAG, "Interrupted while joining the previous metrics thread, retrying", e)
             }
         }
         if (interrupted) Thread.currentThread().interrupt()

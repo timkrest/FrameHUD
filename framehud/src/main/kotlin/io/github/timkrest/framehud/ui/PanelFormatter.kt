@@ -1,8 +1,8 @@
 package io.github.timkrest.framehud.ui
 
+import io.github.timkrest.framehud.FrameWindowStats
 import io.github.timkrest.framehud.MemoryStats
 import io.github.timkrest.framehud.MetricValue
-import io.github.timkrest.framehud.PerformanceMetrics
 import io.github.timkrest.framehud.PipelineStage
 import io.github.timkrest.framehud.SessionStats
 import io.github.timkrest.framehud.ThermalStats
@@ -17,10 +17,9 @@ internal val CPU_COLUMNS_HEADER_LINE: String =
 internal val GPU_UNAVAILABLE_LINE: String = format(COLUMN_LAYOUT, LABEL_GPU, LABEL_GPU_NA, LABEL_GPU_NA, "")
 
 /** Derived timings track no peak, so their row stops after two columns. */
-internal fun formatMetricLine(label: String, value: MetricValue): String = if (value.peak > 0f) {
-    format("%-7s %5.1f %5.1f %5.1f", label, value.current, value.average, value.peak)
-} else {
-    format("%-7s %5.1f %5.1f", label, value.current, value.average)
+internal fun formatMetricLine(label: String, value: MetricValue): String {
+    val peak = value.peak ?: return format("%-7s %5.1f %5.1f", label, value.current, value.average)
+    return format("%-7s %5.1f %5.1f %5.1f", label, value.current, value.average, peak)
 }
 
 internal fun formatFps(fps: Int): String = if (fps == 0) LABEL_IDLE else format("%d FPS", fps)
@@ -30,11 +29,11 @@ internal fun formatTiming(vsyncRate: Int, frameBudgetMs: Float): String =
 
 internal fun formatJankShort(jankPercent: Float): String = format("jank %.1f%%", jankPercent)
 
-internal fun formatWindowSummary(metrics: PerformanceMetrics): String = format(
+internal fun formatWindowSummary(window: FrameWindowStats): String = format(
     "win  jank %4.1f%%  p95 %5.1f  max %5.1f",
-    metrics.windowJankPercent,
-    metrics.windowP95FrameMs,
-    metrics.windowWorstFrameMs,
+    window.jankPercent,
+    window.p95FrameMs,
+    window.worstFrameMs,
 )
 
 internal fun formatSessionLatency(session: SessionStats): String = format(

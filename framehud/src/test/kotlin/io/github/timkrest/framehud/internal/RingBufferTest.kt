@@ -2,6 +2,7 @@ package io.github.timkrest.framehud.internal
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class RingBufferTest {
 
@@ -13,6 +14,7 @@ class RingBufferTest {
         assertEquals(0f, buffer.windowMax(), TOLERANCE)
         assertEquals(0f, buffer.percentile(50f), TOLERANCE)
         assertEquals(0, buffer.snapshot().size)
+        assertNull(buffer.peak)
     }
 
     @Test
@@ -36,7 +38,26 @@ class RingBufferTest {
         buffer.add(1f)
         buffer.add(2f)
         assertEquals(2f, buffer.windowMax(), TOLERANCE)
-        assertEquals(10f, buffer.peak, TOLERANCE)
+        assertEquals(10f, buffer.peak)
+    }
+
+    @Test
+    fun `a peak stays the highest sample even when every sample is negative`() {
+        val buffer = RingBuffer(capacity = 4)
+        listOf(-8f, -2f, -5f).forEach(buffer::add)
+        assertEquals(-2f, buffer.peak)
+        assertEquals(-2f, buffer.windowMax(), TOLERANCE)
+        assertEquals(-5f, buffer.percentile(50f), TOLERANCE)
+    }
+
+    @Test
+    fun `the window is read from the oldest sample after wrapping`() {
+        val buffer = RingBuffer(capacity = 3)
+        listOf(5f, 4f, 3f, 2f, 1f).forEach(buffer::add)
+        assertEquals(listOf(3f, 2f, 1f), buffer.snapshot().toList())
+        assertEquals(3f, buffer.windowMax(), TOLERANCE)
+        assertEquals(1f, buffer.percentile(0f), TOLERANCE)
+        assertEquals(2f, buffer.percentile(50f), TOLERANCE)
     }
 
     @Test
@@ -73,7 +94,7 @@ class RingBufferTest {
         buffer.clear()
         assertEquals(0, buffer.size)
         assertEquals(0f, buffer.average(), TOLERANCE)
-        assertEquals(0f, buffer.peak, TOLERANCE)
+        assertNull(buffer.peak)
     }
 
     private companion object {

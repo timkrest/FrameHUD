@@ -12,10 +12,11 @@ public object JankAssertions {
     @JvmStatic
     @JvmOverloads
     public fun assertNoJank(tag: String, thresholds: JankThresholds = JankThresholds()) {
-        val stats = checkNotNull(FrameHud.awaitSessionStats(STATS_TIMEOUT_MS)) {
-            "$tag: FrameHud is not collecting. Enable it and resume an activity before asserting."
+        val stats = FrameHud.awaitSessionStats(STATS_TIMEOUT_MS)
+            ?: throw AssertionError("$tag: FrameHud is not collecting. Enable it and resume an activity first.")
+        if (stats.frames == 0) {
+            throw AssertionError("$tag: no frames were collected — did the screen draw anything?")
         }
-        check(stats.frames > 0) { "$tag: no frames were collected — did the screen draw anything?" }
 
         val violations = thresholds.violations(stats)
         if (violations.isNotEmpty()) {

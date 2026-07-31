@@ -73,6 +73,7 @@ internal class PanelWindow(
 
     fun setVisible(visible: Boolean) {
         view.visibility = if (visible) View.VISIBLE else View.GONE
+        lifecycleOwner.setVisible(visible)
     }
 
     fun dismiss() {

@@ -85,27 +85,29 @@ public data class JankDiagnosis(
             thermal: ThermalStats,
             vsyncRate: Int,
         ): JankDiagnosis {
-            val severity = JankSeverity.of(metrics.windowJankPercent)
+            val severity = JankSeverity.of(metrics.window.jankPercent)
             if (severity == JankSeverity.NONE) return HEALTHY
 
+            val phases = metrics.phases
+            val refreshRateHz = metrics.display.refreshRateHz
             val gcTimeShare = gcTimeShare(memory, metrics.session)
             val cause = when {
                 thermal.level.isThrottling -> JankCause.Thermal(thermal.level)
                 gcTimeShare >= GC_TIME_SHARE_THRESHOLD -> JankCause.Gc(gcTimeShare)
-                isVsyncStarved(vsyncRate, metrics.effectiveRefreshRate) ->
-                    JankCause.VsyncStarvation(vsyncRate, metrics.effectiveRefreshRate)
+                isVsyncStarved(vsyncRate, refreshRateHz) ->
+                    JankCause.VsyncStarvation(vsyncRate, refreshRateHz)
 
-                metrics.unknownDelay.average > metrics.bottleneck.average ->
-                    JankCause.LateStart(metrics.unknownDelay.average)
+                phases.unknownDelay.average > phases.bottleneck.average ->
+                    JankCause.LateStart(phases.unknownDelay.average)
 
-                else -> JankCause.Stage(metrics.bottleneckStage, metrics.bottleneck.average)
+                else -> JankCause.Stage(phases.bottleneckStage, phases.bottleneck.average)
             }
             return JankDiagnosis(
                 cause = cause,
                 severity = severity,
-                jankPercent = metrics.windowJankPercent,
-                worstFrameMs = metrics.windowWorstFrameMs,
-                frameBudgetMs = metrics.frameBudgetMs,
+                jankPercent = metrics.window.jankPercent,
+                worstFrameMs = metrics.window.worstFrameMs,
+                frameBudgetMs = metrics.display.frameBudgetMs,
             )
         }
 

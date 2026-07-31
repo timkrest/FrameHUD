@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,27 +21,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.timkrest.framehud.MemoryStats
 import io.github.timkrest.framehud.PerformanceMetrics
 import io.github.timkrest.framehud.ThermalStats
-import kotlinx.coroutines.flow.StateFlow
-
-/** What the panel reads. The flow references never change, which keeps the panel skippable. */
-@Immutable
-internal class PanelState(
-    val metrics: StateFlow<PerformanceMetrics>,
-    val vsyncRate: StateFlow<Int>,
-    val memory: StateFlow<MemoryStats>,
-    val thermal: StateFlow<ThermalStats>,
-    val isCollapsed: StateFlow<Boolean>,
-    val isFrozen: StateFlow<Boolean>,
-)
-
-/** What the panel can trigger. [requestOverlayPermission] is null when there is nothing to ask for. */
-internal class PanelActions(
-    val toggleCollapsed: () -> Unit,
-    val toggleFrozen: () -> Unit,
-    val reset: () -> Unit,
-    val drag: (dx: Float, dy: Float) -> Unit,
-    val requestOverlayPermission: (() -> Unit)?,
-)
 
 @Composable
 internal fun FrameHudPanel(state: PanelState, actions: PanelActions, modifier: Modifier = Modifier) {
@@ -68,7 +46,7 @@ internal fun FrameHudPanel(state: PanelState, actions: PanelActions, modifier: M
             .padding(PanelPadding),
     ) {
         if (isCollapsed) {
-            CollapsedContent(metrics = metrics, actions = actions)
+            CollapsedContent(metrics = metrics, isEmulator = state.isEmulator, actions = actions)
         } else {
             ExpandedContent(
                 metrics = metrics,
@@ -76,6 +54,8 @@ internal fun FrameHudPanel(state: PanelState, actions: PanelActions, modifier: M
                 memory = memory,
                 thermal = thermal,
                 isFrozen = isFrozen,
+                canRequestOverlayPermission = state.canRequestOverlayPermission,
+                isEmulator = state.isEmulator,
                 actions = actions,
                 modifier = Modifier.width(PanelWidth),
             )
@@ -84,8 +64,8 @@ internal fun FrameHudPanel(state: PanelState, actions: PanelActions, modifier: M
 }
 
 @Composable
-private fun CollapsedContent(metrics: PerformanceMetrics, actions: PanelActions) {
-    val summary = remember(metrics) { buildCollapsedLine(metrics = metrics) }
+private fun CollapsedContent(metrics: PerformanceMetrics, isEmulator: Boolean, actions: PanelActions) {
+    val summary = remember(metrics, isEmulator) { buildCollapsedLine(metrics = metrics, isEmulator = isEmulator) }
     Row(
         modifier = Modifier
             .height(CollapsedRowHeight)
@@ -93,8 +73,8 @@ private fun CollapsedContent(metrics: PerformanceMetrics, actions: PanelActions)
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FrameSparkline(
-            history = metrics.history,
-            frameBudgetMs = metrics.frameBudgetMs,
+            history = metrics.window.history,
+            frameBudgetMs = metrics.display.frameBudgetMs,
             modifier = Modifier
                 .width(SparklineMiniWidth)
                 .height(SparklineMiniHeight),
@@ -111,23 +91,27 @@ private fun ExpandedContent(
     memory: MemoryStats,
     thermal: ThermalStats,
     isFrozen: Boolean,
+    canRequestOverlayPermission: Boolean,
+    isEmulator: Boolean,
     actions: PanelActions,
     modifier: Modifier = Modifier,
 ) {
-    val lines = remember(metrics, memory, thermal) {
-        buildPanelLines(metrics = metrics, memory = memory, thermal = thermal)
+    val lines = remember(metrics, memory, thermal, isEmulator) {
+        buildPanelLines(metrics = metrics, memory = memory, thermal = thermal, isEmulator = isEmulator)
     }
     Column(modifier = modifier) {
         PanelHeader(
             metrics = metrics,
             vsyncRate = vsyncRate,
             isFrozen = isFrozen,
+            canRequestOverlayPermission = canRequestOverlayPermission,
+            isEmulator = isEmulator,
             actions = actions,
         )
 
         FrameSparkline(
-            history = metrics.history,
-            frameBudgetMs = metrics.frameBudgetMs,
+            history = metrics.window.history,
+            frameBudgetMs = metrics.display.frameBudgetMs,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(SparklineHeight),
@@ -142,6 +126,8 @@ private fun PanelHeader(
     metrics: PerformanceMetrics,
     vsyncRate: Int,
     isFrozen: Boolean,
+    canRequestOverlayPermission: Boolean,
+    isEmulator: Boolean,
     actions: PanelActions,
 ) {
     Row(
@@ -150,19 +136,23 @@ private fun PanelHeader(
             .tapAndHold(onTap = {}, onHold = actions.toggleFrozen),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (isEmulator) {
+            MetricText(text = LABEL_EMULATOR, color = TextCaution)
+            Spacer(Modifier.width(ItemSpacing))
+        }
         MetricText(
             text = if (isFrozen) {
                 LABEL_HEADER_FROZEN
             } else {
-                formatTiming(vsyncRate = vsyncRate, frameBudgetMs = metrics.frameBudgetMs)
+                formatTiming(vsyncRate = vsyncRate, frameBudgetMs = metrics.display.frameBudgetMs)
             },
             color = if (isFrozen) TextFrozen else TextHeader,
         )
         Spacer(Modifier.weight(1f))
-        FpsText(metrics = metrics)
+        FpsText(fps = metrics.window.fps, refreshRateHz = metrics.display.refreshRateHz)
         Spacer(Modifier.width(ItemSpacing))
-        actions.requestOverlayPermission?.let { request ->
-            PanelIconButton(icon = ICON_DETACH, onClick = request)
+        if (canRequestOverlayPermission) {
+            PanelIconButton(icon = ICON_DETACH, onClick = actions.requestOverlayPermission)
         }
         PanelIconButton(icon = ICON_COLLAPSE, onClick = actions.toggleCollapsed)
         PanelIconButton(icon = ICON_RESET, onClick = actions.reset)

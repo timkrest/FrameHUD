@@ -18,11 +18,13 @@ android {
         targetSdk = libs.versions.androidCompileSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Only so the no-op variant can be installed without a keystore; the sample ships nowhere.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -57,4 +59,12 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // The only place the published instrumentation module actually runs.
+    androidTestImplementation(project(":framehud-instrumentation"))
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlin.test)
 }

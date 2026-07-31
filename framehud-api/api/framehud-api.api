@@ -1,3 +1,24 @@
+public final class io/github/timkrest/framehud/DisplayInfo {
+	public static final field Companion Lio/github/timkrest/framehud/DisplayInfo$Companion;
+	public static final field DEFAULT_REFRESH_RATE_HZ F
+	public fun <init> ()V
+	public fun <init> (FF)V
+	public synthetic fun <init> (FFILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()F
+	public final fun component2 ()F
+	public final fun copy (FF)Lio/github/timkrest/framehud/DisplayInfo;
+	public static synthetic fun copy$default (Lio/github/timkrest/framehud/DisplayInfo;FFILjava/lang/Object;)Lio/github/timkrest/framehud/DisplayInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFrameBudgetMs ()F
+	public final fun getRefreshRateHz ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/timkrest/framehud/DisplayInfo$Companion {
+	public final fun getDEFAULT ()Lio/github/timkrest/framehud/DisplayInfo;
+}
+
 public final class io/github/timkrest/framehud/FrameHistory {
 	public static final field Companion Lio/github/timkrest/framehud/FrameHistory$Companion;
 	public synthetic fun <init> ([FLkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -105,6 +126,77 @@ public final class io/github/timkrest/framehud/FrameHudEvent$ThermalChanged : io
 
 public abstract interface class io/github/timkrest/framehud/FrameHudEventListener {
 	public abstract fun onEvent (Lio/github/timkrest/framehud/FrameHudEvent;)V
+}
+
+public final class io/github/timkrest/framehud/FramePhases {
+	public static final field Companion Lio/github/timkrest/framehud/FramePhases$Companion;
+	public fun <init> ()V
+	public fun <init> (Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Z)V
+	public synthetic fun <init> (Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component10 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component11 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component12 ()Z
+	public final fun component2 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component3 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component4 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component5 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component6 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component7 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component8 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun component9 ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun copy (Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Z)Lio/github/timkrest/framehud/FramePhases;
+	public static synthetic fun copy$default (Lio/github/timkrest/framehud/FramePhases;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;ZILjava/lang/Object;)Lio/github/timkrest/framehud/FramePhases;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnimation ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getBottleneck ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getBottleneckStage ()Lio/github/timkrest/framehud/PipelineStage;
+	public final fun getCommandIssue ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getCpu ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getDraw ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getGpu ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getInput ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getLayout ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getOther ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getOverrun ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getRender ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getSwapBuffers ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getSync ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getTotal ()Lio/github/timkrest/framehud/MetricValue;
+	public final fun getUnknownDelay ()Lio/github/timkrest/framehud/MetricValue;
+	public fun hashCode ()I
+	public final fun isGpuAvailable ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/timkrest/framehud/FramePhases$Companion {
+	public final fun getEMPTY ()Lio/github/timkrest/framehud/FramePhases;
+}
+
+public final class io/github/timkrest/framehud/FrameWindowStats {
+	public static final field Companion Lio/github/timkrest/framehud/FrameWindowStats$Companion;
+	public fun <init> ()V
+	public fun <init> (IFFFLio/github/timkrest/framehud/FrameHistory;)V
+	public synthetic fun <init> (IFFFLio/github/timkrest/framehud/FrameHistory;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()F
+	public final fun component3 ()F
+	public final fun component4 ()F
+	public final fun component5 ()Lio/github/timkrest/framehud/FrameHistory;
+	public final fun copy (IFFFLio/github/timkrest/framehud/FrameHistory;)Lio/github/timkrest/framehud/FrameWindowStats;
+	public static synthetic fun copy$default (Lio/github/timkrest/framehud/FrameWindowStats;IFFFLio/github/timkrest/framehud/FrameHistory;ILjava/lang/Object;)Lio/github/timkrest/framehud/FrameWindowStats;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFps ()I
+	public final fun getHistory ()Lio/github/timkrest/framehud/FrameHistory;
+	public final fun getJankPercent ()F
+	public final fun getP95FrameMs ()F
+	public final fun getWorstFrameMs ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/timkrest/framehud/FrameWindowStats$Companion {
+	public final fun getEMPTY ()Lio/github/timkrest/framehud/FrameWindowStats;
 }
 
 public abstract interface annotation class io/github/timkrest/framehud/InternalFrameHudApi : java/lang/annotation/Annotation {
@@ -267,17 +359,17 @@ public final class io/github/timkrest/framehud/MemoryStats$Companion {
 public final class io/github/timkrest/framehud/MetricValue {
 	public static final field Companion Lio/github/timkrest/framehud/MetricValue$Companion;
 	public fun <init> ()V
-	public fun <init> (FFF)V
-	public synthetic fun <init> (FFFILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (FFLjava/lang/Float;)V
+	public synthetic fun <init> (FFLjava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()F
 	public final fun component2 ()F
-	public final fun component3 ()F
-	public final fun copy (FFF)Lio/github/timkrest/framehud/MetricValue;
-	public static synthetic fun copy$default (Lio/github/timkrest/framehud/MetricValue;FFFILjava/lang/Object;)Lio/github/timkrest/framehud/MetricValue;
+	public final fun component3 ()Ljava/lang/Float;
+	public final fun copy (FFLjava/lang/Float;)Lio/github/timkrest/framehud/MetricValue;
+	public static synthetic fun copy$default (Lio/github/timkrest/framehud/MetricValue;FFLjava/lang/Float;ILjava/lang/Object;)Lio/github/timkrest/framehud/MetricValue;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAverage ()F
 	public final fun getCurrent ()F
-	public final fun getPeak ()F
+	public final fun getPeak ()Ljava/lang/Float;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -296,61 +388,21 @@ public final class io/github/timkrest/framehud/OverlayMode : java/lang/Enum {
 
 public final class io/github/timkrest/framehud/PerformanceMetrics {
 	public static final field Companion Lio/github/timkrest/framehud/PerformanceMetrics$Companion;
-	public static final field DEFAULT_REFRESH_RATE_HZ F
 	public fun <init> ()V
-	public fun <init> (Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/PipelineStage;IFFFLio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/FrameHistory;ZFF)V
-	public synthetic fun <init> (Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/PipelineStage;IFFFLio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/FrameHistory;ZFFILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component10 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component11 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component12 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component13 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component14 ()Lio/github/timkrest/framehud/PipelineStage;
-	public final fun component15 ()I
-	public final fun component16 ()F
-	public final fun component17 ()F
-	public final fun component18 ()F
-	public final fun component19 ()Lio/github/timkrest/framehud/SessionStats;
-	public final fun component2 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component20 ()Lio/github/timkrest/framehud/FrameHistory;
-	public final fun component21 ()Z
-	public final fun component22 ()F
-	public final fun component23 ()F
-	public final fun component3 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component4 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component5 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component6 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component7 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component8 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun component9 ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun copy (Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/PipelineStage;IFFFLio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/FrameHistory;ZFF)Lio/github/timkrest/framehud/PerformanceMetrics;
-	public static synthetic fun copy$default (Lio/github/timkrest/framehud/PerformanceMetrics;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/MetricValue;Lio/github/timkrest/framehud/PipelineStage;IFFFLio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/FrameHistory;ZFFILjava/lang/Object;)Lio/github/timkrest/framehud/PerformanceMetrics;
+	public fun <init> (Lio/github/timkrest/framehud/FramePhases;Lio/github/timkrest/framehud/FrameWindowStats;Lio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/DisplayInfo;)V
+	public synthetic fun <init> (Lio/github/timkrest/framehud/FramePhases;Lio/github/timkrest/framehud/FrameWindowStats;Lio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/DisplayInfo;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/timkrest/framehud/FramePhases;
+	public final fun component2 ()Lio/github/timkrest/framehud/FrameWindowStats;
+	public final fun component3 ()Lio/github/timkrest/framehud/SessionStats;
+	public final fun component4 ()Lio/github/timkrest/framehud/DisplayInfo;
+	public final fun copy (Lio/github/timkrest/framehud/FramePhases;Lio/github/timkrest/framehud/FrameWindowStats;Lio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/DisplayInfo;)Lio/github/timkrest/framehud/PerformanceMetrics;
+	public static synthetic fun copy$default (Lio/github/timkrest/framehud/PerformanceMetrics;Lio/github/timkrest/framehud/FramePhases;Lio/github/timkrest/framehud/FrameWindowStats;Lio/github/timkrest/framehud/SessionStats;Lio/github/timkrest/framehud/DisplayInfo;ILjava/lang/Object;)Lio/github/timkrest/framehud/PerformanceMetrics;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAnimation ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getBottleneck ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getBottleneckStage ()Lio/github/timkrest/framehud/PipelineStage;
-	public final fun getCommandIssue ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getDraw ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getEffectiveRefreshRate ()F
-	public final fun getFps ()I
-	public final fun getFrameBudgetMs ()F
-	public final fun getGpu ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getHistory ()Lio/github/timkrest/framehud/FrameHistory;
-	public final fun getInput ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getLayout ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getOther ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getOverrun ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getRefreshRate ()F
+	public final fun getDisplay ()Lio/github/timkrest/framehud/DisplayInfo;
+	public final fun getPhases ()Lio/github/timkrest/framehud/FramePhases;
 	public final fun getSession ()Lio/github/timkrest/framehud/SessionStats;
-	public final fun getSwapBuffers ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getSync ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getTotal ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getUnknownDelay ()Lio/github/timkrest/framehud/MetricValue;
-	public final fun getWindowJankPercent ()F
-	public final fun getWindowP95FrameMs ()F
-	public final fun getWindowWorstFrameMs ()F
+	public final fun getWindow ()Lio/github/timkrest/framehud/FrameWindowStats;
 	public fun hashCode ()I
-	public final fun isGpuAvailable ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -369,7 +421,9 @@ public final class io/github/timkrest/framehud/PipelineStage : java/lang/Enum {
 
 public final class io/github/timkrest/framehud/SessionStats {
 	public static final field Companion Lio/github/timkrest/framehud/SessionStats$Companion;
+	public fun <init> ()V
 	public fun <init> (IJFFFFIII)V
+	public synthetic fun <init> (IJFFFFIIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component2 ()J
 	public final fun component3 ()F

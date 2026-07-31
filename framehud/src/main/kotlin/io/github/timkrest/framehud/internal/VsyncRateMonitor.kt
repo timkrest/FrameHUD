@@ -6,6 +6,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.roundToInt
 
+/**
+ * Counts the Choreographer ticks the main thread serves each second — the reading that tells a
+ * blocked main thread apart from a screen with nothing to draw, since neither produces frames.
+ *
+ * It costs a frame callback posted for as long as a window is bound, which wakes the main thread
+ * every vsync even on a still screen. Nothing cheaper reports the same thing, so it is kept to the
+ * shortest span that answers the question: [start] and [stop] follow the bound window, not the
+ * process.
+ */
 internal class VsyncRateMonitor {
 
     private val _ratePerSecond = MutableStateFlow(0)
