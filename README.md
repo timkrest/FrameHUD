@@ -25,7 +25,6 @@ measures.
 ```kotlin
 dependencies {
     debugImplementation("com.timkrest:framehud:0.3.0")
-    releaseImplementation("com.timkrest:framehud-noop:0.3.0")
 }
 ```
 
@@ -33,12 +32,16 @@ Requires `minSdk` 24. Frame phases come from `FrameMetrics`; GPU timings need AP
 that reports them.
 
 There is nothing to call. A `ContentProvider` starts the panel in the main process, and it follows
-whichever activity is resumed.
+whichever activity is resumed. `debugImplementation` keeps the artifact out of release builds
+altogether, along with that provider and the `SYSTEM_ALERT_WINDOW` it declares.
 
-Keep `framehud-noop` in release builds. It mirrors the API with empty bodies, so your calls still
-compile while nothing is measured and no window is added. It also keeps `SYSTEM_ALERT_WINDOW` out of
-your APK: the `framehud` artifact declares that permission, and manifest merging pulls it into any app
-that depends on it.
+Add `framehud-noop` when your own code references `FrameHud` from a source set that release builds
+compile. It mirrors the API with empty bodies, so those call sites resolve while nothing is measured
+and no window is added.
+
+```kotlin
+releaseImplementation("com.timkrest:framehud-noop:0.3.0")
+```
 
 On an emulator the render thread and the GPU belong to the host machine, so those rows describe your
 desktop rather than a device. The panel marks the header `EMU`, labels those sections `· host` and
