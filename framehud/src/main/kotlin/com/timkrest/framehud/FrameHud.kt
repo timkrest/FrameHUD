@@ -5,6 +5,7 @@ import android.app.Application
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
+import android.view.ViewTreeObserver
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
 import com.timkrest.framehud.internal.PanelHost
@@ -16,10 +17,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.lang.ref.WeakReference
+import java.util.WeakHashMap
 
 /**
  * A draggable debug panel showing frame timings on top of your app. Installs itself in the main
- * process and follows the resumed activity; nothing to call.
+ * process and follows the focused activity; nothing to call.
  *
  * The panel renders in its own window, so it stays out of the metrics of the window it measures.
  *
@@ -59,6 +61,8 @@ public object FrameHud {
     private var boundActivityRef: WeakReference<Activity>? = null
 
     private val boundActivity: Activity? get() = boundActivityRef?.get()
+
+    private val focusWatchers = WeakHashMap<Activity, WindowFocusWatcher>()
 
     /**
      * Called by the installer; only needed by hand when that installer is removed. Belongs in
@@ -140,6 +144,17 @@ public object FrameHud {
         _isFrozen.value = false
     }
 
+    /** Split-screen resumes every visible activity at once; the focused one is the one in use. */
+    private fun onResumed(activity: Activity) {
+        watchWindowFocus(activity)
+        if (boundActivity?.hasWindowFocus() != true) attachToActivity(activity)
+    }
+
+    private fun onPaused(activity: Activity) {
+        stopWatchingWindowFocus(activity)
+        detachFromActivity(activity)
+    }
+
     private fun attachToActivity(activity: Activity) {
         if (boundActivity !== activity) {
             engine.unbindWindow()
@@ -159,6 +174,21 @@ public object FrameHud {
         boundActivityRef = null
         val host = panelHost ?: return
         if (host.isAppWindow) stopPanel() else host.hideAfterActivitySwap()
+    }
+
+    private fun watchWindowFocus(activity: Activity) {
+        if (activity in focusWatchers) return
+        val observer = activity.window.decorView.viewTreeObserver
+        if (!observer.isAlive) return
+        val watcher = WindowFocusWatcher(activity)
+        focusWatchers[activity] = watcher
+        observer.addOnWindowFocusChangeListener(watcher)
+    }
+
+    private fun stopWatchingWindowFocus(activity: Activity) {
+        val watcher = focusWatchers.remove(activity) ?: return
+        val observer = activity.window.decorView.viewTreeObserver
+        if (observer.isAlive) observer.removeOnWindowFocusChangeListener(watcher)
     }
 
     private fun bindActivityMetrics() {
@@ -198,10 +228,19 @@ public object FrameHud {
         check(Looper.myLooper() === Looper.getMainLooper()) { "FrameHud must be used from the main thread" }
     }
 
-    private object LifecycleCallbacks : Application.ActivityLifecycleCallbacks {
-        override fun onActivityResumed(activity: Activity) = attachToActivity(activity)
+    /** Weak: a paused activity may never come back, and its observer would outlive it. */
+    private class WindowFocusWatcher(activity: Activity) : ViewTreeObserver.OnWindowFocusChangeListener {
+        private val activityRef = WeakReference(activity)
 
-        override fun onActivityPaused(activity: Activity) = detachFromActivity(activity)
+        override fun onWindowFocusChanged(hasFocus: Boolean) {
+            if (hasFocus) activityRef.get()?.let(::attachToActivity)
+        }
+    }
+
+    private object LifecycleCallbacks : Application.ActivityLifecycleCallbacks {
+        override fun onActivityResumed(activity: Activity) = onResumed(activity)
+
+        override fun onActivityPaused(activity: Activity) = onPaused(activity)
 
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
 
