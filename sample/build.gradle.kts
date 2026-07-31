@@ -9,11 +9,11 @@ plugins {
 val javaTarget = JavaVersion.toVersion(libs.versions.jvmTarget.get())
 
 android {
-    namespace = "io.github.timkrest.framehud.sample"
+    namespace = "com.timkrest.framehud.sample"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "io.github.timkrest.framehud.sample"
+        applicationId = "com.timkrest.framehud.sample"
         minSdk = libs.versions.androidMinSdk.get().toInt()
         targetSdk = libs.versions.androidCompileSdk.get().toInt()
         versionCode = 1

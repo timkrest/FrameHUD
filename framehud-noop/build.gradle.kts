@@ -9,7 +9,7 @@ plugins {
 val javaTarget = JavaVersion.toVersion(libs.versions.jvmTarget.get())
 
 android {
-    namespace = "io.github.timkrest.framehud.noop"
+    namespace = "com.timkrest.framehud.noop"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
 
     defaultConfig {

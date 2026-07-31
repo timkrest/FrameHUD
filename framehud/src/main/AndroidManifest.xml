@@ -5,7 +5,7 @@
 
     <application>
         <provider
-            android:name="io.github.timkrest.framehud.FrameHudInstaller"
+            android:name="com.timkrest.framehud.FrameHudInstaller"
             android:authorities="${applicationId}.framehud-installer"
             android:exported="false" />
     </application>
