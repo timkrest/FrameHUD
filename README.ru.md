@@ -1,6 +1,6 @@
 # FrameHUD
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.timkrest/framehud)](https://central.sonatype.com/artifact/io.github.timkrest/framehud)
+[![Maven Central](https://img.shields.io/maven-central/v/com.timkrest/framehud)](https://central.sonatype.com/artifact/com.timkrest/framehud)
 [![Build](https://github.com/timkrest/FrameHUD/actions/workflows/build.yml/badge.svg)](https://github.com/timkrest/FrameHUD/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
@@ -23,8 +23,8 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.timkrest:framehud:0.2.0")
-    releaseImplementation("io.github.timkrest:framehud-noop:0.2.0")
+    debugImplementation("com.timkrest:framehud:0.3.0")
+    releaseImplementation("com.timkrest:framehud-noop:0.3.0")
 }
 ```
 
@@ -85,7 +85,7 @@ FrameHud.config = FrameHud.config.copy(
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.2.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.3.0")
 ```
 
 ```kotlin
@@ -113,7 +113,7 @@ androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.2.0")
 
 ```xml
 <provider
-    android:name="io.github.timkrest.framehud.FrameHudInstaller"
+    android:name="com.timkrest.framehud.FrameHudInstaller"
     android:authorities="${applicationId}.framehud-installer"
     tools:node="remove" />
 ```
@@ -133,7 +133,7 @@ androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.2.0")
 
 - [Как читать панель](docs/metrics.ru.md) — что означает каждая строка, как замерять экран и что
   делать, когда что-то красное
-- [Справочник API](https://javadoc.io/doc/io.github.timkrest/framehud) — генерируется из исходников
+- [Справочник API](https://javadoc.io/doc/com.timkrest/framehud) — генерируется из исходников
   каждого релиза
 - [Карта развития](ROADMAP.ru.md) — что планируется дальше и что сделано не будет
 - [Как участвовать](CONTRIBUTING.md) — как собрать проект и что проверить перед pull request. Вклад

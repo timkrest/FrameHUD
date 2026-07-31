@@ -1,6 +1,6 @@
 # FrameHUD
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.timkrest/framehud)](https://central.sonatype.com/artifact/io.github.timkrest/framehud)
+[![Maven Central](https://img.shields.io/maven-central/v/com.timkrest/framehud)](https://central.sonatype.com/artifact/com.timkrest/framehud)
 [![Build](https://github.com/timkrest/FrameHUD/actions/workflows/build.yml/badge.svg)](https://github.com/timkrest/FrameHUD/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
@@ -24,8 +24,8 @@ measures.
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.timkrest:framehud:0.2.0")
-    releaseImplementation("io.github.timkrest:framehud-noop:0.2.0")
+    debugImplementation("com.timkrest:framehud:0.3.0")
+    releaseImplementation("com.timkrest:framehud-noop:0.3.0")
 }
 ```
 
@@ -87,7 +87,7 @@ Events arrive on the metrics thread. Don't block it and don't touch views from i
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("io.github.timkrest:framehud-instrumentation:0.2.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.3.0")
 ```
 
 ```kotlin
@@ -114,7 +114,7 @@ Drop the provider and call `FrameHud.install(application)` yourself:
 
 ```xml
 <provider
-    android:name="io.github.timkrest.framehud.FrameHudInstaller"
+    android:name="com.timkrest.framehud.FrameHudInstaller"
     android:authorities="${applicationId}.framehud-installer"
     tools:node="remove" />
 ```
@@ -134,7 +134,7 @@ layouts, churning garbage. Each one moves a different metric.
 
 - [Reading the panel](docs/metrics.md) — what every row means, how to measure a screen, and what to
   do when something turns red
-- [API reference](https://javadoc.io/doc/io.github.timkrest/framehud) — generated from the sources of
+- [API reference](https://javadoc.io/doc/com.timkrest/framehud) — generated from the sources of
   each release
 - [Roadmap](ROADMAP.md) — what is planned next, and what is deliberately not
 - [Contributing](CONTRIBUTING.md) — how to build, and what to check before opening a pull request.
