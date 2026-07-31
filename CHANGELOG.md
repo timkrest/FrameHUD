@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-08-01
 
 ### Changed
 
@@ -12,6 +12,14 @@ All notable changes to this project are documented here. The format follows
   `io.github.timkrest` in both. Update the dependency lines and the imports; a manifest override that
   names the installer takes `com.timkrest.framehud.FrameHudInstaller`. 0.1.0 and 0.2.0 stay published
   under the old coordinates and are not republished under the new ones.
+- `framehud-noop` left the documented install. `debugImplementation` already keeps the artifact, its
+  provider and the `SYSTEM_ALERT_WINDOW` it declares out of a release build, so the no-op is needed
+  only where app code references `FrameHud` outside `src/debug`.
+
+### Fixed
+
+- Split-screen on Android 10 and up resumes every visible activity, so the panel could measure a
+  window other than the one being used. It follows the focused window instead.
 
 ## [0.2.0] - 2026-07-31
 
@@ -78,6 +86,6 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.2.0...HEAD
+[0.3.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.3.0
 [0.2.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.2.0
 [0.1.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.1.0
