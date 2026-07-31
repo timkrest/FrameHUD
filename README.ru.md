@@ -31,12 +31,13 @@ dependencies {
 драйвер их сообщает.
 
 Вызывать ничего не нужно. `ContentProvider` поднимает панель в главном процессе, дальше она следует
-за той activity, которая сейчас на экране. `debugImplementation` не пускает артефакт в релизные
-сборки целиком — вместе с этим provider'ом и разрешением `SYSTEM_ALERT_WINDOW`, которое он объявляет.
+за той activity, которая сейчас на экране. В релизную сборку не попадает ничего: `debugImplementation`
+оставляет за бортом и панель, и этот provider, и разрешение `SYSTEM_ALERT_WINDOW`, которое объявляет
+артефакт.
 
-`framehud-noop` нужен, только если ваш код обращается к `FrameHud` из sourceSet'а, который
-компилируется в релизе. Он повторяет API с пустыми реализациями: такие вызовы разрешаются, но ничего
-не измеряется и окно не добавляется.
+`framehud-noop` нужен, только если вы обращаетесь к `FrameHud` вне `src/debug` — релизной сборке всё
+равно надо скомпилировать эти строки. Он повторяет API с пустыми реализациями: вызовы компилируются,
+но ничего не измеряется и окно не появляется.
 
 ```kotlin
 releaseImplementation("com.timkrest:framehud-noop:0.3.0")
@@ -112,7 +113,9 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.3.0")
 <details>
 <summary>Установка вручную вместо provider'а</summary>
 
-Уберите provider и вызовите `FrameHud.install(application)` сами:
+Уберите provider и вызовите `FrameHud.install(application)` из `Application.onCreate()`. Панель
+появляется на следующей activity, которая выйдет на экран, поэтому вызов позже пропустит уже
+открытый экран.
 
 ```xml
 <provider

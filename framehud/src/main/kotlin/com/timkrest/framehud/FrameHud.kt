@@ -60,7 +60,11 @@ public object FrameHud {
 
     private val boundActivity: Activity? get() = boundActivityRef?.get()
 
-    /** Called by the installer; only needed by hand when that installer is removed. Idempotent. */
+    /**
+     * Called by the installer; only needed by hand when that installer is removed. Belongs in
+     * [Application.onCreate]: the panel comes up with the next resumed activity, so a call made
+     * later skips the screen already open. Idempotent.
+     */
     public fun install(application: Application) {
         checkMainThread()
         if (panelHost != null) {

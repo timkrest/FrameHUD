@@ -32,12 +32,12 @@ Requires `minSdk` 24. Frame phases come from `FrameMetrics`; GPU timings need AP
 that reports them.
 
 There is nothing to call. A `ContentProvider` starts the panel in the main process, and it follows
-whichever activity is resumed. `debugImplementation` keeps the artifact out of release builds
-altogether, along with that provider and the `SYSTEM_ALERT_WINDOW` it declares.
+whichever activity is resumed. None of it reaches a release build: `debugImplementation` leaves out
+the panel, that provider and the `SYSTEM_ALERT_WINDOW` the artifact declares.
 
-Add `framehud-noop` when your own code references `FrameHud` from a source set that release builds
-compile. It mirrors the API with empty bodies, so those call sites resolve while nothing is measured
-and no window is added.
+Add `framehud-noop` if you call `FrameHud` outside `src/debug`, since a release build still has to
+compile those lines. It mirrors the API with empty bodies: the calls compile, nothing is measured,
+no window is added.
 
 ```kotlin
 releaseImplementation("com.timkrest:framehud-noop:0.3.0")
@@ -113,7 +113,8 @@ that button.
 <details>
 <summary>Installing by hand instead of the provider</summary>
 
-Drop the provider and call `FrameHud.install(application)` yourself:
+Drop the provider and call `FrameHud.install(application)` from `Application.onCreate()`. The panel
+comes up with the next resumed activity, so a call made later skips the screen already open.
 
 ```xml
 <provider
