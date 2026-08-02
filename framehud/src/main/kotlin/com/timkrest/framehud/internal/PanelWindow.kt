@@ -3,7 +3,6 @@ package com.timkrest.framehud.internal
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -54,6 +53,10 @@ internal class PanelWindow(
         title = LOG_TAG
     }
 
+    // A slow drag delivers fractions of a pixel per frame, which would round to nothing every time.
+    private var positionX = layoutParams.x.toFloat()
+    private var positionY = layoutParams.y.toFloat()
+
     private val view = ComposeView(context).apply {
         setViewTreeLifecycleOwner(lifecycleOwner)
         setViewTreeSavedStateRegistryOwner(lifecycleOwner)
@@ -64,11 +67,7 @@ internal class PanelWindow(
 
     fun show() {
         lifecycleOwner.start()
-        try {
-            windowManager.addView(view, layoutParams)
-        } catch (e: Exception) {
-            Log.w(LOG_TAG, "Failed to add the panel window", e)
-        }
+        guarded("adding the panel window") { windowManager.addView(view, layoutParams) }
     }
 
     fun setVisible(visible: Boolean) {
@@ -78,26 +77,18 @@ internal class PanelWindow(
 
     fun dismiss() {
         if (view.isAttachedToWindow) {
-            try {
-                windowManager.removeViewImmediate(view)
-            } catch (e: Exception) {
-                Log.w(LOG_TAG, "Failed to remove the panel window", e)
-            }
+            guarded("removing the panel window") { windowManager.removeViewImmediate(view) }
         }
         lifecycleOwner.stop()
     }
 
     private fun moveBy(dx: Float, dy: Float) {
         val displayMetrics = context.resources.displayMetrics
-        layoutParams.x = (layoutParams.x - dx.roundToInt())
-            .coerceIn(0, (displayMetrics.widthPixels - view.width).coerceAtLeast(0))
-        layoutParams.y = (layoutParams.y + dy.roundToInt())
-            .coerceIn(0, (displayMetrics.heightPixels - view.height).coerceAtLeast(0))
-        try {
-            windowManager.updateViewLayout(view, layoutParams)
-        } catch (e: Exception) {
-            Log.w(LOG_TAG, "Failed to move the panel window", e)
-        }
+        positionX = (positionX - dx).coerceIn(0f, travelRange(displayMetrics.widthPixels, view.width))
+        positionY = (positionY + dy).coerceIn(0f, travelRange(displayMetrics.heightPixels, view.height))
+        layoutParams.x = positionX.roundToInt()
+        layoutParams.y = positionY.roundToInt()
+        guarded("moving the panel window") { windowManager.updateViewLayout(view, layoutParams) }
     }
 
     private companion object {
@@ -112,5 +103,7 @@ internal class PanelWindow(
 
         fun clampToHost(value: Int, hostSize: Int, minVisiblePx: Int): Int =
             if (hostSize > 0) value.coerceIn(0, (hostSize - minVisiblePx).coerceAtLeast(0)) else value
+
+        fun travelRange(hostSize: Int, panelSize: Int): Float = (hostSize - panelSize).coerceAtLeast(0).toFloat()
     }
 }

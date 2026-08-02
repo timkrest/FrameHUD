@@ -45,11 +45,8 @@ internal class FrameMetricsCollector(
         }
     }
 
-    private fun frameDeadlineNs(frameMetrics: FrameMetrics): Long = if (hasApi31FrameMetrics) {
-        frameMetrics.getMetric(FrameMetrics.DEADLINE)
-    } else {
-        FrameAggregator.NO_DEADLINE
-    }
+    private fun frameDeadlineNs(frameMetrics: FrameMetrics): Long? =
+        if (hasApi31FrameMetrics) frameMetrics.getMetric(FrameMetrics.DEADLINE).takeIf { it > 0L } else null
 
     private fun frameEndTimestampNs(frameMetrics: FrameMetrics): Long = if (hasApi26FrameMetrics) {
         frameMetrics.getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP) +
@@ -58,6 +55,5 @@ internal class FrameMetricsCollector(
         clock.nanoTime()
     }
 
-    private fun Window.currentRefreshRate(): Float =
-        decorView.display?.refreshRate ?: FrameAggregator.NO_REFRESH_RATE
+    private fun Window.currentRefreshRate(): Float? = decorView.display?.refreshRate?.takeIf { it > 0f }
 }

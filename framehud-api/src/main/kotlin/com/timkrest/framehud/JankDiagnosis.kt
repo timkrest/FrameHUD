@@ -75,7 +75,10 @@ public data class JankDiagnosis(
             frameBudgetMs = 0f,
         )
 
+        /** Below this, GC pauses are lost in the noise and explain nothing. */
         private const val GC_TIME_SHARE_THRESHOLD = 0.02f
+
+        /** Serving fewer than this share of vsyncs means the main thread is busy outside rendering. */
         private const val VSYNC_STARVATION_RATIO = 0.7f
 
         /** Attributes jank to the most specific cause that fires: thermal, GC, vsync, late start, stage. */

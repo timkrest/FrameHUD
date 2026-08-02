@@ -1,21 +1,11 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.framehud.android.application)
     alias(libs.plugins.compose.compiler)
 }
 
-val javaTarget = JavaVersion.toVersion(libs.versions.jvmTarget.get())
-
 android {
-    namespace = "com.timkrest.framehud.sample"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
-
     defaultConfig {
         applicationId = "com.timkrest.framehud.sample"
-        minSdk = libs.versions.androidMinSdk.get().toInt()
-        targetSdk = libs.versions.androidCompileSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -29,25 +19,13 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = javaTarget
-        targetCompatibility = javaTarget
-    }
-
     buildFeatures {
         compose = true
     }
 
     lint {
-        abortOnError = true
-        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
-    compilerOptions {
-        jvmTarget = JvmTarget.fromTarget(javaTarget.toString())
+        // A developer harness that ships nowhere: no launcher icon, and nothing worth backing up.
+        disable += setOf("MissingApplicationIcon", "DataExtractionRules")
     }
 }
 
@@ -61,7 +39,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
-    // The only place the published instrumentation module actually runs.
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.tooling.preview)
+
     androidTestImplementation(project(":framehud-instrumentation"))
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.runner)

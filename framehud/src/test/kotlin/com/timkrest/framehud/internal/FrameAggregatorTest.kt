@@ -33,7 +33,7 @@ class FrameAggregatorTest {
 
     @Test
     fun `a display reporting no refresh rate falls back to the configured one`() {
-        aggregator.addFrame(totalMs = 10f, refreshRateHz = FrameAggregator.NO_REFRESH_RATE)
+        aggregator.addFrame(totalMs = 10f, refreshRateHz = null)
 
         assertEquals(60f, aggregator.metrics.value.display.refreshRateHz, TOLERANCE)
     }
@@ -158,9 +158,9 @@ class FrameAggregatorTest {
 
     private fun FrameAggregator.addFrame(
         totalMs: Float,
-        deadlineNs: Long = FrameAggregator.NO_DEADLINE,
+        deadlineNs: Long? = null,
         totalDurationNs: Long = (totalMs * NS_PER_MS).toLong(),
-        refreshRateHz: Float = 60f,
+        refreshRateHz: Float? = 60f,
     ) {
         val durationsMs = FloatArray(FramePhase.entries.size)
         durationsMs[FramePhase.TOTAL.ordinal] = totalMs

@@ -2,7 +2,7 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 
-/** Heap usage and GC counters, sampled alongside frame metrics. Peaks are since the last reset. */
+/** Sampled alongside frame metrics. Peaks and GC counters are since the last reset. */
 @Immutable
 public data class MemoryStats(
     val usedHeapMb: Int = 0,

@@ -15,16 +15,12 @@ internal class MemoryStatsMonitor {
     @Volatile
     private var isFrozen = false
 
-    private var baselineGcCount = NO_BASELINE
-    private var baselineGcTimeMs = 0L
+    private var gcBaseline: GcBaseline? = null
     private var peakUsedHeapMb = 0
     private var peakNativeHeapMb = 0
 
     fun sample() {
-        if (baselineGcCount == NO_BASELINE) {
-            baselineGcCount = readGcCount()
-            baselineGcTimeMs = readGcTimeMs()
-        }
+        val baseline = gcBaseline ?: readGcBaseline().also { gcBaseline = it }
         val runtime = Runtime.getRuntime()
         val usedHeapMb = ((runtime.totalMemory() - runtime.freeMemory()) / BYTES_PER_MB).toInt()
         val nativeHeapMb = (Debug.getNativeHeapAllocatedSize() / BYTES_PER_MB).toInt()
@@ -38,8 +34,8 @@ internal class MemoryStatsMonitor {
             nativeHeapMb = nativeHeapMb,
             peakUsedHeapMb = peakUsedHeapMb,
             peakNativeHeapMb = peakNativeHeapMb,
-            gcCount = readGcCount() - baselineGcCount,
-            gcTimeMs = readGcTimeMs() - baselineGcTimeMs,
+            gcCount = readGcCount() - baseline.count,
+            gcTimeMs = readGcTimeMs() - baseline.timeMs,
         )
     }
 
@@ -48,21 +44,24 @@ internal class MemoryStatsMonitor {
     }
 
     fun reset() {
-        baselineGcCount = readGcCount()
-        baselineGcTimeMs = readGcTimeMs()
+        gcBaseline = readGcBaseline()
         peakUsedHeapMb = 0
         peakNativeHeapMb = 0
         _stats.value = MemoryStats.EMPTY
     }
 
+    private fun readGcBaseline(): GcBaseline = GcBaseline(count = readGcCount(), timeMs = readGcTimeMs())
+
     private fun readGcCount(): Int = Debug.getRuntimeStat(STAT_GC_COUNT)?.toIntOrNull() ?: 0
 
     private fun readGcTimeMs(): Long = Debug.getRuntimeStat(STAT_GC_TIME)?.toLongOrNull() ?: 0L
 
-    companion object {
-        private const val BYTES_PER_MB = 1024L * 1024L
-        private const val STAT_GC_COUNT = "art.gc.gc-count"
-        private const val STAT_GC_TIME = "art.gc.gc-time"
-        private const val NO_BASELINE = -1
+    /** GC counters are cumulative for the process, so they are only meaningful against a baseline. */
+    private data class GcBaseline(val count: Int, val timeMs: Long)
+
+    private companion object {
+        const val BYTES_PER_MB = 1024L * 1024L
+        const val STAT_GC_COUNT = "art.gc.gc-count"
+        const val STAT_GC_TIME = "art.gc.gc-time"
     }
 }

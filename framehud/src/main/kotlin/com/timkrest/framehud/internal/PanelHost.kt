@@ -34,10 +34,12 @@ internal class PanelHost(
 
     val isShowing: Boolean get() = window != null
 
-    /** The panel sits in the activity's window, so it dies with the activity. */
     val isAppWindow: Boolean get() = window?.mode == PanelWindowMode.APP
 
-    /** False when an app window is needed and no activity is bound yet; the next resume brings one. */
+    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
+    val canRequestOverlayPermission: Boolean
+        get() = config().overlayMode == OverlayMode.PREFER_SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+
     fun show(activity: Activity?): Boolean {
         cancelPendingHide()
         if (window != null) return true
@@ -60,7 +62,6 @@ internal class PanelHost(
         window = null
     }
 
-    /** Picks up an overlay permission granted while the panel was already running. */
     fun dismissIfWindowModeChanged() {
         val current = window ?: return
         if (current.mode != resolveWindowMode()) dismiss()
@@ -71,7 +72,6 @@ internal class PanelHost(
         window?.setVisible(true)
     }
 
-    /** Long enough to cover an activity swap, so the panel does not blink between screens. */
     fun hideAfterActivitySwap() {
         mainHandler.postDelayed(hideInBackground, BACKGROUND_HIDE_DELAY_MS)
     }
@@ -79,11 +79,6 @@ internal class PanelHost(
     private fun cancelPendingHide() {
         mainHandler.removeCallbacks(hideInBackground)
     }
-
-    /** Asking for `SYSTEM_ALERT_WINDOW` could move the panel out of the app window. */
-    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
-    val canRequestOverlayPermission: Boolean
-        get() = config().overlayMode == OverlayMode.PREFER_SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
     private fun createWindow(context: Context, mode: PanelWindowMode): PanelWindow {
         val canRequest = mode == PanelWindowMode.APP && canRequestOverlayPermission

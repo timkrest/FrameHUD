@@ -35,7 +35,6 @@ internal fun metricRowColor(
 }
 
 internal fun thermalColor(level: ThermalLevel): Color = when {
-    level == ThermalLevel.UNKNOWN -> TextHeader
     level >= ThermalLevel.SEVERE -> TextWarning
     level.isThrottling -> TextCaution
     else -> TextHeader

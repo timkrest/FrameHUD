@@ -27,5 +27,5 @@ public enum class ThermalLevel {
     ;
 
     /** Throttling hard enough to distort measurements. */
-    public val isThrottling: Boolean get() = ordinal >= MODERATE.ordinal
+    public val isThrottling: Boolean get() = this >= MODERATE
 }

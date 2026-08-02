@@ -421,6 +421,7 @@ public final class com/timkrest/framehud/PipelineStage : java/lang/Enum {
 
 public final class com/timkrest/framehud/SessionStats {
 	public static final field Companion Lcom/timkrest/framehud/SessionStats$Companion;
+	public static final field FROZEN_FRAME_MS F
 	public fun <init> ()V
 	public fun <init> (IJFFFFIII)V
 	public synthetic fun <init> (IJFFFFIIIILkotlin/jvm/internal/DefaultConstructorMarker;)V

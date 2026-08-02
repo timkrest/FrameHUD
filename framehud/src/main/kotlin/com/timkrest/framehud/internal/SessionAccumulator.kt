@@ -7,7 +7,7 @@ import kotlin.math.max
 internal class SessionAccumulator(private val clock: MetricsClock) {
 
     private val totals = LatencyHistogram()
-    private var collectingSinceMs = 0L
+    private var collectingSinceMs: Long? = null
     private var collectedMs = 0L
     private var jankyFrames = 0
     private var frozenFrames = 0
@@ -24,7 +24,7 @@ internal class SessionAccumulator(private val clock: MetricsClock) {
         } else {
             currentJankStreak = 0
         }
-        if (totalMs > FROZEN_FRAME_MS) frozenFrames++
+        if (totalMs > SessionStats.FROZEN_FRAME_MS) frozenFrames++
     }
 
     fun addDroppedReports(count: Int) {
@@ -32,13 +32,13 @@ internal class SessionAccumulator(private val clock: MetricsClock) {
     }
 
     fun startCollecting() {
-        if (collectingSinceMs == 0L) collectingSinceMs = clock.elapsedRealtimeMs()
+        if (collectingSinceMs == null) collectingSinceMs = clock.elapsedRealtimeMs()
     }
 
     fun stopCollecting() {
-        if (collectingSinceMs == 0L) return
-        collectedMs += clock.elapsedRealtimeMs() - collectingSinceMs
-        collectingSinceMs = 0L
+        val startedMs = collectingSinceMs ?: return
+        collectedMs += clock.elapsedRealtimeMs() - startedMs
+        collectingSinceMs = null
     }
 
     fun stats(): SessionStats {
@@ -64,15 +64,9 @@ internal class SessionAccumulator(private val clock: MetricsClock) {
         currentJankStreak = 0
         maxJankStreak = 0
         collectedMs = 0L
-        if (collectingSinceMs != 0L) collectingSinceMs = clock.elapsedRealtimeMs()
+        if (collectingSinceMs != null) collectingSinceMs = clock.elapsedRealtimeMs()
     }
 
-    private fun collectedDurationMs(): Long {
-        val startedMs = collectingSinceMs
-        return collectedMs + if (startedMs == 0L) 0L else clock.elapsedRealtimeMs() - startedMs
-    }
-
-    companion object {
-        private const val FROZEN_FRAME_MS = 700f
-    }
+    private fun collectedDurationMs(): Long =
+        collectedMs + (collectingSinceMs?.let { clock.elapsedRealtimeMs() - it } ?: 0L)
 }

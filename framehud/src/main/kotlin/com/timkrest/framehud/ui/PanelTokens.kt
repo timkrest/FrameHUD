@@ -43,7 +43,6 @@ internal val ButtonBackgroundPressed = Color.White.copy(alpha = BUTTON_PRESSED_A
 internal val TextNormal = Color(0xFFCCCCCC)
 internal val TextHeader = Color(0xFF888888)
 
-/** Dimmer than the headers, for the rows an emulator measures on the host. */
 internal val TextDimmed = Color(0xFF666666)
 internal val TextWarning = Color(0xFFFF6B6B)
 internal val TextCaution = Color(0xFFFFC66D)

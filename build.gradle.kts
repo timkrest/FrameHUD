@@ -7,10 +7,6 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
-subprojects {
-    apply(plugin = rootProject.libs.plugins.ktlint.get().pluginId)
-}
-
 apiValidation {
     ignoredProjects += "sample"
 }

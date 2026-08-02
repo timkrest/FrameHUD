@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Keeps the latest event so the screen can show what a listener receives. Called off the main thread. */
 object SampleEvents : FrameHudEventListener {
 
     private val _last = MutableStateFlow<FrameHudEvent?>(null)

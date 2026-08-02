@@ -1,5 +1,6 @@
 package com.timkrest.framehud.internal
 
+import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.min
 import kotlin.math.pow
@@ -54,16 +55,16 @@ internal class LatencyHistogram {
 
     private fun upperBoundMs(boundMs: Float): Float = min(boundMs, max)
 
-    companion object {
-        private const val FINE_BUCKET_WIDTH_MS = 0.25f
-        private const val FINE_BUCKET_COUNT = 256
-        private const val FINE_RANGE_MS = FINE_BUCKET_COUNT * FINE_BUCKET_WIDTH_MS
-        private const val TAIL_RATIO = 1.05f
-        private const val TAIL_BUCKET_COUNT = 188
+    private companion object {
+        const val FINE_BUCKET_WIDTH_MS = 0.25f
+        const val FINE_BUCKET_COUNT = 256
+        const val FINE_RANGE_MS = FINE_BUCKET_COUNT * FINE_BUCKET_WIDTH_MS
+        const val TAIL_RATIO = 1.05f
+        const val TAIL_MAX_MS = 10f * 60f * MS_PER_SECOND
 
-        private val LN_TAIL_RATIO = ln(TAIL_RATIO)
-        private val TAIL_BOUNDS_MS = FloatArray(TAIL_BUCKET_COUNT) { index ->
-            // The last bucket is open-ended, so its bound is whatever the longest frame turned out to be.
+        val LN_TAIL_RATIO = ln(TAIL_RATIO)
+        val TAIL_BUCKET_COUNT = ceil(ln(TAIL_MAX_MS / FINE_RANGE_MS) / LN_TAIL_RATIO).toInt()
+        val TAIL_BOUNDS_MS = FloatArray(TAIL_BUCKET_COUNT) { index ->
             if (index == TAIL_BUCKET_COUNT - 1) {
                 Float.POSITIVE_INFINITY
             } else {

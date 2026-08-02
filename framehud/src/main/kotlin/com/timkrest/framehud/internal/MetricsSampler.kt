@@ -20,24 +20,23 @@ internal class MetricsSampler(
     private val listener: Window.OnFrameMetricsAvailableListener,
     private val tickIntervalMs: () -> Long,
     private val onTick: () -> Unit,
-    predecessor: Thread? = null,
+    predecessor: MetricsSampler? = null,
 ) {
 
     private val thread = HandlerThread(threadName).apply { start() }
     private val handler = Handler(thread.looper)
 
-    var boundWindow: Window? = null
-        private set
+    private var boundWindow: Window? = null
 
     /** Metrics thread only. Bumped to retire a tick that is already in flight. */
     private var tickGeneration = 0
 
     init {
         // The aggregator is shared with the thread being replaced; keep the two from overlapping.
-        if (predecessor != null) handler.post { awaitTermination(predecessor) }
+        if (predecessor != null) handler.post { awaitTermination(predecessor.thread) }
     }
 
-    val metricsThread: Thread get() = thread
+    val threadName: String get() = thread.name
 
     fun startTicking() {
         handler.post { postTick(++tickGeneration) }
@@ -47,7 +46,6 @@ internal class MetricsSampler(
         handler.post { tickGeneration++ }
     }
 
-    /** False when [window] is already bound. */
     fun bind(window: Window): Boolean {
         if (boundWindow === window) return false
         unbind()
@@ -56,25 +54,22 @@ internal class MetricsSampler(
         return true
     }
 
-    /** False when nothing was bound. */
     fun unbind(): Boolean {
         val window = boundWindow ?: return false
         boundWindow = null
-        try {
-            window.removeOnFrameMetricsAvailableListener(listener)
-        } catch (e: Exception) {
-            Log.w(LOG_TAG, "Failed to remove the frame metrics listener", e)
-        }
+        guarded("removing the frame metrics listener") { window.removeOnFrameMetricsAvailableListener(listener) }
         return true
     }
 
     fun post(action: () -> Unit): Boolean = handler.post { guarded("running a metrics task", action) }
 
-    /** Runs what is already queued, then lets the thread finish. Never blocks the caller. */
-    fun quit() {
+    /** Returns the window it was bound to, for a replacement to pick up. */
+    fun quit(): Window? {
+        val window = boundWindow
         unbind()
         stopTicking()
         thread.quitSafely()
+        return window
     }
 
     private fun postTick(generation: Int) {

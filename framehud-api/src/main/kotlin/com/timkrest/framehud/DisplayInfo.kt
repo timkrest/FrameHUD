@@ -2,7 +2,7 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 
-/** Refresh rate and the frame budget that follows from it. Both are positive. */
+/** What the display asks of each frame. Both values are positive. */
 @Immutable
 public data class DisplayInfo(
     val refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ,

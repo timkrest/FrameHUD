@@ -6,7 +6,6 @@ public data class FrameHudConfig(
     val enabled: Boolean = true,
     val overlayMode: OverlayMode = OverlayMode.PREFER_SYSTEM,
     val eventListeners: List<FrameHudEventListener> = listOf(LogcatEventListener),
-    /** How many recent frames the rolling window keeps. */
     val metricsSampleWindowSize: Int = DEFAULT_METRICS_SAMPLE_WINDOW_SIZE,
     /** How often the panel is allowed to update. Lower values cost more to render. */
     val metricsThrottleIntervalMs: Long = DEFAULT_METRICS_THROTTLE_INTERVAL_MS,

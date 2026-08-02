@@ -29,7 +29,7 @@ internal class ThermalMonitor {
     private var powerManager: PowerManager? = null
 
     @Volatile
-    private var lastSampleMs = 0L
+    private var lastSampleMs: Long? = null
 
     fun bind(context: Context) {
         if (!hasThermalStatus) return
@@ -38,7 +38,7 @@ internal class ThermalMonitor {
 
     fun unbind() {
         powerManager = null
-        lastSampleMs = 0L
+        lastSampleMs = null
         _stats.value = ThermalStats.EMPTY
     }
 
@@ -51,7 +51,8 @@ internal class ThermalMonitor {
         val manager = powerManager ?: return
         if (isFrozen) return
         val now = SystemClock.elapsedRealtime()
-        if (lastSampleMs != 0L && now - lastSampleMs < SAMPLE_INTERVAL_MS) return
+        val previousMs = lastSampleMs
+        if (previousMs != null && now - previousMs < SAMPLE_INTERVAL_MS) return
         lastSampleMs = now
 
         _stats.value = ThermalStats(
@@ -76,8 +77,10 @@ internal class ThermalMonitor {
         else -> ThermalLevel.UNKNOWN
     }
 
-    companion object {
-        private const val SAMPLE_INTERVAL_MS = 2000L
-        private const val HEADROOM_FORECAST_SECONDS = 0
+    private companion object {
+        /** Thermal status moves in minutes, and the platform rate-limits headroom reads anyway. */
+        const val SAMPLE_INTERVAL_MS = 2000L
+
+        const val HEADROOM_FORECAST_SECONDS = 0
     }
 }

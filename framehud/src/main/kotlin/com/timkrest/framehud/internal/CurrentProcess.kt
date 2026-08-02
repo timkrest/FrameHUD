@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Build
 import java.io.File
 
-/** When the process name cannot be read, assumes the main process rather than staying silent. */
 internal fun isMainProcess(context: Context): Boolean {
     val processName = currentProcessName() ?: return true
     return processName == context.packageName

@@ -8,14 +8,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.JankDiagnosis
+import com.timkrest.framehud.PerformanceMetrics
 import java.util.Locale
 
-/** The same numbers the panel draws, read through the public API. */
 @Composable
 fun MetricsReadout(modifier: Modifier = Modifier) {
     val metrics by FrameHud.metrics.collectAsStateWithLifecycle()
@@ -24,29 +25,17 @@ fun MetricsReadout(modifier: Modifier = Modifier) {
     val vsyncRate by FrameHud.vsyncRate.collectAsStateWithLifecycle()
     val lastEvent by SampleEvents.last.collectAsStateWithLifecycle()
 
-    val diagnosis = JankDiagnosis.of(
-        metrics = metrics,
-        memory = memory,
-        thermal = thermal,
-        vsyncRate = vsyncRate,
-    )
+    val summary = remember(metrics) { formatMetricsSummary(metrics) }
+    val diagnosis = remember(metrics, memory, thermal, vsyncRate) {
+        JankDiagnosis.of(metrics = metrics, memory = memory, thermal = thermal, vsyncRate = vsyncRate).summary
+    }
 
     Card(modifier = modifier) {
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
             Text(text = "FrameHud.metrics", style = MaterialTheme.typography.labelLarge)
+            Text(text = summary, style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = String.format(
-                    Locale.US,
-                    "%d FPS · budget %.1f ms · %s bound %.1f ms",
-                    metrics.window.fps,
-                    metrics.display.frameBudgetMs,
-                    metrics.phases.bottleneckStage.name.lowercase(Locale.US),
-                    metrics.phases.bottleneck.average,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = "JankDiagnosis: ${diagnosis.summary}",
+                text = "JankDiagnosis: $diagnosis",
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
@@ -56,3 +45,12 @@ fun MetricsReadout(modifier: Modifier = Modifier) {
         }
     }
 }
+
+private fun formatMetricsSummary(metrics: PerformanceMetrics): String = String.format(
+    Locale.US,
+    "%d FPS · budget %.1f ms · %s bound %.1f ms",
+    metrics.window.fps,
+    metrics.display.frameBudgetMs,
+    metrics.phases.bottleneckStage.name.lowercase(Locale.US),
+    metrics.phases.bottleneck.average,
+)

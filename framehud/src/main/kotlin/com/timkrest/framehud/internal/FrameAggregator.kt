@@ -22,15 +22,12 @@ import kotlinx.coroutines.flow.asStateFlow
  *
  * Confined to the metrics thread, apart from [metrics] and [setFrozen].
  */
-internal class FrameAggregator(config: FrameHudConfig, private val clock: MetricsClock) {
-
-    private var config = config
+internal class FrameAggregator(private var config: FrameHudConfig, private val clock: MetricsClock) {
 
     private var frameWindow = FrameWindow(config.windowSize())
 
     private val session = SessionAccumulator(clock)
 
-    /** Restarted for every bound window, so events can be attributed per screen. */
     private val screen = SessionAccumulator(clock)
 
     private val _metrics = MutableStateFlow(PerformanceMetrics.EMPTY)
@@ -50,42 +47,28 @@ internal class FrameAggregator(config: FrameHudConfig, private val clock: Metric
      */
     private var hasGpuSample = false
 
-    /**
-     * One frame, with its phase timings in [durationsMs] indexed by [FramePhase].
-     *
-     * [deadlineNs] is what the platform gave this frame, or [NO_DEADLINE] when it reports none —
-     * then the budget follows from [refreshRateHz], which is [NO_REFRESH_RATE] when the display
-     * reports nothing usable either.
-     */
     fun addFrame(
         durationsMs: FloatArray,
         totalDurationNs: Long,
-        deadlineNs: Long,
+        deadlineNs: Long?,
         frameEndNs: Long,
-        refreshRateHz: Float,
+        refreshRateHz: Float?,
     ) {
-        lastRefreshRateHz = refreshRateHz.takeIf { it > 0f } ?: config.refreshRateHz()
-        lastFrameBudgetMs = if (deadlineNs > NO_DEADLINE) {
-            deadlineNs / NS_PER_MS
-        } else {
-            MS_PER_SECOND / lastRefreshRateHz
-        }
+        lastRefreshRateHz = refreshRateHz ?: config.refreshRateHz()
 
         if (!hasGpuSample && durationsMs[FramePhase.GPU.ordinal] > 0f) hasGpuSample = true
         val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
 
-        // Compared in nanoseconds wherever the platform gives a deadline: a frame that lands right
-        // on it is not janky, and milliseconds are too coarse to tell that apart.
-        val isJanky = if (deadlineNs > NO_DEADLINE) {
-            totalDurationNs > deadlineNs
-        } else {
-            totalMs > lastFrameBudgetMs
-        }
-        val overrunMs = if (deadlineNs > NO_DEADLINE) {
+        // Milliseconds are too coarse to tell a frame that lands exactly on the deadline from one
+        // that missed it.
+        val overrunMs = if (deadlineNs != null) {
+            lastFrameBudgetMs = deadlineNs / NS_PER_MS
             (totalDurationNs - deadlineNs) / NS_PER_MS
         } else {
+            lastFrameBudgetMs = MS_PER_SECOND / lastRefreshRateHz
             totalMs - lastFrameBudgetMs
         }
+        val isJanky = overrunMs > 0f
 
         frameWindow.add(durationsMs = durationsMs, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
         session.addFrame(totalMs = totalMs, isJanky = isJanky)
@@ -100,7 +83,6 @@ internal class FrameAggregator(config: FrameHudConfig, private val clock: Metric
         screen.addDroppedReports(count)
     }
 
-    /** Keeps the readings moving after the last frame, until the window has aged out. */
     fun onTick() {
         if (!isDrainingToIdle) return
         maybeEmit()
@@ -134,7 +116,6 @@ internal class FrameAggregator(config: FrameHudConfig, private val clock: Metric
         _metrics.value = PerformanceMetrics.EMPTY
     }
 
-    /** Resizing the window drops the frames it holds; session aggregates survive. */
     fun updateConfig(newConfig: FrameHudConfig) {
         val previousWindowSize = config.windowSize()
         config = newConfig
@@ -178,14 +159,6 @@ internal class FrameAggregator(config: FrameHudConfig, private val clock: Metric
             display = DisplayInfo(refreshRateHz = lastRefreshRateHz, frameBudgetMs = lastFrameBudgetMs),
         )
         if (fps == 0) isDrainingToIdle = false
-    }
-
-    companion object {
-        /** Below API 31 the platform reports no per-frame deadline. */
-        const val NO_DEADLINE = 0L
-
-        /** Some displays report no usable refresh rate; the configured fallback stands in. */
-        const val NO_REFRESH_RATE = 0f
     }
 }
 

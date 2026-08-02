@@ -5,9 +5,10 @@ import android.util.Log
 /**
  * Runs [block], logging anything it throws instead of letting it escape.
  *
- * Everything the metrics thread runs goes through here. An exception on a `HandlerThread` reaches
- * the platform's uncaught handler, which kills the process — and a debug overlay must not take the
- * app down with it. Losing a reading is the acceptable failure; the log line says which one.
+ * A debug overlay must not take the app down with it, so every call it makes into the platform goes
+ * through here — the metrics thread above all, where an exception escaping a `HandlerThread` reaches
+ * the uncaught handler and kills the process. Losing a reading or a window update is the acceptable
+ * failure; the log line says which one.
  */
 internal inline fun guarded(what: String, block: () -> Unit) {
     try {

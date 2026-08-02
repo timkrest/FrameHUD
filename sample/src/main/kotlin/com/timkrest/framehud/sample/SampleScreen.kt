@@ -17,13 +17,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/**
- * Everything scrolls in one list, so the rows keep the screen instead of being squeezed under a
- * fixed header — and scrolling the header produces frames too.
- */
 @Composable
 fun SampleScreen(title: String, subtitle: String, actions: (@Composable () -> Unit)? = null) {
-    var active by remember { mutableStateOf(emptySet<Load>()) }
+    var active by remember { mutableStateOf(ActiveLoads()) }
 
     if (Load.GcChurn in active) GcChurn()
 
@@ -31,30 +27,43 @@ fun SampleScreen(title: String, subtitle: String, actions: (@Composable () -> Un
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize().padding(insets),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(insets),
         ) {
-            item {
+            item(contentType = ContentType.TITLE) {
                 Text(text = title, style = MaterialTheme.typography.titleLarge)
             }
-            item {
+            item(contentType = ContentType.SUBTITLE) {
                 Text(text = subtitle, style = MaterialTheme.typography.bodyMedium)
             }
-            item {
+            item(contentType = ContentType.CHIPS) {
                 LoadChips(
                     active = active,
-                    onToggle = { load -> active = if (load in active) active - load else active + load },
+                    onToggle = { load -> active = active.toggled(load) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            item {
+            item(contentType = ContentType.READOUT) {
                 MetricsReadout(modifier = Modifier.fillMaxWidth())
             }
             if (actions != null) {
-                item { actions() }
+                item(contentType = ContentType.ACTIONS) { actions() }
             }
-            items(count = ROW_COUNT, key = { it }) { index ->
+            items(count = ROW_COUNT, key = { it }, contentType = { ContentType.ROW }) { index ->
                 SampleRow(index = index, active = active)
             }
         }
     }
 }
+
+private enum class ContentType {
+    TITLE,
+    SUBTITLE,
+    CHIPS,
+    READOUT,
+    ACTIONS,
+    ROW,
+}
+
+private const val ROW_COUNT = 300

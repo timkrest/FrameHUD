@@ -21,7 +21,7 @@ internal class VsyncRateMonitor {
     val ratePerSecond: StateFlow<Int> = _ratePerSecond.asStateFlow()
 
     private var activeCallback: Choreographer.FrameCallback? = null
-    private var windowStartNs = 0L
+    private var windowStartNs: Long? = null
     private var tickCount = 0
 
     @Volatile
@@ -29,7 +29,7 @@ internal class VsyncRateMonitor {
 
     fun start() {
         if (activeCallback != null) return
-        windowStartNs = 0L
+        windowStartNs = null
         tickCount = 0
         val callback = object : Choreographer.FrameCallback {
             override fun doFrame(frameTimeNanos: Long) {
@@ -53,21 +53,17 @@ internal class VsyncRateMonitor {
     }
 
     private fun onVsync(frameTimeNanos: Long) {
-        if (windowStartNs == 0L) {
+        val startNs = windowStartNs
+        if (startNs == null) {
             windowStartNs = frameTimeNanos
             return
         }
         tickCount++
-        val elapsedNs = frameTimeNanos - windowStartNs
-        if (elapsedNs >= WINDOW_NS) {
-            if (!isFrozen) _ratePerSecond.value = (tickCount * NS_PER_SECOND / elapsedNs).roundToInt()
+        val elapsedNs = frameTimeNanos - startNs
+        if (elapsedNs >= NS_PER_SECOND) {
+            if (!isFrozen) _ratePerSecond.value = ((tickCount * NS_PER_SECOND).toFloat() / elapsedNs).roundToInt()
             tickCount = 0
             windowStartNs = frameTimeNanos
         }
-    }
-
-    companion object {
-        private const val WINDOW_NS = 1_000_000_000L
-        private const val NS_PER_SECOND = 1_000_000_000f
     }
 }

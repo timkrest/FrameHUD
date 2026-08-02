@@ -3,49 +3,85 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.timkrest/framehud)](https://central.sonatype.com/artifact/com.timkrest/framehud)
 [![Build](https://github.com/timkrest/FrameHUD/actions/workflows/build.yml/badge.svg)](https://github.com/timkrest/FrameHUD/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![API 24+](https://img.shields.io/badge/API-24%2B-brightgreen)](https://developer.android.com/tools/releases/platforms)
 
 [English](README.md) · [Русский](README.ru.md)
 
-Перетаскиваемая debug-панель, которая раскладывает каждый кадр по стадиям конвейера и показывает, на
-какой из них упирается fps.
+Перетаскиваемая debug-панель: показывает, сколько занимает каждая стадия кадра и какая из них вас
+тормозит.
 
-<img src="docs/panel.png" alt="Панель поверх sample-приложения во время прокрутки списка на 120 Гц" width="420">
+<img src="docs/panel.png" alt="Панель поверх примера при скролле списка на 120 Гц" width="420">
 
-У каждой стадии своя строка: `input`, `anim`, `layout` и `draw` на main thread, дальше `sync`,
-`command` и `swap` на render thread, над ними `gpu`. В каждой строке текущий кадр и среднее по окну,
-а у измеряемых фаз ещё и пик с последнего сброса.
+- **Строка на каждую стадию** — `input`, `anim`, `layout`, `draw` на main thread, затем `sync`,
+  `command`, `swap` на render thread, и `gpu`
+- **Говорит, почему кадры теряются** — троттлинг, паузы GC, пропущенные тики vsync, поздний старт
+- **Меряет приложение, а не себя** — панель рисуется в своём окне
+- **Роняет тесты из-за jank** — JUnit-правило с порогами
+- **Ничего в релизных сборках** — `debugImplementation` оставляет за бортом панель, её provider и
+  `SYSTEM_ALERT_WINDOW`, который объявляет артефакт
 
-Панель не просто печатает числа. Она называет стадию, в которую упёрся fps, а когда кадры теряются,
-объясняет причину: троттлинг, паузы GC, нехватка vsync-тиков или поздний старт кадра. Панель получает
-собственное окно, поэтому в метрики измеряемого окна не попадает.
-
-## Подключение
+## Быстрый старт
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.3.0")
+    debugImplementation("com.timkrest:framehud:0.4.0")
 }
 ```
 
-Требуется `minSdk` 24. Фазы кадра берутся из `FrameMetrics`, тайминги GPU — с API 31+ и только если
-драйвер их сообщает.
+Вызывать ничего не нужно. `ContentProvider` поднимает панель, а дальше она следует за activity,
+у которой фокус.
 
-Вызывать ничего не нужно. `ContentProvider` поднимает панель в главном процессе, дальше она следует
-за той activity, которая сейчас на экране. В релизную сборку не попадает ничего: `debugImplementation`
-оставляет за бортом и панель, и этот provider, и разрешение `SYSTEM_ALERT_WINDOW`, которое объявляет
-артефакт.
+Нужен `minSdk` 24. Фазы кадра приходят из `FrameMetrics`; тайминги GPU требуют API 31+ и драйвера,
+который их сообщает.
 
-`framehud-noop` нужен, только если вы обращаетесь к `FrameHud` вне `src/debug` — релизной сборке всё
-равно надо скомпилировать эти строки. Он повторяет API с пустыми реализациями: вызовы компилируются,
-но ничего не измеряется и окно не появляется.
+## Что показывает панель
 
-```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.3.0")
+```
+⚠ layout 8.4 ms
+CPU       now   avg  peak
+input     0.1   0.2   1.1
+anim      0.3   0.4   2.0
+layout    7.9   8.4  22.3 ◀
+draw      1.2   1.4   6.7
+RENDER
+sync      0.4   0.5   1.9
+command   0.6   0.7   3.1
+swap      0.2   0.3   1.4
+GPU
+gpu       2.1   2.4   9.8
+delay     0.3   0.4   2.2
+other     0.1   0.2
+TOTAL    13.2  14.5  38.6
+over      4.9   6.2  30.3
+pipe:cpu 10.4  11.0
+win  jank  4.2%  p95  12.1  max  22.3
+ses  p50   7.1  p95  12.4  p99  19.8
+ses 4312f 1m12s jank 4.2% frz0 run3
+mem 84/256 ▲96 · nat 37 ▲41 MB
+gc x3 · 18 ms
+therm none · hr 0.68
 ```
 
-На эмуляторе render thread и GPU принадлежат хост-машине, поэтому эти строки описывают ваш десктоп,
-а не устройство. Панель ставит в шапке `EMU`, помечает эти секции `· host` и гасит их строки. Фазы
-main thread, jank и итоги сессии остаются осмысленными — именно их читает jank-гейт на CI.
+Верхняя строка — вердикт, а `◀` помечает строку, о которой он.
+
+Колонки читаются как `now avg peak`: текущий кадр, среднее по окну и пик с последнего сброса.
+Строки, собранные из других строк, заканчиваются на `avg`.
+
+`over` — насколько кадр вышел за бюджет. `pipe:` — самая медленная стадия. `win` — про окно,
+`ses` — про сессию.
+
+[Как читать панель](docs/metrics.ru.md) объясняет каждую строку и что делать, когда она краснеет.
+
+## Релизные сборки
+
+`debugImplementation` уже не пускает ничего в релиз. `framehud-noop` нужен, только если вы вызываете
+`FrameHud` вне `src/debug` — релизной сборке всё равно надо скомпилировать эти строки:
+
+```kotlin
+releaseImplementation("com.timkrest:framehud-noop:0.4.0")
+```
+
+Он повторяет API с пустыми телами. Вызовы компилируются, ничего не измеряется, окно не добавляется.
 
 ## Настройка
 
@@ -65,15 +101,17 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
 | `fallbackRefreshRateHz` | `60` | Герцовка, если дисплей её не сообщает. |
 | `metricsThreadName` | `framehud-metrics` | Имя потока сбора — под ним он виден в трейсах. |
 
-`show()`, `hide()` и `toggle()` — сокращения для `enabled`. Панель не единственный способ читать
-метрики: `FrameHud.metrics`, `memoryStats`, `thermalStats` и `vsyncRate` — обычные `StateFlow`.
-Показание разложено на `phases` (тайминги по стадиям), `window` (fps, jank и p95 по окну выборки),
-`session` (с последнего сброса) и `display` (герцовка и бюджет кадра).
+`show()`, `hide()` и `toggle()` — сокращения для `enabled`.
+
+Панель не единственный способ читать метрики. `FrameHud.metrics`, `memoryStats`, `thermalStats` и
+`vsyncRate` — обычные `StateFlow`. Показание разложено на `phases` (тайминги по стадиям), `window`
+(fps, jank и p95 по окну выборки), `session` (с последнего сброса) и `display` (герцовка и бюджет
+кадра).
 
 ## События о jank
 
-Слушателей уведомляют один раз на всплеск jank, а не на каждый кадр, и причина к этому моменту уже
-определена. Слушатель по умолчанию пишет в logcat.
+Приходит одно событие на всплеск jank, а не на каждый кадр, и причина в нём уже определена.
+Слушатель по умолчанию пишет в logcat.
 
 ```kotlin
 FrameHud.config = FrameHud.config.copy(
@@ -89,26 +127,38 @@ FrameHud.config = FrameHud.config.copy(
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.3.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.4.0")
 ```
 
 ```kotlin
 @get:Rule val noJank = DetectJankAfterTestSuccess(JankThresholds(maxJankPercent = 2f))
 ```
 
-Правило сбрасывает сборщик перед каждым тестом и проверяет пороги после того, как тест прошёл, и
-упавший тест остаётся с собственной ошибкой. Итоги сессии переживают закрытие панели, поэтому
-проверке есть что читать и после того, как `ActivityScenario` закрыл activity. Чтобы отключить
-проверку, пометьте тест или класс
-`@SkipJankDetection` либо вызовите `JankAssertions.assertNoJank("scroll")` в нужный момент сами.
+Правило сбрасывает сборщик перед каждым тестом и проверяет пороги после того, как тест прошёл — так
+упавший тест остаётся со своей ошибкой. Итоги сессии переживают закрытие панели, поэтому цифры есть
+и после того, как `ActivityScenario` закрыл activity.
+
+Чтобы отключить проверку, пометьте тест или класс `@SkipJankDetection` либо вызовите
+`JankAssertions.assertNoJank("scroll")` в нужный момент сами.
 
 ## Разрешение на оверлей
 
 С выданным `SYSTEM_ALERT_WINDOW` панель живёт в системном окне и переживает переходы между экранами.
-Без него окно принадлежит текущей activity, поэтому на каждом переходе панель закрывается и
-поднимается заново, а рядом появляется кнопка `⧉`, открывающая экран разрешения. Сама библиотека его
-не открывает. Поставьте `overlayMode = APP_WINDOW`, чтобы остаться в окне приложения и убрать эту
-кнопку.
+Без него окно принадлежит текущей activity, поэтому на каждом переходе панель поднимается заново, а
+рядом появляется кнопка `⧉`, открывающая экран разрешения.
+
+Сама библиотека его не открывает. Поставьте `overlayMode = APP_WINDOW`, чтобы остаться в окне
+приложения и убрать эту кнопку.
+
+<details>
+<summary>На эмуляторе</summary>
+
+Render thread и GPU принадлежат хост-машине, поэтому эти строки описывают ваш десктоп, а не
+устройство. Панель ставит в шапке `EMU`, помечает эти секции `· host` и гасит их строки.
+
+Фазы main thread, jank и итоги сессии остаются осмысленными. Именно их читает jank-гейт на CI.
+
+</details>
 
 <details>
 <summary>Установка вручную вместо provider'а</summary>
@@ -142,6 +192,7 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.3.0")
 - [Справочник API](https://javadoc.io/doc/com.timkrest/framehud) — генерируется из исходников
   каждого релиза
 - [Карта развития](ROADMAP.ru.md) — что планируется дальше и что сделано не будет
+- [Список изменений](CHANGELOG.md) — что поменялось в каждом релизе
 - [Как участвовать](CONTRIBUTING.md) — как собрать проект и что проверить перед pull request. Вклад
   покрывается [CLA](CLA.md) — бот попросит его подписать.
 

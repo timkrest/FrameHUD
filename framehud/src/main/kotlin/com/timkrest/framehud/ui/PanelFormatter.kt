@@ -9,17 +9,21 @@ import com.timkrest.framehud.ThermalStats
 import com.timkrest.framehud.internal.MS_PER_SECOND
 import java.util.Locale
 
-private const val COLUMN_LAYOUT = "%-7s %5s %5s %5s"
+private const val LABEL_WIDTH = 7
+private const val VALUE_WIDTH = 5
+
+private val HEADER_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s"
+private val METRIC_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f"
+private val METRIC_LAYOUT_WITHOUT_PEAK = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f"
 
 internal val CPU_COLUMNS_HEADER_LINE: String =
-    format(COLUMN_LAYOUT, LABEL_CPU_SECTION, LABEL_COLUMN_NOW, LABEL_COLUMN_AVG, LABEL_COLUMN_PEAK)
+    format(HEADER_LAYOUT, LABEL_CPU_SECTION, LABEL_COLUMN_NOW, LABEL_COLUMN_AVG, LABEL_COLUMN_PEAK)
 
-internal val GPU_UNAVAILABLE_LINE: String = format(COLUMN_LAYOUT, LABEL_GPU, LABEL_GPU_NA, LABEL_GPU_NA, "")
+internal val GPU_UNAVAILABLE_LINE: String = format(HEADER_LAYOUT, LABEL_GPU, LABEL_GPU_NA, LABEL_GPU_NA, "")
 
-/** Derived timings track no peak, so their row stops after two columns. */
 internal fun formatMetricLine(label: String, value: MetricValue): String {
-    val peak = value.peak ?: return format("%-7s %5.1f %5.1f", label, value.current, value.average)
-    return format("%-7s %5.1f %5.1f %5.1f", label, value.current, value.average, peak)
+    val peak = value.peak ?: return format(METRIC_LAYOUT_WITHOUT_PEAK, label, value.current, value.average)
+    return format(METRIC_LAYOUT, label, value.current, value.average, peak)
 }
 
 internal fun formatFps(fps: Int): String = if (fps == 0) LABEL_IDLE else format("%d FPS", fps)

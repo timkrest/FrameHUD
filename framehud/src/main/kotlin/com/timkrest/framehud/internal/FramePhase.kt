@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.view.FrameMetrics
 
-internal enum class FramePhase(val metricId: Int) {
+internal enum class FramePhase(val metricId: Int, minSdk: Int = Build.VERSION_CODES.N) {
     UNKNOWN_DELAY(FrameMetrics.UNKNOWN_DELAY_DURATION),
     INPUT(FrameMetrics.INPUT_HANDLING_DURATION),
     ANIMATION(FrameMetrics.ANIMATION_DURATION),
@@ -15,15 +15,11 @@ internal enum class FramePhase(val metricId: Int) {
     SWAP_BUFFERS(FrameMetrics.SWAP_BUFFERS_DURATION),
 
     @SuppressLint("InlinedApi")
-    GPU(FrameMetrics.GPU_DURATION),
+    GPU(FrameMetrics.GPU_DURATION, minSdk = Build.VERSION_CODES.S),
     TOTAL(FrameMetrics.TOTAL_DURATION),
     ;
 
-    val isAvailable: Boolean
-        get() = when (this) {
-            GPU -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            else -> true
-        }
+    val isAvailable: Boolean = Build.VERSION.SDK_INT >= minSdk
 }
 
 internal fun FrameMetrics.readPhaseDurationsMs(into: FloatArray) {

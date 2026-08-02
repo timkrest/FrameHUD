@@ -7,7 +7,6 @@ import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import android.view.Display
 import android.view.WindowManager
 
@@ -29,9 +28,5 @@ internal fun openOverlayPermissionSettings(activity: Activity) {
         Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
         Uri.fromParts("package", activity.packageName, null),
     )
-    try {
-        activity.startActivity(intent)
-    } catch (e: Exception) {
-        Log.w(LOG_TAG, "Failed to open the overlay permission screen", e)
-    }
+    guarded("opening the overlay permission screen") { activity.startActivity(intent) }
 }

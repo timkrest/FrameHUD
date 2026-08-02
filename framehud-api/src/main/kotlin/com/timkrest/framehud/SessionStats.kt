@@ -12,14 +12,15 @@ public data class SessionStats(
     val p99FrameMs: Float = 0f,
     /** 0..100. */
     val jankPercent: Float = 0f,
-    /** Frames over 700 ms — the Play Vitals definition. */
     val frozenFrames: Int = 0,
-    /** Longest run of consecutive janky frames. */
     val maxJankStreak: Int = 0,
-    /** Reports the system dropped before delivery. Above zero, averages and percentiles are undersampled. */
+    /** Above zero, every other figure here is undersampled. */
     val droppedReports: Int = 0,
 ) {
     public companion object {
+        /** What Play Vitals counts as a frozen frame. */
+        public const val FROZEN_FRAME_MS: Float = 700f
+
         public val EMPTY: SessionStats = SessionStats()
     }
 }

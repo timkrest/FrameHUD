@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 public object FrameHud {
 
+    @Volatile
     public var config: FrameHudConfig = FrameHudConfig()
 
     public val isFrozen: StateFlow<Boolean> = MutableStateFlow(false)

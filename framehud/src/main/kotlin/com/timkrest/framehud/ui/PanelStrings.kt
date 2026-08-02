@@ -30,7 +30,6 @@ internal const val LABEL_COLUMN_NOW = "now"
 internal const val LABEL_COLUMN_AVG = "avg"
 internal const val LABEL_COLUMN_PEAK = "peak"
 
-/** Points at the row the verdict is about. */
 internal const val ATTENTION_MARKER = " ◀"
 internal const val COLLAPSED_SEPARATOR = "  "
 

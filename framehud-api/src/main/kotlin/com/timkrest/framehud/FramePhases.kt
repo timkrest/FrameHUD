@@ -31,31 +31,25 @@ public data class FramePhases(
     val overrun: MetricValue = MetricValue.ZERO,
     val isGpuAvailable: Boolean = false,
 ) {
-    public val cpu: MetricValue get() = input + animation + layout + draw
+    public val cpu: MetricValue = input + animation + layout + draw
 
-    public val render: MetricValue get() = sync + commandIssue + swapBuffers
+    public val render: MetricValue = sync + commandIssue + swapBuffers
 
     /** Unattributed remainder of [total]. Normally near zero. */
-    public val other: MetricValue get() = total - unknownDelay - cpu - render
+    public val other: MetricValue = total - unknownDelay - cpu - render
 
     /** Stage with the highest average. */
-    public val bottleneckStage: PipelineStage
-        get() {
-            val cpuAvg = cpu.average
-            val renderAvg = render.average
-            return when {
-                cpuAvg >= renderAvg && cpuAvg >= gpu.average -> PipelineStage.CPU
-                renderAvg >= gpu.average -> PipelineStage.RENDER
-                else -> PipelineStage.GPU
-            }
-        }
+    public val bottleneckStage: PipelineStage = when {
+        cpu.average >= render.average && cpu.average >= gpu.average -> PipelineStage.CPU
+        render.average >= gpu.average -> PipelineStage.RENDER
+        else -> PipelineStage.GPU
+    }
 
-    public val bottleneck: MetricValue
-        get() = when (bottleneckStage) {
-            PipelineStage.CPU -> cpu
-            PipelineStage.RENDER -> render
-            PipelineStage.GPU -> gpu.copy(peak = null)
-        }
+    public val bottleneck: MetricValue = when (bottleneckStage) {
+        PipelineStage.CPU -> cpu
+        PipelineStage.RENDER -> render
+        PipelineStage.GPU -> gpu.copy(peak = null)
+    }
 
     public companion object {
         public val EMPTY: FramePhases = FramePhases()

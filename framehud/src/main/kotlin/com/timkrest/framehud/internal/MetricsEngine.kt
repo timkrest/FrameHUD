@@ -41,9 +41,7 @@ internal class MetricsEngine(
     @Volatile
     private var sampler: MetricsSampler? = null
 
-    private var samplerThreadName: String? = null
-
-    /** The thread outlives [stop], so its absence no longer tells collection apart. */
+    /** The thread outlives [stop], so its absence cannot stand in for "collecting". */
     private var isRunning = false
 
     val metrics: StateFlow<PerformanceMetrics> get() = aggregator.metrics
@@ -67,7 +65,6 @@ internal class MetricsEngine(
         setFrozen(false)
     }
 
-    /** Attributes frames to [screen]. Does nothing until [start]. */
     fun bindWindow(window: Window, screen: String?) {
         screenName = screen
         val sampler = sampler?.takeIf { isRunning } ?: return
@@ -89,10 +86,9 @@ internal class MetricsEngine(
         vsyncMonitor.stop()
     }
 
-    /** Picks up a renamed metrics thread as well, which is the one setting the thread outlives. */
     fun applyConfig(newConfig: FrameHudConfig) {
-        val currentThreadName = samplerThreadName
-        if (currentThreadName != null && currentThreadName != newConfig.metricsThreadName) {
+        val running = sampler
+        if (running != null && running.threadName != newConfig.metricsThreadName) {
             replaceSampler(newConfig.metricsThreadName)
         }
         onMetricsThread { aggregator.updateConfig(newConfig) }
@@ -134,7 +130,7 @@ internal class MetricsEngine(
         return if (done.await(timeoutMs, TimeUnit.MILLISECONDS)) stats.get() else null
     }
 
-    private fun startSampler(threadName: String, predecessor: Thread? = null): MetricsSampler {
+    private fun startSampler(threadName: String, predecessor: MetricsSampler? = null): MetricsSampler {
         val started = MetricsSampler(
             threadName = threadName,
             listener = collector,
@@ -143,21 +139,17 @@ internal class MetricsEngine(
             predecessor = predecessor,
         )
         sampler = started
-        samplerThreadName = threadName
         return started
     }
 
-    /** Retires the running thread and hands the aggregator to a fresh one, without blocking here. */
     private fun replaceSampler(threadName: String) {
         val previous = sampler ?: return
-        val window = previous.boundWindow // quit() takes the frame metrics listener with it
-        previous.quit()
-        val started = startSampler(threadName, predecessor = previous.metricsThread)
+        val window = previous.quit()
+        val started = startSampler(threadName, predecessor = previous)
         window?.let(started::bind)
         if (isRunning) started.startTicking()
     }
 
-    /** Runs on the metrics thread, or right here when no thread has been started yet. */
     private fun onMetricsThread(action: () -> Unit) {
         if (sampler?.post(action) != true) action()
     }

@@ -14,7 +14,6 @@ import com.timkrest.framehud.PipelineStage
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
 
-/** One rendered line. [loadFraction] fills the row behind the text as a bar, 0..1. */
 @Immutable
 internal data class PanelLine(
     val text: String,
@@ -136,7 +135,6 @@ private fun MutableList<PanelLine>.addStage(
     }
 }
 
-/** Says whose hardware the dimmed rows below actually measure, since the numbers still move. */
 private fun sectionHeader(label: String, isHostMeasured: Boolean): String =
     if (isHostMeasured) label + LABEL_HOST_SECTION else label
 

@@ -1,44 +1,17 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.maven.publish)
+    alias(libs.plugins.framehud.android.library)
+    alias(libs.plugins.framehud.publish)
     alias(libs.plugins.compose.compiler)
 }
 
-val javaTarget = JavaVersion.toVersion(libs.versions.jvmTarget.get())
-
 android {
-    namespace = "com.timkrest.framehud"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
-
     defaultConfig {
-        minSdk = libs.versions.androidMinSdk.get().toInt()
-    }
-
-    compileOptions {
-        sourceCompatibility = javaTarget
-        targetCompatibility = javaTarget
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
         compose = true
     }
-
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
-    }
-}
-
-kotlin {
-    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
-    compilerOptions {
-        jvmTarget = JvmTarget.fromTarget(javaTarget.toString())
-    }
-    explicitApi()
 }
 
 dependencies {
@@ -52,15 +25,17 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.savedstate)
     implementation(libs.androidx.annotation)
-    // Public: the readings are exposed as StateFlow.
     api(libs.coroutines.core)
     implementation(libs.coroutines.android)
 
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.tooling.preview)
+
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.test)
-}
 
-mavenPublishing {
-    publishToMavenCentral()
-    signAllPublications()
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlin.test)
 }

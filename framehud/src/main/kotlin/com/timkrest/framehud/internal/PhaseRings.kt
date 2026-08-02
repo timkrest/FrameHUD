@@ -9,8 +9,8 @@ internal class PhaseRings(capacity: Int) {
     operator fun get(phase: FramePhase): RingBuffer = rings[phase.ordinal]
 
     fun add(durationsMs: FloatArray) {
-        for (phase in FramePhase.entries) {
-            rings[phase.ordinal].add(durationsMs[phase.ordinal])
+        for (index in rings.indices) {
+            rings[index].add(durationsMs[index])
         }
     }
 

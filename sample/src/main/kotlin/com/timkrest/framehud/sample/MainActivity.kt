@@ -38,7 +38,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Flows onto a second line rather than wrapping a label, which large system fonts would do. */
 @Composable
 private fun SampleActions(onToggleOverlay: () -> Unit, onOpenDetails: () -> Unit) {
     FlowRow(

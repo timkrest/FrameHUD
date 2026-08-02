@@ -7,13 +7,12 @@ import kotlin.math.min
  * The last [capacity] samples, with a running sum so the average costs nothing to read. Sampling
  * runs on every frame, so nothing here allocates once the buffer is built.
  */
-internal class RingBuffer(private val capacity: Int = DEFAULT_CAPACITY) {
+internal class RingBuffer(private val capacity: Int) {
 
     private val buffer = FloatArray(capacity)
     private var writePos = 0
     private var runningSum = 0f
 
-    /** Reused by [percentile]; only the rings that report percentiles ever allocate it. */
     private var sortScratch: FloatArray? = null
 
     private var peakValue = 0f
@@ -63,7 +62,6 @@ internal class RingBuffer(private val capacity: Int = DEFAULT_CAPACITY) {
         return sortedSamples()[nearestRank(normalized, size) - 1]
     }
 
-    /** The window in insertion order, oldest first. */
     fun snapshot(): FloatArray {
         if (size == 0) return EMPTY_SNAPSHOT
         return FloatArray(size).also(::copySamplesInto)
@@ -89,7 +87,6 @@ internal class RingBuffer(private val capacity: Int = DEFAULT_CAPACITY) {
         return result
     }
 
-    /** Sorted, so out of insertion order — fine for percentiles, wrong for anything positional. */
     private fun sortedSamples(): FloatArray {
         val scratch = sortScratch ?: FloatArray(capacity).also { sortScratch = it }
         copySamplesInto(scratch)
@@ -97,7 +94,6 @@ internal class RingBuffer(private val capacity: Int = DEFAULT_CAPACITY) {
         return scratch
     }
 
-    /** Copies the window into the first [size] slots of [destination], oldest first. */
     private fun copySamplesInto(destination: FloatArray) {
         val start = startIndex()
         val untilWrap = min(size, capacity - start)
@@ -107,11 +103,9 @@ internal class RingBuffer(private val capacity: Int = DEFAULT_CAPACITY) {
         }
     }
 
-    /** Where the oldest sample sits. Reading the window anywhere else must start here. */
     private fun startIndex(): Int = (writePos - size + capacity) % capacity
 
-    companion object {
-        private const val DEFAULT_CAPACITY = 60
-        private val EMPTY_SNAPSHOT = FloatArray(0)
+    private companion object {
+        val EMPTY_SNAPSHOT = FloatArray(0)
     }
 }

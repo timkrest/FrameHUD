@@ -16,7 +16,7 @@ public sealed interface FrameHudEvent {
         override val summary: String get() = "${screen.orNoScreen()}: ${diagnosis.summary}"
     }
 
-    /** Frames over 700 ms seen since the previous sample — the Play Vitals definition. */
+    /** Frames over [SessionStats.FROZEN_FRAME_MS] seen since the previous sample. */
     public data class FrozenFrames(val count: Int, override val screen: String?) : FrameHudEvent {
         override val summary: String get() = "${screen.orNoScreen()}: $count frozen frame(s)"
     }
