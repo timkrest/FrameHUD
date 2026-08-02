@@ -12,6 +12,19 @@ gen/
 .cxx/
 local.properties
 
+# Local tool state — whoever clones this brings their own
+.claude/
+.codex/
+.cursor/
+.junie/
+.kiro/
+.windsurf/
+.continue/
+.aider*
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+
 # Profiler and tooling output
 *.hprof
 *.log
