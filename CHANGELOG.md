@@ -4,30 +4,53 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-08-09
 
 ### Added
 
+- `FrameHud.mark` attributes frames to an interaction instead of to whichever activity has focus.
+  The header names it in place of the timing, every event carries it, and clearing it reports a
+  `FrameHudEvent.MarkEnded` covering that stretch alone. Leaving the screen clears it.
 - `JankThresholds.maxDroppedReports` — dropped `FrameMetrics` reports fail the gate. They
   undersample every other figure it checks, so a lossy run could pass on numbers nobody collected.
   Defaults to zero.
 
 ### Changed
 
+- `FrameHud.vsyncRate` is now `choreographerTicksPerSecond`, and the matching
+  `JankDiagnosis.of` parameter follows it. The old name looked like the display refresh rate; this
+  value is the number of Choreographer ticks the main thread handled per second.
+- `FrameHudEvent` gained `mark`, and `JankBurst`, `FrozenFrames` and `ThermalChanged` take it in the
+  constructor. Only the library emits them, so this shows up in your code only if you build events
+  by hand in tests.
 - `FrameHudConfig.metricsSampleWindowSize` is now `metricsSampleWindowFrames`, with the default
   constant renamed to match. The unit belongs in the name, as it already is one line below.
 - `JankCause.Stage.avgMs` is now `averageMs`, spelled like `MetricValue.average`.
+- `FrameHud` carries `@MainThread`, `@AnyThread` and `@WorkerThread`, so lint reports a call made from
+  the wrong thread instead of leaving it to the runtime check. `framehud-noop` mirrors them.
+- `FrameHistory` carries the deadline each frame had beside its duration, so `get(index)` gave way
+  to `totalMsAt(index)` and `deadlineMsAt(index)`. A frame can now be judged against the deadline it
+  actually had rather than against the one in force at the time of reading.
 - `FrameHudConfig` rejects a window of no frames, a negative throttle and a fallback refresh rate
   that is not finite and positive, instead of quietly clamping them once the collector got that far.
   The artifact is `debugImplementation` only, so the throw lands in the build that wrote the value.
 
 ### Fixed
 
+- The refresh rate was read off the view hierarchy from the metrics thread every frame. `View.getDisplay`
+  is UI-thread only; the `Display` is now taken when the window is bound and read from there.
 - Events raised after leaving a screen still carried its name instead of null.
 - The `over` row stayed green until a frame lost a whole extra budget. It was coloured as a frame
   time rather than as the overrun it holds.
 - The panel could land off-screen after a rotation, with no way to drag it back. Its position was
   clamped to the display only while dragging, never when the display changed underneath it.
+- The collapsed sparkline covered half a second where the figures printed beside it covered the whole
+  window. It dropped the frames it had no room for; now each bar keeps the worst frame of its slice,
+  so both span the same window and a spike survives however narrow the chart is.
+- One slow frame flattened the sparkline for as long as it stayed in the window, and moved the budget
+  line with it. The scale now climbs in doublings of the budget and stops at sixteen.
+- Sparkline bars stretched to fill the width and narrowed as the window filled. They now keep a slot
+  width and fill from the right.
 
 ## [0.4.0] - 2026-08-02
 
@@ -123,6 +146,7 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
+[0.5.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.5.0
 [0.4.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.4.0
 [0.3.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.3.0
 [0.2.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.2.0

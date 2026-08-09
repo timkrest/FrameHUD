@@ -10,9 +10,10 @@ import kotlinx.coroutines.flow.StateFlow
 @Immutable
 internal class PanelState(
     val metrics: StateFlow<PerformanceMetrics>,
-    val vsyncRate: StateFlow<Int>,
+    val choreographerTicksPerSecond: StateFlow<Int>,
     val memory: StateFlow<MemoryStats>,
     val thermal: StateFlow<ThermalStats>,
+    val activeMark: StateFlow<String?>,
     val isCollapsed: StateFlow<Boolean>,
     val isFrozen: StateFlow<Boolean>,
     val canRequestOverlayPermission: Boolean,

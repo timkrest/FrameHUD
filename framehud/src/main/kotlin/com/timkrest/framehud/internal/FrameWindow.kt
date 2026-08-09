@@ -1,5 +1,7 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.FrameHistory
+import com.timkrest.framehud.InternalFrameHudApi
 import com.timkrest.framehud.MetricValue
 
 internal class FrameWindow(size: Int) {
@@ -33,7 +35,15 @@ internal class FrameWindow(size: Int) {
 
     fun worstTotalMs(): Float = phaseRings[FramePhase.TOTAL].windowMax()
 
-    fun totalHistory(): FloatArray = phaseRings[FramePhase.TOTAL].snapshot()
+    @OptIn(InternalFrameHudApi::class)
+    fun history(): FrameHistory {
+        val totalsMs = phaseRings[FramePhase.TOTAL].snapshot()
+        val overrunsMs = overruns.snapshot()
+        return FrameHistory.of(
+            totalsMs = totalsMs,
+            deadlinesMs = FloatArray(totalsMs.size) { totalsMs[it] - overrunsMs[it] },
+        )
+    }
 
     fun clear() {
         phaseRings.clear()

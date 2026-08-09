@@ -14,7 +14,7 @@ you down.
 
 - **A row per stage** — `input`, `anim`, `layout`, `draw` on the main thread, then `sync`, `command`,
   `swap` on the render thread, and `gpu`
-- **Says why frames drop** — thermal throttling, GC pauses, missed vsync ticks, or a late start
+- **Says why frames drop** — thermal throttling, GC pauses, too few Choreographer ticks, or a late start
 - **Measures your app, not itself** — the panel draws in its own window
 - **Fails tests on jank** — a JUnit rule with thresholds
 - **Nothing in release builds** — `debugImplementation` leaves out the panel, its provider and the
@@ -24,7 +24,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.4.0")
+    debugImplementation("com.timkrest:framehud:0.5.0")
 }
 ```
 
@@ -63,8 +63,8 @@ gc x3 · 18 ms
 therm none · hr 0.68
 ```
 
-The header carries the vsync rate, the frame budget and FPS. The verdict under it names the row to
-look at, and `◀` marks that row.
+The header carries the main thread's Choreographer tick rate, the frame budget and FPS. The verdict
+under it names the row to look at, and `◀` marks that row.
 
 Columns read `now avg peak`: the current frame, the average over the window, and the peak since the
 last reset. Rows summed from other rows stop after `avg`.
@@ -80,7 +80,7 @@ last reset. Rows summed from other rows stop after `avg`.
 you call `FrameHud` outside `src/debug` — a release build still has to compile those lines:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.4.0")
+releaseImplementation("com.timkrest:framehud-noop:0.5.0")
 ```
 
 It mirrors the API with empty bodies. The calls compile, nothing is measured, no window is added.
@@ -97,7 +97,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | --- | --- | --- |
 | `enabled` | `true` | While false, no window is added and no frames are collected. |
 | `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` keeps the panel inside the app window and never uses the permission. |
-| `eventListeners` | `[LogcatEventListener]` | Who receives jank burst, frozen frame, thermal and screen summary events. |
+| `eventListeners` | `[LogcatEventListener]` | Who receives jank burst, frozen frame, thermal, screen and interaction events. |
 | `metricsSampleWindowFrames` | `120` | How much history `avg` and the percentiles cover. |
 | `metricsThrottleIntervalMs` | `400` | How often the panel may redraw. Lower values cost more to render. |
 | `fallbackRefreshRateHz` | `60` | Refresh rate assumed when the display reports none. |
@@ -106,9 +106,9 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
 The panel is not the only way to read the numbers. `FrameHud.metrics`, `memoryStats`, `thermalStats`
-and `vsyncRate` are plain `StateFlow`s. A reading groups into `phases` (per-stage timings), `window`
-(fps, jank and p95 over the sampling window), `session` (since the last reset) and `display`
-(refresh rate and frame budget).
+and `choreographerTicksPerSecond` are plain `StateFlow`s. A reading groups into `phases` (per-stage
+timings), `window` (fps, jank and p95 over the sampling window), `session` (since the last reset) and
+`display` (refresh rate and frame budget).
 
 ## Jank events
 
@@ -126,10 +126,27 @@ FrameHud.config = FrameHud.config.copy(
 
 Events arrive on the metrics thread. Don't block it and don't touch views from it.
 
+## Marking an interaction
+
+A screen summary tells you which screen is slow. A mark tells you which interaction is.
+
+```kotlin
+FrameHud.mark = "scroll"
+// the gesture runs
+FrameHud.mark = null
+```
+
+Frames drawn while the mark is set belong to it. The header reads `▸ scroll` instead of the timing
+and every event fired meanwhile carries the name; clearing the mark reports a `MarkEnded` whose
+stats cover that stretch alone. The panel's own rows keep covering the usual window and session —
+the header labels them, it does not narrow them.
+
+Leaving the screen clears the mark for you, so a gesture never spills into the next screen.
+
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.4.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.5.0")
 ```
 
 ```kotlin

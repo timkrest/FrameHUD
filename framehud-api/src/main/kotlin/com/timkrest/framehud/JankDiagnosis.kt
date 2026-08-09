@@ -21,9 +21,9 @@ public sealed interface JankCause {
         override val summary: String get() = format("GC pauses take %.1f%% of the session", timeShare * PERCENT)
     }
 
-    /** The main thread is not even serving vsync ticks — it is busy outside rendering. */
+    /** Ticks keep arriving on a still screen, so a low count means a blocked main thread, not an idle one. */
     public data class VsyncStarvation(val ticksPerSecond: Int, val refreshRateHz: Float) : JankCause {
-        override val summary: String get() = format("main thread served %d of %.0f vsyncs", ticksPerSecond, refreshRateHz)
+        override val summary: String get() = format("main thread handled %d ticks/s on a %.0f Hz display", ticksPerSecond, refreshRateHz)
     }
 
     /** Frames start late: work queued before rendering is holding the main thread. */
@@ -87,7 +87,7 @@ public data class JankDiagnosis(
             metrics: PerformanceMetrics,
             memory: MemoryStats,
             thermal: ThermalStats,
-            vsyncRate: Int,
+            choreographerTicksPerSecond: Int,
         ): JankDiagnosis {
             val severity = JankSeverity.of(metrics.window.jankPercent)
             if (severity == JankSeverity.NONE) return HEALTHY
@@ -98,8 +98,8 @@ public data class JankDiagnosis(
             val cause = when {
                 thermal.level.isThrottling -> JankCause.Thermal(thermal.level)
                 gcTimeShare >= GC_TIME_SHARE_THRESHOLD -> JankCause.Gc(gcTimeShare)
-                isVsyncStarved(vsyncRate, refreshRateHz) ->
-                    JankCause.VsyncStarvation(vsyncRate, refreshRateHz)
+                isVsyncStarved(choreographerTicksPerSecond, refreshRateHz) ->
+                    JankCause.VsyncStarvation(choreographerTicksPerSecond, refreshRateHz)
 
                 phases.unknownDelay.average > phases.bottleneck.average ->
                     JankCause.LateStart(phases.unknownDelay.average)
@@ -118,7 +118,8 @@ public data class JankDiagnosis(
         private fun gcTimeShare(memory: MemoryStats, session: SessionStats): Float =
             if (session.durationMs > 0L) memory.gcTimeMs.toFloat() / session.durationMs else 0f
 
-        private fun isVsyncStarved(vsyncRate: Int, refreshRateHz: Float): Boolean =
-            vsyncRate > 0 && vsyncRate < refreshRateHz * VSYNC_STARVATION_RATIO
+        private fun isVsyncStarved(choreographerTicksPerSecond: Int, refreshRateHz: Float): Boolean =
+            choreographerTicksPerSecond > 0 &&
+                choreographerTicksPerSecond < refreshRateHz * VSYNC_STARVATION_RATIO
     }
 }

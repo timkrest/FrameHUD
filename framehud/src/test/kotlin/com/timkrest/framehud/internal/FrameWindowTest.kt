@@ -10,11 +10,12 @@ class FrameWindowTest {
     private fun addFrame(
         totalMs: Float,
         isJanky: Boolean = false,
+        overrunMs: Float = 0f,
         frameEndNs: Long = 0L,
     ) {
         val durations = FloatArray(FramePhase.entries.size)
         durations[FramePhase.TOTAL.ordinal] = totalMs
-        window.add(durationsMs = durations, isJanky = isJanky, overrunMs = 0f, frameEndNs = frameEndNs)
+        window.add(durationsMs = durations, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
     }
 
     @Test
@@ -45,9 +46,13 @@ class FrameWindowTest {
     }
 
     @Test
-    fun `history is ordered oldest to newest`() {
-        listOf(1f, 2f, 3f).forEach { addFrame(totalMs = it) }
-        assertEquals(listOf(1f, 2f, 3f), window.totalHistory().toList())
+    fun `history pairs each frame with the deadline it had, oldest first`() {
+        addFrame(totalMs = 1f, overrunMs = -5f)
+        addFrame(totalMs = 2f, overrunMs = -4f)
+        addFrame(totalMs = 20f, overrunMs = 3f)
+        val history = window.history()
+        assertEquals(listOf(1f, 2f, 20f), List(history.size, history::totalMsAt))
+        assertEquals(listOf(6f, 6f, 17f), List(history.size, history::deadlineMsAt))
     }
 
     @Test
@@ -56,7 +61,7 @@ class FrameWindowTest {
         window.clear()
         assertEquals(0f, window.jankPercent(), TOLERANCE)
         assertEquals(0, window.fps(nowNs = 1L))
-        assertEquals(0, window.totalHistory().size)
+        assertEquals(0, window.history().size)
     }
 
     private companion object {

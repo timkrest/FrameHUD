@@ -1,11 +1,11 @@
 package com.timkrest.framehud.internal
 
+import androidx.annotation.AnyThread
+import androidx.annotation.WorkerThread
 import com.timkrest.framehud.DisplayInfo
-import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
-import com.timkrest.framehud.InternalFrameHudApi
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.SessionStats
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +16,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * Takes plain numbers rather than `FrameMetrics`, so the rules that matter — what counts as janky,
  * what the frame budget is, when a reading is published — are covered by unit tests.
  * [FrameMetricsCollector] does the platform reading.
- *
- * Confined to the metrics thread, apart from [metrics] and [setFrozen].
  */
+@WorkerThread
 internal class FrameAggregator(private var config: FrameHudConfig, private val clock: MetricsClock) {
 
     private var frameWindow = FrameWindow(config.metricsSampleWindowFrames)
@@ -27,7 +26,11 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
 
     private val screen = SessionAccumulator(clock)
 
+    private var mark: SessionAccumulator? = null
+
     private val _metrics = MutableStateFlow(PerformanceMetrics.EMPTY)
+
+    @get:AnyThread
     val metrics: StateFlow<PerformanceMetrics> = _metrics.asStateFlow()
 
     @Volatile
@@ -67,6 +70,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         frameWindow.add(durationsMs = durationsMs, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
         session.addFrame(totalMs = totalMs, isJanky = isJanky)
         screen.addFrame(totalMs = totalMs, isJanky = isJanky)
+        mark?.addFrame(totalMs = totalMs, isJanky = isJanky)
 
         isDrainingToIdle = true
         maybeEmit()
@@ -75,6 +79,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
     fun addDroppedReports(count: Int) {
         session.addDroppedReports(count)
         screen.addDroppedReports(count)
+        mark?.addDroppedReports(count)
     }
 
     fun onTick() {
@@ -82,6 +87,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         maybeEmit()
     }
 
+    @AnyThread
     fun setFrozen(frozen: Boolean) {
         isFrozen = frozen
     }
@@ -97,6 +103,17 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         screen.stopCollecting()
     }
 
+    fun beginMark() {
+        mark = SessionAccumulator(clock).apply { startCollecting() }
+    }
+
+    fun endMark(): SessionStats? {
+        val ended = mark ?: return null
+        mark = null
+        ended.stopCollecting()
+        return ended.stats()
+    }
+
     fun sessionStats(): SessionStats = session.stats()
 
     fun screenStats(): SessionStats = screen.stats()
@@ -105,6 +122,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         frameWindow.clear()
         session.clear()
         screen.clear()
+        mark?.clear()
         isDrainingToIdle = false
         lastUpdateTime = 0L
         _metrics.value = PerformanceMetrics.EMPTY
@@ -124,7 +142,6 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         emitMetrics()
     }
 
-    @OptIn(InternalFrameHudApi::class)
     private fun emitMetrics() {
         val fps = frameWindow.fps(clock.nanoTime())
         _metrics.value = PerformanceMetrics(
@@ -147,7 +164,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
                 jankPercent = frameWindow.jankPercent(),
                 p95FrameMs = frameWindow.totalPercentile(P95),
                 worstFrameMs = frameWindow.worstTotalMs(),
-                history = FrameHistory.of(frameWindow.totalHistory()),
+                history = frameWindow.history(),
             ),
             session = session.stats(),
             display = display,

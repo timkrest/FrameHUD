@@ -22,7 +22,7 @@ internal fun PanelCollapsedContent(metrics: PerformanceMetrics, isEmulator: Bool
     ) {
         FrameSparkline(
             history = metrics.window.history,
-            frameBudgetMs = metrics.display.frameBudgetMs,
+            display = metrics.display,
             modifier = Modifier
                 .width(SparklineMiniWidth)
                 .height(SparklineMiniHeight),

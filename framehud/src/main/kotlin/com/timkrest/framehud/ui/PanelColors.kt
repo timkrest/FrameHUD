@@ -35,6 +35,12 @@ internal fun metricRowColor(
     else -> TextNormal
 }
 
+internal fun sparklineBarColor(totalMs: Float, deadlineMs: Float): Color = when {
+    totalMs <= deadlineMs -> TextGood
+    totalMs > deadlineMs * 2f -> TextWarning
+    else -> TextCaution
+}
+
 internal fun thermalColor(level: ThermalLevel): Color = when {
     level >= ThermalLevel.SEVERE -> TextWarning
     level.isThrottling -> TextCaution

@@ -2,16 +2,18 @@ public final class com/timkrest/framehud/FrameHud {
 	public static final field $stable I
 	public static final field INSTANCE Lcom/timkrest/framehud/FrameHud;
 	public final fun awaitSessionStats (J)Lcom/timkrest/framehud/SessionStats;
+	public final fun getChoreographerTicksPerSecond ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getConfig ()Lcom/timkrest/framehud/FrameHudConfig;
+	public final fun getMark ()Ljava/lang/String;
 	public final fun getMemoryStats ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getMetrics ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getThermalStats ()Lkotlinx/coroutines/flow/StateFlow;
-	public final fun getVsyncRate ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun hide ()V
 	public final fun install (Landroid/app/Application;)V
 	public final fun isFrozen ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun reset ()V
 	public final fun setConfig (Lcom/timkrest/framehud/FrameHudConfig;)V
+	public final fun setMark (Ljava/lang/String;)V
 	public final fun show ()V
 	public final fun toggle ()V
 	public final fun toggleFreeze ()V

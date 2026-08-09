@@ -30,6 +30,9 @@ internal const val LABEL_COLUMN_NOW = "now"
 internal const val LABEL_COLUMN_AVG = "avg"
 internal const val LABEL_COLUMN_PEAK = "peak"
 
+internal const val MARK_PREFIX = "▸ "
+internal const val ELLIPSIS = "…"
+
 internal const val ATTENTION_MARKER = " ◀"
 internal const val COLLAPSED_SEPARATOR = "  "
 

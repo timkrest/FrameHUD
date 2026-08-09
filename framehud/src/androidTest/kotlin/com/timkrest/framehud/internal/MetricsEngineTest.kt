@@ -6,10 +6,15 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.FrameHudEvent
+import com.timkrest.framehud.FrameHudEventListener
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -19,10 +24,14 @@ class MetricsEngineTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
-    /** Threads are named per test: they outlive the test that started them, and names are compared. */
     private val threadName = "framehud-engine-${NEXT_ID.getAndIncrement()}"
 
-    private var config = FrameHudConfig(metricsThreadName = threadName)
+    private val events = CopyOnWriteArrayList<FrameHudEvent>()
+
+    private var config = FrameHudConfig(
+        metricsThreadName = threadName,
+        eventListeners = listOf(FrameHudEventListener { events += it }),
+    )
 
     private val engine = MetricsEngine(config = { config })
 
@@ -47,6 +56,37 @@ class MetricsEngineTest {
     }
 
     @Test
+    fun aMarkBegunBeforeTheFirstScreenSurvivesTheFocusSwapThatStartsCollection() {
+        onMainThread { engine.setMark(MARK) }
+        onMainThread { engine.unbindWindow() }
+        onMainThread { engine.start(context) }
+        onMainThread { engine.setMark(null) }
+        awaitMetricsThread()
+
+        val ended = assertIs<FrameHudEvent.MarkEnded>(events.single())
+        assertEquals(MARK, ended.mark)
+    }
+
+    @Test
+    fun settingTheSameMarkAgainLeavesTheIntervalRunning() {
+        onMainThread { engine.start(context) }
+        onMainThread { engine.setMark(MARK) }
+        onMainThread { engine.setMark(MARK) }
+        awaitMetricsThread()
+
+        assertTrue(events.isEmpty(), "the interval was cut in two: $events")
+    }
+
+    @Test
+    fun workPostedBeforeTheStartRunsOnTheThreadTheStartGoesOnToUse() {
+        engine.reset()
+        onMainThread { engine.start(context) }
+        awaitMetricsThread()
+
+        assertEquals(1, threadsNamed(threadName), "the engine is running more than one metrics thread")
+    }
+
+    @Test
     fun renamingTheMetricsThreadRetiresTheOldOne() {
         onMainThread { engine.start(context) }
         assertNotNull(engine.awaitSessionStats(TIMEOUT_MS), "nothing was collecting")
@@ -62,6 +102,12 @@ class MetricsEngineTest {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(action)
     }
 
+    private fun awaitMetricsThread() {
+        assertNotNull(engine.awaitSessionStats(TIMEOUT_MS), "the metrics thread never answered")
+    }
+
+    private fun threadsNamed(name: String): Int = Thread.getAllStackTraces().keys.count { it.name == name }
+
     private fun awaitThreadGone(name: String): Boolean {
         val deadlineMs = SystemClock.elapsedRealtime() + TIMEOUT_MS
         while (SystemClock.elapsedRealtime() < deadlineMs) {
@@ -74,6 +120,7 @@ class MetricsEngineTest {
     private companion object {
         val NEXT_ID = AtomicInteger()
 
+        const val MARK = "scroll"
         const val TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 10L
     }

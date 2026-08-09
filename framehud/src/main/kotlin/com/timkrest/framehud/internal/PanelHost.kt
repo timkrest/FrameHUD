@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.MainThread
 import androidx.compose.runtime.remember
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.OverlayMode
@@ -16,7 +17,7 @@ import com.timkrest.framehud.ui.FrameHudPanel
 import com.timkrest.framehud.ui.PanelActions
 import com.timkrest.framehud.ui.PanelState
 
-/** Main thread only. */
+@MainThread
 internal class PanelHost(
     val application: Application,
     private val config: () -> FrameHudConfig,

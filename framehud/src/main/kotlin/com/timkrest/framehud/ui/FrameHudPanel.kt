@@ -15,9 +15,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 internal fun FrameHudPanel(state: PanelState, actions: PanelActions, modifier: Modifier = Modifier) {
     val metrics by state.metrics.collectAsStateWithLifecycle()
-    val vsyncRate by state.vsyncRate.collectAsStateWithLifecycle()
+    val choreographerTicksPerSecond by state.choreographerTicksPerSecond.collectAsStateWithLifecycle()
     val memory by state.memory.collectAsStateWithLifecycle()
     val thermal by state.thermal.collectAsStateWithLifecycle()
+    val activeMark by state.activeMark.collectAsStateWithLifecycle()
     val isCollapsed by state.isCollapsed.collectAsStateWithLifecycle()
     val isFrozen by state.isFrozen.collectAsStateWithLifecycle()
 
@@ -38,9 +39,10 @@ internal fun FrameHudPanel(state: PanelState, actions: PanelActions, modifier: M
         } else {
             PanelExpandedContent(
                 metrics = metrics,
-                vsyncRate = vsyncRate,
+                choreographerTicksPerSecond = choreographerTicksPerSecond,
                 memory = memory,
                 thermal = thermal,
+                activeMark = activeMark,
                 isFrozen = isFrozen,
                 canRequestOverlayPermission = state.canRequestOverlayPermission,
                 isEmulator = state.isEmulator,

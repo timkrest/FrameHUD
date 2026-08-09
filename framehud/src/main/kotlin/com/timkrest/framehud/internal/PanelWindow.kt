@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.annotation.MainThread
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -23,7 +24,7 @@ internal enum class PanelWindowMode(val windowType: Int) {
     APP(WindowManager.LayoutParams.TYPE_APPLICATION),
 }
 
-/** Main thread only. */
+@MainThread
 internal class PanelWindow(
     private val context: Context,
     val mode: PanelWindowMode,

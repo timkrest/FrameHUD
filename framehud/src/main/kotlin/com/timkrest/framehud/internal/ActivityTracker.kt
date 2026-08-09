@@ -4,13 +4,15 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import android.view.ViewTreeObserver
+import androidx.annotation.MainThread
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 
 /**
  * Follows the activity actually in use. Split-screen resumes every visible activity at once, so
- * window focus decides which one that is, not the last resume. Main thread only.
+ * window focus decides which one that is, not the last resume.
  */
+@MainThread
 internal class ActivityTracker(
     private val onFocused: (activity: Activity, previous: Activity?) -> Unit,
     private val onLost: () -> Unit,

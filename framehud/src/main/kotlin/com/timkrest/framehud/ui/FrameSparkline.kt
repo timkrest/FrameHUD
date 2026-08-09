@@ -8,14 +8,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import kotlin.math.max
-import kotlin.math.min
 
 @Composable
 internal fun FrameSparkline(
     history: FrameHistory,
-    frameBudgetMs: Float,
+    display: DisplayInfo,
     modifier: Modifier = Modifier,
 ) {
     Canvas(
@@ -23,42 +23,31 @@ internal fun FrameSparkline(
             .clip(SparklineShape)
             .background(SparklineBackground),
     ) {
-        drawFrameHistory(history = history, frameBudgetMs = frameBudgetMs)
+        drawFrameHistory(history = history, frameBudgetMs = display.frameBudgetMs)
     }
 }
 
 private fun DrawScope.drawFrameHistory(history: FrameHistory, frameBudgetMs: Float) {
-    if (history.size == 0 || frameBudgetMs <= 0f) return
+    val slotCount = (size.width / SparklineMinSlotWidth.toPx()).toInt()
+    val frames = worstFramePerSlot(history = history, slotCount = slotCount)
+    if (frames.size == 0) return
 
-    val maxBars = (size.width / SparklineMinSlotWidth.toPx()).toInt().coerceAtLeast(1)
-    val visibleCount = min(history.size, maxBars)
-    val firstIndex = history.size - visibleCount
-
-    var peakMs = 0f
-    for (index in firstIndex until history.size) {
-        peakMs = max(peakMs, history[index])
-    }
-    val scaleMs = max(frameBudgetMs * SPARKLINE_SCALE_FACTOR, peakMs)
-
-    val slotWidth = size.width / visibleCount
+    val fullHeightMs = budgetDoublingCovering(frames = frames, frameBudgetMs = frameBudgetMs)
+    val slotWidth = size.width / slotCount
     val barWidth = max(slotWidth - SparklineBarGap.toPx(), slotWidth * SPARKLINE_MIN_BAR_FRACTION)
-    for (position in 0 until visibleCount) {
-        val valueMs = history[firstIndex + position]
-        if (valueMs <= 0f) continue
-        val barHeight = (valueMs / scaleMs).coerceIn(0f, 1f) * size.height
+    val firstSlotX = size.width - frames.size * slotWidth
+    for (bar in 0 until frames.size) {
+        val totalMs = frames.totalMsAt(bar)
+        if (totalMs <= 0f) continue
+        val barHeight = (totalMs / fullHeightMs).coerceIn(0f, 1f) * size.height
         drawRect(
-            color = metricRowColor(
-                valueMs = valueMs - frameBudgetMs,
-                frameBudgetMs = frameBudgetMs,
-                kind = MetricRowKind.OVERRUN,
-                isAttention = false,
-            ),
-            topLeft = Offset(x = position * slotWidth, y = size.height - barHeight),
+            color = sparklineBarColor(totalMs = totalMs, deadlineMs = frames.deadlineMsAt(bar)),
+            topLeft = Offset(x = firstSlotX + bar * slotWidth, y = size.height - barHeight),
             size = Size(width = barWidth, height = barHeight),
         )
     }
 
-    val budgetY = size.height - (frameBudgetMs / scaleMs) * size.height
+    val budgetY = size.height - (frameBudgetMs / fullHeightMs) * size.height
     drawLine(
         color = SparklineBudgetLine,
         start = Offset(x = 0f, y = budgetY),

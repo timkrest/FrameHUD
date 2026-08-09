@@ -76,11 +76,21 @@ class EventDispatcherTest {
         assertTrue(events.isEmpty())
     }
 
+    @Test
+    fun `an interaction is reported even when nothing was drawn while it was open`() {
+        dispatcher.onMarkEnded(listeners = listeners, stats = SessionStats.EMPTY, mark = MARK, screen = SCREEN)
+
+        val event = assertIs<FrameHudEvent.MarkEnded>(events.single())
+        assertEquals(MARK, event.mark)
+        assertEquals(SCREEN, event.screen)
+    }
+
     private fun sample(
         jankPercent: Float = 0f,
         frozenFrames: Int = 0,
         thermal: ThermalStats = ThermalStats.EMPTY,
-        vsyncRate: Int = 60,
+        choreographerTicksPerSecond: Int = 60,
+        mark: String? = null,
     ) {
         dispatcher.onSample(
             listeners = listeners,
@@ -92,12 +102,14 @@ class EventDispatcherTest {
             ),
             memory = MemoryStats.EMPTY,
             thermal = thermal,
-            vsyncRate = vsyncRate,
+            choreographerTicksPerSecond = choreographerTicksPerSecond,
             screen = SCREEN,
+            mark = mark,
         )
     }
 
     private companion object {
         const val SCREEN = "SampleActivity"
+        const val MARK = "scroll"
     }
 }

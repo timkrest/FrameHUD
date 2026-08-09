@@ -3,31 +3,38 @@ package com.timkrest.framehud.internal
 import android.content.Context
 import android.util.Log
 import android.view.Window
+import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
+import androidx.annotation.WorkerThread
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalStats
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
-/** Readings are safe from any thread. The rest is main thread only, except [awaitSessionStats]. */
+@MainThread
 internal class MetricsEngine(
     private val config: () -> FrameHudConfig,
     clock: MetricsClock = SystemMetricsClock,
 ) {
 
     private val aggregator = FrameAggregator(config(), clock)
-    private val collector = FrameMetricsCollector(aggregator, clock)
-    private val vsyncMonitor = VsyncRateMonitor()
+    private val collector = FrameMetricsCollector(aggregator, clock) { sampler?.display }
+    private val choreographerTickMonitor = ChoreographerTickMonitor()
     private val memoryMonitor = MemoryStatsMonitor()
     private val thermalMonitor = ThermalMonitor()
     private val eventDispatcher = EventDispatcher()
 
     @Volatile
     private var screenName: String? = null
+
+    private val _activeMark = MutableStateFlow<String?>(null)
 
     private val samplerLock = Any()
 
@@ -36,15 +43,25 @@ internal class MetricsEngine(
 
     private var isRunning = false
 
+    @get:AnyThread
     val metrics: StateFlow<PerformanceMetrics> get() = aggregator.metrics
-    val vsyncRate: StateFlow<Int> get() = vsyncMonitor.ratePerSecond
+
+    @get:AnyThread
+    val choreographerTicksPerSecond: StateFlow<Int> get() = choreographerTickMonitor.ticksPerSecond
+
+    @get:AnyThread
     val memoryStats: StateFlow<MemoryStats> get() = memoryMonitor.stats
+
+    @get:AnyThread
     val thermalStats: StateFlow<ThermalStats> get() = thermalMonitor.stats
+
+    @get:AnyThread
+    val activeMark: StateFlow<String?> = _activeMark.asStateFlow()
 
     fun start(context: Context) {
         isRunning = true
         thermalMonitor.bind(context)
-        val running = sampler ?: startSampler(config().metricsThreadName)
+        val running = requireSampler()
         running.post(::sampleMonitors)
         running.startTicking()
     }
@@ -62,12 +79,21 @@ internal class MetricsEngine(
         if (!sampler.bind(window)) return
         screenName = screen
         sampler.post(aggregator::startCollecting)
-        vsyncMonitor.start()
+        choreographerTickMonitor.start()
+    }
+
+    fun setMark(name: String?) {
+        if (_activeMark.value == name) return
+        endMark()
+        if (name == null) return
+        _activeMark.value = name
+        onMetricsThread(aggregator::beginMark)
     }
 
     fun unbindWindow() {
         val sampler = sampler ?: return
         if (!sampler.unbind()) return
+        endMark()
         val endedScreen = screenName
         screenName = null
         val listeners = config().eventListeners
@@ -75,7 +101,7 @@ internal class MetricsEngine(
             aggregator.stopCollecting()
             eventDispatcher.onScreenEnded(listeners = listeners, stats = aggregator.screenStats(), screen = endedScreen)
         }
-        vsyncMonitor.stop()
+        choreographerTickMonitor.stop()
     }
 
     fun applyConfig(newConfig: FrameHudConfig) {
@@ -86,13 +112,15 @@ internal class MetricsEngine(
         onMetricsThread { aggregator.updateConfig(newConfig) }
     }
 
+    @AnyThread
     fun setFrozen(frozen: Boolean) {
         aggregator.setFrozen(frozen)
         memoryMonitor.setFrozen(frozen)
-        vsyncMonitor.setFrozen(frozen)
+        choreographerTickMonitor.setFrozen(frozen)
         thermalMonitor.setFrozen(frozen)
     }
 
+    @AnyThread
     fun reset() {
         onMetricsThread {
             aggregator.reset()
@@ -101,6 +129,7 @@ internal class MetricsEngine(
         }
     }
 
+    @WorkerThread
     fun awaitSessionStats(timeoutMs: Long): SessionStats? {
         val sampler = sampler ?: return null
         val stats = AtomicReference<SessionStats>()
@@ -116,6 +145,18 @@ internal class MetricsEngine(
         return if (done.await(timeoutMs, TimeUnit.MILLISECONDS)) stats.get() else null
     }
 
+    private fun endMark() {
+        val ended = _activeMark.value ?: return
+        _activeMark.value = null
+        val listeners = config().eventListeners
+        val screen = screenName
+        onMetricsThread {
+            aggregator.endMark()?.let { stats ->
+                eventDispatcher.onMarkEnded(listeners = listeners, stats = stats, mark = ended, screen = screen)
+            }
+        }
+    }
+
     private fun startSampler(threadName: String, predecessor: MetricsSampler? = null): MetricsSampler {
         val started = MetricsSampler(
             threadName = threadName,
@@ -129,24 +170,35 @@ internal class MetricsEngine(
     }
 
     private fun replaceSampler(threadName: String) {
-        val previous = sampler ?: return
-        val started = startSampler(threadName, predecessor = previous)
-        previous.quit()?.let(started::bind)
-        if (isRunning) started.startTicking()
-    }
-
-    private fun onMetricsThread(action: () -> Unit) {
         synchronized(samplerLock) {
-            val running = sampler ?: return action()
-            if (!running.post(action)) Log.w(LOG_TAG, "The metrics thread is gone, dropped a metrics task")
+            val previous = sampler ?: return
+            val started = startSampler(threadName, predecessor = previous)
+            previous.quit()?.let(started::bind)
+            if (isRunning) started.startTicking()
         }
     }
 
+    @AnyThread
+    private fun requireSampler(): MetricsSampler = synchronized(samplerLock) {
+        sampler ?: startSampler(config().metricsThreadName)
+    }
+
+    @AnyThread
+    private fun onMetricsThread(action: () -> Unit) {
+        synchronized(samplerLock) {
+            if (!requireSampler().post(action)) {
+                Log.w(LOG_TAG, "The metrics thread is gone, dropped a metrics task")
+            }
+        }
+    }
+
+    @WorkerThread
     private fun sampleMonitors() {
         memoryMonitor.sample()
         thermalMonitor.sample()
     }
 
+    @WorkerThread
     private fun onTick() {
         aggregator.onTick()
         sampleMonitors()
@@ -156,8 +208,9 @@ internal class MetricsEngine(
             metrics = aggregator.metrics.value,
             memory = memoryMonitor.stats.value,
             thermal = thermalMonitor.stats.value,
-            vsyncRate = vsyncMonitor.ratePerSecond.value,
+            choreographerTicksPerSecond = choreographerTickMonitor.ticksPerSecond.value,
             screen = screenName,
+            mark = _activeMark.value,
         )
     }
 

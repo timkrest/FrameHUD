@@ -15,14 +15,27 @@ class FrameHudEventTest {
 
     @Test
     fun `a jank burst carries the diagnosis`() {
-        val event = FrameHudEvent.JankBurst(diagnosis = diagnosis(), screen = "Feed")
+        val event = FrameHudEvent.JankBurst(diagnosis = diagnosis(), screen = "Feed", mark = null)
         assertEquals("Feed: jank 25.0%, worst 42.0 ms of 16.7 ms — cpu bound, 19.3 ms per frame", event.summary)
     }
 
     @Test
     fun `events fired without a bound screen say so`() {
-        assertTrue(FrameHudEvent.FrozenFrames(count = 2, screen = null).summary.startsWith("no screen: "))
-        assertEquals("Feed: 2 frozen frame(s)", FrameHudEvent.FrozenFrames(count = 2, screen = "Feed").summary)
+        val event = FrameHudEvent.FrozenFrames(count = 2, screen = null, mark = null)
+        assertTrue(event.summary.startsWith("no screen: "))
+        assertEquals(
+            "Feed: 2 frozen frame(s)",
+            FrameHudEvent.FrozenFrames(count = 2, screen = "Feed", mark = null).summary,
+        )
+    }
+
+    @Test
+    fun `an open mark narrows the summary down from the screen to the interaction`() {
+        val event = FrameHudEvent.FrozenFrames(count = 2, screen = "Feed", mark = "scroll")
+        assertEquals("Feed/scroll: 2 frozen frame(s)", event.summary)
+
+        val unbound = FrameHudEvent.FrozenFrames(count = 2, screen = null, mark = "scroll")
+        assertEquals("scroll: 2 frozen frame(s)", unbound.summary)
     }
 
     @Test
@@ -31,7 +44,7 @@ class FrameHudEventTest {
         Locale.setDefault(Locale.GERMANY)
         try {
             assertTrue(FrameHudEvent.ScreenEnded(stats(), screen = "Feed").summary.contains("2.0s"))
-            assertTrue(FrameHudEvent.JankBurst(diagnosis(), screen = "Feed").summary.contains("jank 25.0%"))
+            assertTrue(FrameHudEvent.JankBurst(diagnosis(), "Feed", mark = null).summary.contains("jank 25.0%"))
         } finally {
             Locale.setDefault(previous)
         }

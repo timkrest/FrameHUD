@@ -20,7 +20,7 @@ the peaks.
 
 ## Header
 
-- **ui N/s** — Choreographer ticks the main thread served in the last second. Drops below the display
+- **ui N/s** — Choreographer ticks the main thread handled in the last second. Drops below the display
   rate when the main thread is busy; fluctuates on LTPO displays (60↔120)
 - **FPS** — frames actually rendered in the last second. `idle` means no frames at all: a static
   screen, or a frozen main thread
@@ -78,6 +78,13 @@ send.
   memory pressure is costing you frames
 - **therm** — `PowerManager` throttling status and headroom (closer to 1.0 is harder throttling).
   Hidden until the platform reports it
+
+## Marks
+
+While an interaction is open the header reads `▸ name` in place of the timing. It labels what is
+under way, not what the figures cover: the rows below stay on the usual window and session, and only
+the `MarkEnded` event reports the mark alone. Marks come from `FrameHud.mark` in your app; the panel
+sets none on its own.
 
 ## Verdict
 

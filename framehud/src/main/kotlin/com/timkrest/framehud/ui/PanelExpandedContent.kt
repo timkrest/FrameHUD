@@ -13,9 +13,10 @@ import com.timkrest.framehud.ThermalStats
 @Composable
 internal fun PanelExpandedContent(
     metrics: PerformanceMetrics,
-    vsyncRate: Int,
+    choreographerTicksPerSecond: Int,
     memory: MemoryStats,
     thermal: ThermalStats,
+    activeMark: String?,
     isFrozen: Boolean,
     canRequestOverlayPermission: Boolean,
     isEmulator: Boolean,
@@ -28,7 +29,8 @@ internal fun PanelExpandedContent(
     Column(modifier = modifier) {
         PanelHeader(
             metrics = metrics,
-            vsyncRate = vsyncRate,
+            choreographerTicksPerSecond = choreographerTicksPerSecond,
+            activeMark = activeMark,
             isFrozen = isFrozen,
             canRequestOverlayPermission = canRequestOverlayPermission,
             isEmulator = isEmulator,
@@ -37,7 +39,7 @@ internal fun PanelExpandedContent(
 
         FrameSparkline(
             history = metrics.window.history,
-            frameBudgetMs = metrics.display.frameBudgetMs,
+            display = metrics.display,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(SparklineHeight),

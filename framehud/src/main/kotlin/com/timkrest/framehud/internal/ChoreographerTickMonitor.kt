@@ -1,6 +1,8 @@
 package com.timkrest.framehud.internal
 
 import android.view.Choreographer
+import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,10 +17,10 @@ import kotlin.math.roundToInt
  * shortest span that answers the question: [start] and [stop] follow the bound window, not the
  * process.
  */
-internal class VsyncRateMonitor {
+internal class ChoreographerTickMonitor {
 
-    private val _ratePerSecond = MutableStateFlow(0)
-    val ratePerSecond: StateFlow<Int> = _ratePerSecond.asStateFlow()
+    private val _ticksPerSecond = MutableStateFlow(0)
+    val ticksPerSecond: StateFlow<Int> = _ticksPerSecond.asStateFlow()
 
     private var activeCallback: Choreographer.FrameCallback? = null
     private var windowStartNs: Long? = null
@@ -27,6 +29,7 @@ internal class VsyncRateMonitor {
     @Volatile
     private var isFrozen = false
 
+    @MainThread
     fun start() {
         if (activeCallback != null) return
         windowStartNs = null
@@ -34,7 +37,7 @@ internal class VsyncRateMonitor {
         val callback = object : Choreographer.FrameCallback {
             override fun doFrame(frameTimeNanos: Long) {
                 if (activeCallback !== this) return
-                onVsync(frameTimeNanos)
+                onTick(frameTimeNanos)
                 Choreographer.getInstance().postFrameCallback(this)
             }
         }
@@ -42,17 +45,19 @@ internal class VsyncRateMonitor {
         Choreographer.getInstance().postFrameCallback(callback)
     }
 
+    @MainThread
     fun stop() {
         activeCallback?.let(Choreographer.getInstance()::removeFrameCallback)
         activeCallback = null
-        _ratePerSecond.value = 0
+        _ticksPerSecond.value = 0
     }
 
+    @AnyThread
     fun setFrozen(frozen: Boolean) {
         isFrozen = frozen
     }
 
-    private fun onVsync(frameTimeNanos: Long) {
+    private fun onTick(frameTimeNanos: Long) {
         val startNs = windowStartNs
         if (startNs == null) {
             windowStartNs = frameTimeNanos
@@ -61,7 +66,9 @@ internal class VsyncRateMonitor {
         tickCount++
         val elapsedNs = frameTimeNanos - startNs
         if (elapsedNs >= NS_PER_SECOND) {
-            if (!isFrozen) _ratePerSecond.value = ((tickCount * NS_PER_SECOND).toFloat() / elapsedNs).roundToInt()
+            if (!isFrozen) {
+                _ticksPerSecond.value = ((tickCount * NS_PER_SECOND).toFloat() / elapsedNs).roundToInt()
+            }
             tickCount = 0
             windowStartNs = frameTimeNanos
         }

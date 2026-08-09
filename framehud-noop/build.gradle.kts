@@ -6,6 +6,7 @@ plugins {
 dependencies {
     api(project(":framehud-api"))
     api(libs.coroutines.core)
+    implementation(libs.androidx.annotation)
 }
 
 val checkApiParity by tasks.registering {

@@ -4,6 +4,7 @@ import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.PerformanceMetrics
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class FrameAggregatorTest {
@@ -119,6 +120,36 @@ class FrameAggregatorTest {
         aggregator.startCollecting()
         assertEquals(0, aggregator.screenStats().frames)
         assertEquals(1, aggregator.sessionStats().frames)
+    }
+
+    @Test
+    fun `a mark covers the frames drawn while it was open and nothing before it`() {
+        aggregator.startCollecting()
+        aggregator.addFrame(totalMs = 10f)
+
+        aggregator.beginMark()
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 40f)
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 40f)
+
+        val stats = assertNotNull(aggregator.endMark())
+        assertEquals(2, stats.frames)
+        assertEquals(100f, stats.jankPercent, TOLERANCE)
+        assertEquals(3, aggregator.sessionStats().frames)
+    }
+
+    @Test
+    fun `beginning a mark twice reports only the frames after the second one`() {
+        aggregator.startCollecting()
+        aggregator.beginMark()
+        aggregator.addFrame(totalMs = 10f)
+
+        aggregator.beginMark()
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(1, assertNotNull(aggregator.endMark()).frames)
     }
 
     @Test

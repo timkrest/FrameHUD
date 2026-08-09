@@ -14,7 +14,7 @@
 
 - **Строка на каждую стадию** — `input`, `anim`, `layout`, `draw` на main thread, затем `sync`,
   `command`, `swap` на render thread, и `gpu`
-- **Говорит, почему кадры теряются** — троттлинг, паузы GC, пропущенные тики vsync, поздний старт
+- **Говорит, почему кадры теряются** — троттлинг, паузы GC, редкие тики Choreographer, поздний старт
 - **Меряет приложение, а не себя** — панель рисуется в своём окне
 - **Роняет тесты из-за jank** — JUnit-правило с порогами
 - **Ничего в релизных сборках** — `debugImplementation` оставляет за бортом панель, её provider и
@@ -24,7 +24,7 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.4.0")
+    debugImplementation("com.timkrest:framehud:0.5.0")
 }
 ```
 
@@ -63,8 +63,8 @@ gc x3 · 18 ms
 therm none · hr 0.68
 ```
 
-В шапке — частота vsync, бюджет кадра и FPS. Вердикт под ней называет строку, на которую стоит
-смотреть, а `◀` её помечает.
+В шапке — частота тиков Choreographer на main thread, бюджет кадра и FPS. Вердикт под ней называет
+строку, на которую стоит смотреть, а `◀` её помечает.
 
 Колонки читаются как `now avg peak`: текущий кадр, среднее по окну и пик с последнего сброса.
 Строки, собранные из других строк, заканчиваются на `avg`.
@@ -80,7 +80,7 @@ therm none · hr 0.68
 `FrameHud` вне `src/debug` — релизной сборке всё равно надо скомпилировать эти строки:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.4.0")
+releaseImplementation("com.timkrest:framehud-noop:0.5.0")
 ```
 
 Он повторяет API с пустыми телами. Вызовы компилируются, ничего не измеряется, окно не добавляется.
@@ -97,7 +97,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | --- | --- | --- |
 | `enabled` | `true` | Пока false — окно не добавляется и кадры не собираются. |
 | `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` держит панель внутри окна приложения и не использует разрешение. |
-| `eventListeners` | `[LogcatEventListener]` | Кто получает события о jank, замёрзших кадрах, троттлинге и итогах экрана. |
+| `eventListeners` | `[LogcatEventListener]` | Кто получает события о jank, замёрзших кадрах, троттлинге, итогах экрана и взаимодействия. |
 | `metricsSampleWindowFrames` | `120` | За сколько кадров считаются `avg` и перцентили. |
 | `metricsThrottleIntervalMs` | `400` | Как часто панель может перерисовываться. Меньше — дороже рендер. |
 | `fallbackRefreshRateHz` | `60` | Герцовка, если дисплей её не сообщает. |
@@ -106,9 +106,9 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 `show()`, `hide()` и `toggle()` — сокращения для `enabled`.
 
 Панель не единственный способ читать метрики. `FrameHud.metrics`, `memoryStats`, `thermalStats` и
-`vsyncRate` — обычные `StateFlow`. Показание разложено на `phases` (тайминги по стадиям), `window`
-(fps, jank и p95 по окну выборки), `session` (с последнего сброса) и `display` (герцовка и бюджет
-кадра).
+`choreographerTicksPerSecond` — обычные `StateFlow`. Показание разложено на `phases` (тайминги по
+стадиям), `window` (fps, jank и p95 по окну выборки), `session` (с последнего сброса) и `display`
+(герцовка и бюджет кадра).
 
 ## События о jank
 
@@ -126,10 +126,27 @@ FrameHud.config = FrameHud.config.copy(
 
 События приходят на metrics-потоке. Не блокируйте его и не обращайтесь из него к view.
 
+## Метка взаимодействия
+
+Итог по экрану говорит, какой экран медленный. Метка — какое взаимодействие.
+
+```kotlin
+FrameHud.mark = "scroll"
+// идёт жест
+FrameHud.mark = null
+```
+
+Кадры, отрисованные при выставленной метке, относятся к ней. В шапке вместо таймингов появляется
+`▸ scroll`, каждое событие за это время несёт имя метки, а её сброс даёт `MarkEnded` со статистикой
+только по этому отрезку. Строки самой панели остаются на обычном окне и сессии — шапка их
+подписывает, а не сужает.
+
+Уход с экрана сбрасывает метку сам, так что жест не перетекает на следующий экран.
+
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.4.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.5.0")
 ```
 
 ```kotlin

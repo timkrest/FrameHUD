@@ -1,19 +1,21 @@
 package com.timkrest.framehud.internal
 
 import android.os.Build
+import android.view.Display
 import android.view.FrameMetrics
 import android.view.Window
 import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.WorkerThread
 
 /**
  * Reads `FrameMetrics` and hands the numbers to [FrameAggregator]. Everything version-dependent
  * lives here, so the aggregation stays platform-free and testable.
- *
- * Confined to the thread the callbacks are delivered on.
  */
+@WorkerThread
 internal class FrameMetricsCollector(
     private val aggregator: FrameAggregator,
     private val clock: MetricsClock,
+    private val display: () -> Display?,
 ) : Window.OnFrameMetricsAvailableListener {
 
     @field:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
@@ -39,7 +41,7 @@ internal class FrameMetricsCollector(
                 totalDurationNs = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION),
                 deadlineNs = frameDeadlineNs(frameMetrics),
                 frameEndNs = frameEndTimestampNs(frameMetrics),
-                refreshRateHz = window.currentRefreshRate(),
+                refreshRateHz = display()?.refreshRate?.takeIf { it.isFinite() && it > 0f },
             )
         }
     }
@@ -53,7 +55,4 @@ internal class FrameMetricsCollector(
     } else {
         clock.nanoTime()
     }
-
-    private fun Window.currentRefreshRate(): Float? =
-        decorView.display?.refreshRate?.takeIf { it.isFinite() && it > 0f }
 }

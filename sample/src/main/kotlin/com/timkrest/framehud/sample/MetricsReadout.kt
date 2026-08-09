@@ -22,12 +22,17 @@ fun MetricsReadout(modifier: Modifier = Modifier) {
     val metrics by FrameHud.metrics.collectAsStateWithLifecycle()
     val memory by FrameHud.memoryStats.collectAsStateWithLifecycle()
     val thermal by FrameHud.thermalStats.collectAsStateWithLifecycle()
-    val vsyncRate by FrameHud.vsyncRate.collectAsStateWithLifecycle()
+    val choreographerTicksPerSecond by FrameHud.choreographerTicksPerSecond.collectAsStateWithLifecycle()
     val lastEvent by SampleEvents.last.collectAsStateWithLifecycle()
 
     val summary = remember(metrics) { formatMetricsSummary(metrics) }
-    val diagnosis = remember(metrics, memory, thermal, vsyncRate) {
-        JankDiagnosis.of(metrics = metrics, memory = memory, thermal = thermal, vsyncRate = vsyncRate).summary
+    val diagnosis = remember(metrics, memory, thermal, choreographerTicksPerSecond) {
+        JankDiagnosis.of(
+            metrics = metrics,
+            memory = memory,
+            thermal = thermal,
+            choreographerTicksPerSecond = choreographerTicksPerSecond,
+        ).summary
     }
 
     Card(modifier = modifier) {

@@ -1,9 +1,10 @@
 package com.timkrest.framehud.internal
 
+import androidx.annotation.WorkerThread
 import com.timkrest.framehud.SessionStats
 import kotlin.math.max
 
-/** Confined to the metrics thread, like the aggregator that owns it. */
+@WorkerThread
 internal class SessionAccumulator(private val clock: MetricsClock) {
 
     private val totals = LatencyHistogram()

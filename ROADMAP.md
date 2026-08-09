@@ -13,9 +13,6 @@ deprecated for a release first.
 
 ## Next
 
-- **Interaction marks** — `FrameHud.mark("scroll")`, so a reading belongs to a gesture rather than to
-  whichever activity had focus. Screen summaries answer which screen is slow; marks answer which
-  interaction is.
 - **First frame of a screen** — how long a screen takes from creation to its first frame. Not process
   startup: `FrameMetrics` marks the first frame of a window layout, which happens again on rotation
   and window recreation.

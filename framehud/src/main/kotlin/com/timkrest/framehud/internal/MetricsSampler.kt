@@ -3,7 +3,10 @@ package com.timkrest.framehud.internal
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
+import android.view.Display
 import android.view.Window
+import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
 
 /**
  * Owns the thread `FrameMetrics` callbacks arrive on, plus the tick that keeps readings fresh once
@@ -12,9 +15,8 @@ import android.view.Window
  * The thread outlives a single screen: stopping only unbinds the window and stops the tick, so
  * leaving a screen never waits on it. It is torn down only when the configured thread name changes,
  * and even then the replacement waits for it on its own thread — never on the caller's.
- *
- * Main thread only, apart from [post] and [isBound].
  */
+@MainThread
 internal class MetricsSampler(
     threadName: String,
     private val listener: Window.OnFrameMetricsAvailableListener,
@@ -29,6 +31,9 @@ internal class MetricsSampler(
     @Volatile
     private var boundWindow: Window? = null
 
+    @Volatile
+    private var boundDisplay: Display? = null
+
     private var tickGeneration = 0
 
     init {
@@ -38,7 +43,11 @@ internal class MetricsSampler(
 
     val threadName: String get() = thread.name
 
+    @get:AnyThread
     val isBound: Boolean get() = boundWindow != null
+
+    @get:AnyThread
+    val display: Display? get() = boundDisplay
 
     fun startTicking() {
         handler.post { postTick(++tickGeneration) }
@@ -52,6 +61,7 @@ internal class MetricsSampler(
         if (boundWindow === window) return false
         unbind()
         boundWindow = window
+        boundDisplay = window.decorView.display
         window.addOnFrameMetricsAvailableListener(listener, handler)
         return true
     }
@@ -59,13 +69,14 @@ internal class MetricsSampler(
     fun unbind(): Boolean {
         val window = boundWindow ?: return false
         boundWindow = null
+        boundDisplay = null
         guarded("removing the frame metrics listener") { window.removeOnFrameMetricsAvailableListener(listener) }
         return true
     }
 
+    @AnyThread
     fun post(action: () -> Unit): Boolean = handler.post { guarded("running a metrics task", action) }
 
-    /** Returns the window it was bound to, for a replacement to pick up. */
     fun quit(): Window? {
         val window = boundWindow
         unbind()

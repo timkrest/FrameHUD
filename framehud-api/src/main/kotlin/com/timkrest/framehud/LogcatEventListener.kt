@@ -17,5 +17,6 @@ public object LogcatEventListener : FrameHudEventListener {
         is FrameHudEvent.FrozenFrames -> true
         is FrameHudEvent.ThermalChanged -> level.isThrottling
         is FrameHudEvent.ScreenEnded -> false
+        is FrameHudEvent.MarkEnded -> false
     }
 }

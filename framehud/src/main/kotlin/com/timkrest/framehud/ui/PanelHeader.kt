@@ -13,14 +13,18 @@ import com.timkrest.framehud.PerformanceMetrics
 @Composable
 internal fun PanelHeader(
     metrics: PerformanceMetrics,
-    vsyncRate: Int,
+    choreographerTicksPerSecond: Int,
+    activeMark: String?,
     isFrozen: Boolean,
     canRequestOverlayPermission: Boolean,
     isEmulator: Boolean,
     actions: PanelActions,
 ) {
-    val timing = remember(vsyncRate, metrics.display.frameBudgetMs) {
-        formatTiming(vsyncRate = vsyncRate, frameBudgetMs = metrics.display.frameBudgetMs)
+    val timing = remember(choreographerTicksPerSecond, metrics.display.frameBudgetMs) {
+        formatTiming(
+            choreographerTicksPerSecond = choreographerTicksPerSecond,
+            frameBudgetMs = metrics.display.frameBudgetMs,
+        )
     }
     Row(
         modifier = Modifier
@@ -33,8 +37,16 @@ internal fun PanelHeader(
             Spacer(Modifier.width(ItemSpacing))
         }
         MetricText(
-            text = if (isFrozen) LABEL_HEADER_FROZEN else timing,
-            color = if (isFrozen) TextFrozen else TextHeader,
+            text = when {
+                isFrozen -> LABEL_HEADER_FROZEN
+                activeMark != null -> formatMark(activeMark)
+                else -> timing
+            },
+            color = when {
+                isFrozen -> TextFrozen
+                activeMark != null -> TextNormal
+                else -> TextHeader
+            },
         )
         Spacer(Modifier.weight(1f))
         FpsText(fps = metrics.window.fps, refreshRateHz = metrics.display.refreshRateHz)

@@ -11,6 +11,7 @@ import java.util.Locale
 
 private const val LABEL_WIDTH = 7
 private const val VALUE_WIDTH = 5
+private const val MARK_WIDTH = 14
 
 private val HEADER_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s"
 private val METRIC_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f"
@@ -28,8 +29,13 @@ internal fun formatMetricLine(label: String, value: MetricValue): String {
 
 internal fun formatFps(fps: Int): String = if (fps == 0) LABEL_IDLE else format("%d FPS", fps)
 
-internal fun formatTiming(vsyncRate: Int, frameBudgetMs: Float): String =
-    format("ui %d/s · %.1fms", vsyncRate, frameBudgetMs)
+internal fun formatMark(mark: String): String {
+    val label = if (mark.length <= MARK_WIDTH) mark else mark.take(MARK_WIDTH - 1) + ELLIPSIS
+    return MARK_PREFIX + label
+}
+
+internal fun formatTiming(choreographerTicksPerSecond: Int, frameBudgetMs: Float): String =
+    format("ui %d/s · %.1fms", choreographerTicksPerSecond, frameBudgetMs)
 
 internal fun formatJankShort(jankPercent: Float): String = format("jank %.1f%%", jankPercent)
 

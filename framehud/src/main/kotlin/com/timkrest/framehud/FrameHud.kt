@@ -4,6 +4,9 @@ import android.app.Activity
 import android.app.Application
 import android.os.Looper
 import android.util.Log
+import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
+import androidx.annotation.WorkerThread
 import com.timkrest.framehud.internal.ActivityTracker
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
@@ -21,15 +24,15 @@ import kotlinx.coroutines.flow.asStateFlow
  * process and follows the focused activity; nothing to call.
  *
  * The panel renders in its own window, so it stays out of the metrics of the window it measures.
- *
- * Call from the main thread, except for the readings, [reset] and [toggleFreeze], which are safe
- * from anywhere, and [awaitSessionStats], which blocks and must not run on the main thread.
  */
+@MainThread
 public object FrameHud {
 
     @Volatile
     private var currentConfig = FrameHudConfig()
 
+    @get:AnyThread
+    @set:MainThread
     public var config: FrameHudConfig
         get() = currentConfig
         set(value) = applyConfig(value)
@@ -39,17 +42,32 @@ public object FrameHud {
     private val _isFrozen = MutableStateFlow(false)
 
     /** Readings held still for inspection. Collection continues while frozen. */
+    @get:AnyThread
     public val isFrozen: StateFlow<Boolean> = _isFrozen.asStateFlow()
 
     /** Updated at most every [FrameHudConfig.metricsThrottleIntervalMs]. */
+    @get:AnyThread
     public val metrics: StateFlow<PerformanceMetrics> get() = engine.metrics
 
-    /** Choreographer ticks the main thread served during the last second. */
-    public val vsyncRate: StateFlow<Int> get() = engine.vsyncRate
+    /** Choreographer ticks handled by the main thread per second, over the latest completed interval. */
+    @get:AnyThread
+    public val choreographerTicksPerSecond: StateFlow<Int> get() = engine.choreographerTicksPerSecond
 
+    @get:AnyThread
     public val memoryStats: StateFlow<MemoryStats> get() = engine.memoryStats
 
+    @get:AnyThread
     public val thermalStats: StateFlow<ThermalStats> get() = engine.thermalStats
+
+    /** Attributes frames to an interaction rather than to the activity in focus. */
+    @get:AnyThread
+    @set:MainThread
+    public var mark: String?
+        get() = engine.activeMark.value
+        set(value) {
+            checkMainThread()
+            engine.setMark(value)
+        }
 
     private val isPanelCollapsed = MutableStateFlow(false)
 
@@ -89,12 +107,14 @@ public object FrameHud {
         config = currentConfig.copy(enabled = !currentConfig.enabled)
     }
 
-    /** Clears the window, the session aggregates and the peaks. */
+    /** Clears the window, the session aggregates and the peaks, and thaws a frozen panel. */
+    @AnyThread
     public fun reset() {
         setFrozen(false)
         engine.reset()
     }
 
+    @AnyThread
     public fun toggleFreeze() {
         setFrozen(!_isFrozen.value)
     }
@@ -104,6 +124,7 @@ public object FrameHud {
      * timed out. Still answers once the panel has stopped, so a test can assert after its activity
      * is gone. Blocks the caller, so it is for instrumentation tests rather than production code.
      */
+    @WorkerThread
     public fun awaitSessionStats(timeoutMs: Long): SessionStats? {
         check(Looper.myLooper() !== Looper.getMainLooper()) {
             "awaitSessionStats blocks; call it from a test or background thread"
@@ -158,6 +179,7 @@ public object FrameHud {
         engine.bindWindow(window = activity.window, screen = activity.javaClass.simpleName)
     }
 
+    @AnyThread
     private fun setFrozen(frozen: Boolean) {
         _isFrozen.value = frozen
         engine.setFrozen(frozen)
@@ -165,9 +187,10 @@ public object FrameHud {
 
     private fun panelState(canRequestOverlayPermission: Boolean) = PanelState(
         metrics = metrics,
-        vsyncRate = vsyncRate,
+        choreographerTicksPerSecond = choreographerTicksPerSecond,
         memory = memoryStats,
         thermal = thermalStats,
+        activeMark = engine.activeMark,
         isCollapsed = isPanelCollapsed,
         isFrozen = isFrozen,
         canRequestOverlayPermission = canRequestOverlayPermission,

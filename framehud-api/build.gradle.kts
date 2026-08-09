@@ -7,6 +7,7 @@ dependencies {
     api(platform(libs.androidx.compose.bom))
     // framehud-noop must not drag Compose into release builds.
     api(libs.androidx.compose.runtime.annotation)
+    implementation(libs.androidx.annotation)
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.test)

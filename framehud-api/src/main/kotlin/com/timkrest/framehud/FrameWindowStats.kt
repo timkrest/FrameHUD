@@ -11,7 +11,6 @@ public data class FrameWindowStats(
     val jankPercent: Float = 0f,
     val p95FrameMs: Float = 0f,
     val worstFrameMs: Float = 0f,
-    /** Recent frame times, oldest first. */
     val history: FrameHistory = FrameHistory.EMPTY,
 ) {
     public companion object {

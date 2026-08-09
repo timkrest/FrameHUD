@@ -31,7 +31,7 @@ class JankDiagnosisTest {
             metrics = metrics(jankPercent = 30f, unknownDelayMs = 20f),
             memory = MemoryStats.EMPTY.copy(gcTimeMs = 5_000L),
             thermal = ThermalStats(level = ThermalLevel.SEVERE, headroom = null),
-            vsyncRate = 10,
+            choreographerTicksPerSecond = 10,
         )
         assertEquals(JankCause.Thermal(ThermalLevel.SEVERE), diagnosis.cause)
     }
@@ -41,7 +41,7 @@ class JankDiagnosisTest {
         val diagnosis = diagnose(
             metrics = metrics(jankPercent = 30f, sessionDurationMs = 10_000L),
             memory = MemoryStats.EMPTY.copy(gcTimeMs = 300L),
-            vsyncRate = 10,
+            choreographerTicksPerSecond = 10,
         )
         val cause = assertIs<JankCause.Gc>(diagnosis.cause)
         assertEquals(0.03f, cause.timeShare, TOLERANCE)
@@ -58,7 +58,10 @@ class JankDiagnosisTest {
 
     @Test
     fun `starved vsync is reported before frame phases`() {
-        val diagnosis = diagnose(metrics = metrics(jankPercent = 30f, bottleneckMs = 12f), vsyncRate = 30)
+        val diagnosis = diagnose(
+            metrics = metrics(jankPercent = 30f, bottleneckMs = 12f),
+            choreographerTicksPerSecond = 30,
+        )
         assertEquals(JankCause.VsyncStarvation(ticksPerSecond = 30, refreshRateHz = 60f), diagnosis.cause)
     }
 
@@ -85,8 +88,13 @@ class JankDiagnosisTest {
         metrics: PerformanceMetrics,
         memory: MemoryStats = MemoryStats.EMPTY,
         thermal: ThermalStats = ThermalStats.EMPTY,
-        vsyncRate: Int = 60,
-    ): JankDiagnosis = JankDiagnosis.of(metrics = metrics, memory = memory, thermal = thermal, vsyncRate = vsyncRate)
+        choreographerTicksPerSecond: Int = 60,
+    ): JankDiagnosis = JankDiagnosis.of(
+        metrics = metrics,
+        memory = memory,
+        thermal = thermal,
+        choreographerTicksPerSecond = choreographerTicksPerSecond,
+    )
 
     /** Bottleneck is derived — load the phase that should win. */
     private fun metrics(
