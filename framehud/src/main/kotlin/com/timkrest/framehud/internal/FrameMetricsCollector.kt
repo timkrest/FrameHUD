@@ -24,7 +24,6 @@ internal class FrameMetricsCollector(
 
     private val scratchDurationsMs = FloatArray(FramePhase.entries.size)
 
-    /** The platform calls this, so it is the outermost frame of the metrics thread. */
     override fun onFrameMetricsAvailable(
         window: Window,
         frameMetrics: FrameMetrics,
@@ -55,5 +54,6 @@ internal class FrameMetricsCollector(
         clock.nanoTime()
     }
 
-    private fun Window.currentRefreshRate(): Float? = decorView.display?.refreshRate?.takeIf { it > 0f }
+    private fun Window.currentRefreshRate(): Float? =
+        decorView.display?.refreshRate?.takeIf { it.isFinite() && it > 0f }
 }

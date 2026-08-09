@@ -3,7 +3,6 @@ package com.timkrest.framehud.ui
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.JankSeverity
 
-/** The panel's top line: either nothing to do, or the one phase worth looking at. */
 internal sealed interface PanelVerdict {
     data object Ok : PanelVerdict
 

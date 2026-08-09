@@ -11,11 +11,7 @@ import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
 
-/**
- * One event per jank burst, not per frame. Confined to the metrics thread.
- *
- * State advances even without listeners, so attaching one later does not replay history as a spike.
- */
+/** Confined to the metrics thread. */
 internal class EventDispatcher {
 
     private var wasInBurst = false

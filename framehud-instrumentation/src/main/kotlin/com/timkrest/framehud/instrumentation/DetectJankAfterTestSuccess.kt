@@ -5,6 +5,7 @@ import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
+/** Leaves the annotated test or class out of [DetectJankAfterTestSuccess]. */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 public annotation class SkipJankDetection

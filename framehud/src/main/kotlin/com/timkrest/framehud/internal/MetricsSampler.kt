@@ -13,7 +13,7 @@ import android.view.Window
  * leaving a screen never waits on it. It is torn down only when the configured thread name changes,
  * and even then the replacement waits for it on its own thread — never on the caller's.
  *
- * Main thread only, apart from [post].
+ * Main thread only, apart from [post] and [isBound].
  */
 internal class MetricsSampler(
     threadName: String,
@@ -26,9 +26,9 @@ internal class MetricsSampler(
     private val thread = HandlerThread(threadName).apply { start() }
     private val handler = Handler(thread.looper)
 
+    @Volatile
     private var boundWindow: Window? = null
 
-    /** Metrics thread only. Bumped to retire a tick that is already in flight. */
     private var tickGeneration = 0
 
     init {
@@ -37,6 +37,8 @@ internal class MetricsSampler(
     }
 
     val threadName: String get() = thread.name
+
+    val isBound: Boolean get() = boundWindow != null
 
     fun startTicking() {
         handler.post { postTick(++tickGeneration) }

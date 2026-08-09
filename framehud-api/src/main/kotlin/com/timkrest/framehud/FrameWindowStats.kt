@@ -2,7 +2,7 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 
-/** The rolling window of recent frames, sized by [FrameHudConfig.metricsSampleWindowSize]. */
+/** The rolling window of recent frames, sized by [FrameHudConfig.metricsSampleWindowFrames]. */
 @Immutable
 public data class FrameWindowStats(
     /** Frames completed in the last second. Zero while the screen is idle. */

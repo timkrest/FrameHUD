@@ -13,9 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Turns frames into what the panel and the listeners read: the rolling window, the session
- * aggregates and the per-screen ones.
- *
  * Takes plain numbers rather than `FrameMetrics`, so the rules that matter — what counts as janky,
  * what the frame budget is, when a reading is published — are covered by unit tests.
  * [FrameMetricsCollector] does the platform reading.
@@ -24,7 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 internal class FrameAggregator(private var config: FrameHudConfig, private val clock: MetricsClock) {
 
-    private var frameWindow = FrameWindow(config.windowSize())
+    private var frameWindow = FrameWindow(config.metricsSampleWindowFrames)
 
     private val session = SessionAccumulator(clock)
 
@@ -37,8 +34,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
     private var isFrozen = false
 
     private var lastUpdateTime = 0L
-    private var lastRefreshRateHz = config.refreshRateHz()
-    private var lastFrameBudgetMs = MS_PER_SECOND / config.refreshRateHz()
+    private var display = displayOf(config.fallbackRefreshRateHz)
     private var isDrainingToIdle = false
 
     /**
@@ -54,7 +50,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         frameEndNs: Long,
         refreshRateHz: Float?,
     ) {
-        lastRefreshRateHz = refreshRateHz ?: config.refreshRateHz()
+        display = displayOf(refreshRateHz ?: config.fallbackRefreshRateHz, deadlineNs)
 
         if (!hasGpuSample && durationsMs[FramePhase.GPU.ordinal] > 0f) hasGpuSample = true
         val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
@@ -62,11 +58,9 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         // Milliseconds are too coarse to tell a frame that lands exactly on the deadline from one
         // that missed it.
         val overrunMs = if (deadlineNs != null) {
-            lastFrameBudgetMs = deadlineNs / NS_PER_MS
             (totalDurationNs - deadlineNs) / NS_PER_MS
         } else {
-            lastFrameBudgetMs = MS_PER_SECOND / lastRefreshRateHz
-            totalMs - lastFrameBudgetMs
+            totalMs - display.frameBudgetMs
         }
         val isJanky = overrunMs > 0f
 
@@ -117,15 +111,15 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
     }
 
     fun updateConfig(newConfig: FrameHudConfig) {
-        val previousWindowSize = config.windowSize()
+        val previousWindowFrames = config.metricsSampleWindowFrames
         config = newConfig
-        if (newConfig.windowSize() != previousWindowSize) frameWindow = FrameWindow(newConfig.windowSize())
+        if (newConfig.metricsSampleWindowFrames != previousWindowFrames) frameWindow = FrameWindow(newConfig.metricsSampleWindowFrames)
     }
 
     private fun maybeEmit() {
         if (isFrozen) return
         val now = clock.elapsedRealtimeMs()
-        if (now - lastUpdateTime < config.throttleMs()) return
+        if (now - lastUpdateTime < config.metricsThrottleIntervalMs) return
         lastUpdateTime = now
         emitMetrics()
     }
@@ -156,15 +150,13 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
                 history = FrameHistory.of(frameWindow.totalHistory()),
             ),
             session = session.stats(),
-            display = DisplayInfo(refreshRateHz = lastRefreshRateHz, frameBudgetMs = lastFrameBudgetMs),
+            display = display,
         )
         if (fps == 0) isDrainingToIdle = false
     }
 }
 
-private fun FrameHudConfig.throttleMs(): Long = metricsThrottleIntervalMs.coerceAtLeast(0L)
-
-private fun FrameHudConfig.windowSize(): Int = metricsSampleWindowSize.coerceAtLeast(1)
-
-private fun FrameHudConfig.refreshRateHz(): Float =
-    fallbackRefreshRateHz.takeIf { it > 0f } ?: DisplayInfo.DEFAULT_REFRESH_RATE_HZ
+private fun displayOf(refreshRateHz: Float, deadlineNs: Long? = null) = DisplayInfo(
+    refreshRateHz = refreshRateHz,
+    frameBudgetMs = if (deadlineNs != null) deadlineNs / NS_PER_MS else MS_PER_SECOND / refreshRateHz,
+)

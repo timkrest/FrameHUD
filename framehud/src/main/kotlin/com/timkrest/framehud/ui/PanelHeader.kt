@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.timkrest.framehud.PerformanceMetrics
@@ -18,6 +19,9 @@ internal fun PanelHeader(
     isEmulator: Boolean,
     actions: PanelActions,
 ) {
+    val timing = remember(vsyncRate, metrics.display.frameBudgetMs) {
+        formatTiming(vsyncRate = vsyncRate, frameBudgetMs = metrics.display.frameBudgetMs)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -29,11 +33,7 @@ internal fun PanelHeader(
             Spacer(Modifier.width(ItemSpacing))
         }
         MetricText(
-            text = if (isFrozen) {
-                LABEL_HEADER_FROZEN
-            } else {
-                formatTiming(vsyncRate = vsyncRate, frameBudgetMs = metrics.display.frameBudgetMs)
-            },
+            text = if (isFrozen) LABEL_HEADER_FROZEN else timing,
             color = if (isFrozen) TextFrozen else TextHeader,
         )
         Spacer(Modifier.weight(1f))

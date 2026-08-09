@@ -1,6 +1,7 @@
 package com.timkrest.framehud.internal
 
 import android.content.Context
+import android.util.Log
 import android.view.Window
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.MemoryStats
@@ -12,12 +13,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
-/**
- * The metrics thread, the aggregation it feeds, the monitors sampled alongside it and the events
- * they produce.
- *
- * Readings are safe from any thread. The rest is main thread only, except [awaitSessionStats].
- */
+/** Readings are safe from any thread. The rest is main thread only, except [awaitSessionStats]. */
 internal class MetricsEngine(
     private val config: () -> FrameHudConfig,
     clock: MetricsClock = SystemMetricsClock,
@@ -33,15 +29,11 @@ internal class MetricsEngine(
     @Volatile
     private var screenName: String? = null
 
-    /**
-     * Outlives a single screen: started on the first [start] and replaced only when the configured
-     * thread name changes. [stop] leaves it idle instead of tearing it down, so leaving a screen
-     * never waits on a thread — and the aggregates stay readable afterwards.
-     */
+    private val samplerLock = Any()
+
     @Volatile
     private var sampler: MetricsSampler? = null
 
-    /** The thread outlives [stop], so its absence cannot stand in for "collecting". */
     private var isRunning = false
 
     val metrics: StateFlow<PerformanceMetrics> get() = aggregator.metrics
@@ -53,7 +45,7 @@ internal class MetricsEngine(
         isRunning = true
         thermalMonitor.bind(context)
         val running = sampler ?: startSampler(config().metricsThreadName)
-        running.post(::sampleMonitors) // the first tick is a whole throttle interval away
+        running.post(::sampleMonitors)
         running.startTicking()
     }
 
@@ -66,9 +58,9 @@ internal class MetricsEngine(
     }
 
     fun bindWindow(window: Window, screen: String?) {
-        screenName = screen
         val sampler = sampler?.takeIf { isRunning } ?: return
         if (!sampler.bind(window)) return
+        screenName = screen
         sampler.post(aggregator::startCollecting)
         vsyncMonitor.start()
     }
@@ -76,8 +68,8 @@ internal class MetricsEngine(
     fun unbindWindow() {
         val sampler = sampler ?: return
         if (!sampler.unbind()) return
-        // Captured now — the next screen may bind before this runs.
         val endedScreen = screenName
+        screenName = null
         val listeners = config().eventListeners
         sampler.post {
             aggregator.stopCollecting()
@@ -109,12 +101,6 @@ internal class MetricsEngine(
         }
     }
 
-    /**
-     * Blocks. Null when nothing was ever collected or the read timed out.
-     *
-     * The metrics thread survives [stop], so a test can still read the aggregates once the last
-     * activity is gone.
-     */
     fun awaitSessionStats(timeoutMs: Long): SessionStats? {
         val sampler = sampler ?: return null
         val stats = AtomicReference<SessionStats>()
@@ -138,20 +124,22 @@ internal class MetricsEngine(
             onTick = ::onTick,
             predecessor = predecessor,
         )
-        sampler = started
+        synchronized(samplerLock) { sampler = started }
         return started
     }
 
     private fun replaceSampler(threadName: String) {
         val previous = sampler ?: return
-        val window = previous.quit()
         val started = startSampler(threadName, predecessor = previous)
-        window?.let(started::bind)
+        previous.quit()?.let(started::bind)
         if (isRunning) started.startTicking()
     }
 
     private fun onMetricsThread(action: () -> Unit) {
-        if (sampler?.post(action) != true) action()
+        synchronized(samplerLock) {
+            val running = sampler ?: return action()
+            if (!running.post(action)) Log.w(LOG_TAG, "The metrics thread is gone, dropped a metrics task")
+        }
     }
 
     private fun sampleMonitors() {
@@ -162,6 +150,7 @@ internal class MetricsEngine(
     private fun onTick() {
         aggregator.onTick()
         sampleMonitors()
+        if (sampler?.isBound != true) return
         eventDispatcher.onSample(
             listeners = config().eventListeners,
             metrics = aggregator.metrics.value,

@@ -29,6 +29,7 @@ internal fun metricRowColor(
     isAttention: Boolean,
 ): Color = when {
     valueMs > frameBudgetMs -> TextWarning
+    kind == MetricRowKind.OVERRUN -> if (valueMs > 0f) TextCaution else TextGood
     isAttention -> TextCaution
     kind == MetricRowKind.TOTAL -> TextGood
     else -> TextNormal

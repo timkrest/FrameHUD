@@ -31,8 +31,9 @@ public sealed interface JankCause {
         override val summary: String get() = format("frames start %.1f ms late", delayMs)
     }
 
-    public data class Stage(val stage: PipelineStage, val avgMs: Float) : JankCause {
-        override val summary: String get() = format("%s bound, %.1f ms per frame", stage.name.lowercase(Locale.US), avgMs)
+    public data class Stage(val stage: PipelineStage, val averageMs: Float) : JankCause {
+        override val summary: String
+            get() = format("%s bound, %.1f ms per frame", stage.name.lowercase(Locale.US), averageMs)
     }
 }
 

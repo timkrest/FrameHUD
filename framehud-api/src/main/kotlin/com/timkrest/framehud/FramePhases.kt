@@ -29,6 +29,7 @@ public data class FramePhases(
     val total: MetricValue = MetricValue.ZERO,
     /** [total] minus [DisplayInfo.frameBudgetMs]. Negative means the frame finished with headroom. */
     val overrun: MetricValue = MetricValue.ZERO,
+    /** False until a real [gpu] sample lands — a zero [gpu] is never an idle GPU. */
     val isGpuAvailable: Boolean = false,
 ) {
     public val cpu: MetricValue = input + animation + layout + draw
@@ -45,6 +46,7 @@ public data class FramePhases(
         else -> PipelineStage.GPU
     }
 
+    /** The [bottleneckStage] timing. [MetricValue.peak] is always null, even for [gpu], which tracks one. */
     public val bottleneck: MetricValue = when (bottleneckStage) {
         PipelineStage.CPU -> cpu
         PipelineStage.RENDER -> render

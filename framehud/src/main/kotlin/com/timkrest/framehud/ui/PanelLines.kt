@@ -29,6 +29,7 @@ internal data class PanelLines(val values: List<PanelLine>)
 internal enum class MetricRowKind {
     PHASE,
     TOTAL,
+    OVERRUN,
 }
 
 @Immutable
@@ -70,7 +71,7 @@ internal fun buildPanelLines(
         addMetric(LABEL_DELAY, phases.unknownDelay, rowContext, separatorAbove = true)
         addMetric(LABEL_OTHER, phases.other, rowContext)
         addMetric(LABEL_TOTAL, phases.total, rowContext, MetricRowKind.TOTAL)
-        addMetric(LABEL_OVERRUN, phases.overrun, rowContext)
+        addMetric(LABEL_OVERRUN, phases.overrun, rowContext, MetricRowKind.OVERRUN)
         val bottleneckStage = phases.bottleneckStage
         addMetric(
             label = pipeLabel(bottleneckStage),

@@ -9,6 +9,7 @@ public data class JankThresholds(
     val maxJankPercent: Float = JankSeverity.WARNING_JANK_PERCENT,
     val maxFrozenFrames: Int = 0,
     val maxP95FrameMs: Float = Float.POSITIVE_INFINITY,
+    val maxDroppedReports: Int = 0,
 )
 
 internal fun JankThresholds.violations(stats: SessionStats): List<String> = buildList {
@@ -20,6 +21,12 @@ internal fun JankThresholds.violations(stats: SessionStats): List<String> = buil
     }
     if (stats.p95FrameMs > maxP95FrameMs) {
         add(format("p95 %.1f ms over %.1f ms", stats.p95FrameMs, maxP95FrameMs))
+    }
+    if (stats.droppedReports > maxDroppedReports) {
+        add(
+            "${stats.droppedReports} dropped report(s), allowed $maxDroppedReports — " +
+                "every figure above is undersampled",
+        )
     }
 }
 

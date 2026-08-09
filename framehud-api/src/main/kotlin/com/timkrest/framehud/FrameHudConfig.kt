@@ -6,16 +6,26 @@ public data class FrameHudConfig(
     val enabled: Boolean = true,
     val overlayMode: OverlayMode = OverlayMode.PREFER_SYSTEM,
     val eventListeners: List<FrameHudEventListener> = listOf(LogcatEventListener),
-    val metricsSampleWindowSize: Int = DEFAULT_METRICS_SAMPLE_WINDOW_SIZE,
-    /** How often the panel is allowed to update. Lower values cost more to render. */
+    val metricsSampleWindowFrames: Int = DEFAULT_METRICS_SAMPLE_WINDOW_FRAMES,
     val metricsThrottleIntervalMs: Long = DEFAULT_METRICS_THROTTLE_INTERVAL_MS,
-    /** Refresh rate assumed when the display reports none. */
     val fallbackRefreshRateHz: Float = DisplayInfo.DEFAULT_REFRESH_RATE_HZ,
     val metricsThreadName: String = DEFAULT_METRICS_THREAD_NAME,
 ) {
+    init {
+        require(metricsSampleWindowFrames > 0) {
+            "metricsSampleWindowFrames must be positive, was $metricsSampleWindowFrames"
+        }
+        require(metricsThrottleIntervalMs >= 0L) {
+            "metricsThrottleIntervalMs must not be negative, was $metricsThrottleIntervalMs"
+        }
+        require(fallbackRefreshRateHz.isFinite() && fallbackRefreshRateHz > 0f) {
+            "fallbackRefreshRateHz must be finite and positive, was $fallbackRefreshRateHz"
+        }
+    }
+
     public companion object {
         public const val DEFAULT_METRICS_THREAD_NAME: String = "framehud-metrics"
-        public const val DEFAULT_METRICS_SAMPLE_WINDOW_SIZE: Int = 120
+        public const val DEFAULT_METRICS_SAMPLE_WINDOW_FRAMES: Int = 120
         public const val DEFAULT_METRICS_THROTTLE_INTERVAL_MS: Long = 400L
     }
 }

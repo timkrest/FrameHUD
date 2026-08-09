@@ -78,7 +78,7 @@ class JankDiagnosisTest {
                 bottleneckStage = PipelineStage.GPU,
             ),
         )
-        assertEquals(JankCause.Stage(stage = PipelineStage.GPU, avgMs = 11f), diagnosis.cause)
+        assertEquals(JankCause.Stage(stage = PipelineStage.GPU, averageMs = 11f), diagnosis.cause)
     }
 
     private fun diagnose(

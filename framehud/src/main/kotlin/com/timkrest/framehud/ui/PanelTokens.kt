@@ -28,7 +28,6 @@ internal val SparklineMinSlotWidth = 2.dp
 internal const val FPS_GOOD_THRESHOLD = 0.95f
 internal const val FPS_WARN_THRESHOLD = 0.75f
 internal const val SPARKLINE_SCALE_FACTOR = 2f
-internal const val SPARKLINE_SEVERE_FACTOR = 2f
 internal const val SPARKLINE_MIN_BAR_FRACTION = 0.6f
 internal const val LOAD_BAR_ALPHA = 0.16f
 
@@ -37,6 +36,7 @@ private const val BUTTON_PRESSED_ALPHA = 0.34f
 
 internal val PanelShape = RoundedCornerShape(PanelCornerRadius)
 internal val ButtonShape = RoundedCornerShape(ButtonCornerRadius)
+internal val SparklineShape = RoundedCornerShape(SparklineCornerRadius)
 
 internal val OverlayBackground = Color.Black.copy(alpha = BACKGROUND_ALPHA)
 internal val ButtonBackgroundPressed = Color.White.copy(alpha = BUTTON_PRESSED_ALPHA)

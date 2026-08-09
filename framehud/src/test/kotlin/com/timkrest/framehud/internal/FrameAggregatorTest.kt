@@ -127,7 +127,7 @@ class FrameAggregatorTest {
         advancePastThrottle()
         aggregator.addFrame(totalMs = 12f)
 
-        aggregator.updateConfig(FrameHudConfig(metricsSampleWindowSize = 4))
+        aggregator.updateConfig(FrameHudConfig(metricsSampleWindowFrames = 4))
         advancePastThrottle()
         aggregator.addFrame(totalMs = 14f)
 

@@ -2,13 +2,11 @@ package com.timkrest.framehud.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.timkrest.framehud.FrameHistory
 import kotlin.math.max
@@ -22,7 +20,7 @@ internal fun FrameSparkline(
 ) {
     Canvas(
         modifier = modifier
-            .clip(RoundedCornerShape(SparklineCornerRadius))
+            .clip(SparklineShape)
             .background(SparklineBackground),
     ) {
         drawFrameHistory(history = history, frameBudgetMs = frameBudgetMs)
@@ -49,7 +47,12 @@ private fun DrawScope.drawFrameHistory(history: FrameHistory, frameBudgetMs: Flo
         if (valueMs <= 0f) continue
         val barHeight = (valueMs / scaleMs).coerceIn(0f, 1f) * size.height
         drawRect(
-            color = sparklineBarColor(valueMs = valueMs, frameBudgetMs = frameBudgetMs),
+            color = metricRowColor(
+                valueMs = valueMs - frameBudgetMs,
+                frameBudgetMs = frameBudgetMs,
+                kind = MetricRowKind.OVERRUN,
+                isAttention = false,
+            ),
             topLeft = Offset(x = position * slotWidth, y = size.height - barHeight),
             size = Size(width = barWidth, height = barHeight),
         )
@@ -62,10 +65,4 @@ private fun DrawScope.drawFrameHistory(history: FrameHistory, frameBudgetMs: Flo
         end = Offset(x = size.width, y = budgetY),
         strokeWidth = SparklineBudgetStroke.toPx(),
     )
-}
-
-private fun sparklineBarColor(valueMs: Float, frameBudgetMs: Float): Color = when {
-    valueMs > frameBudgetMs * SPARKLINE_SEVERE_FACTOR -> TextWarning
-    valueMs > frameBudgetMs -> TextCaution
-    else -> TextGood
 }

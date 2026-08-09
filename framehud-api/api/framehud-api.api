@@ -33,7 +33,7 @@ public final class com/timkrest/framehud/FrameHistory$Companion {
 
 public final class com/timkrest/framehud/FrameHudConfig {
 	public static final field Companion Lcom/timkrest/framehud/FrameHudConfig$Companion;
-	public static final field DEFAULT_METRICS_SAMPLE_WINDOW_SIZE I
+	public static final field DEFAULT_METRICS_SAMPLE_WINDOW_FRAMES I
 	public static final field DEFAULT_METRICS_THREAD_NAME Ljava/lang/String;
 	public static final field DEFAULT_METRICS_THROTTLE_INTERVAL_MS J
 	public fun <init> ()V
@@ -52,7 +52,7 @@ public final class com/timkrest/framehud/FrameHudConfig {
 	public final fun getEnabled ()Z
 	public final fun getEventListeners ()Ljava/util/List;
 	public final fun getFallbackRefreshRateHz ()F
-	public final fun getMetricsSampleWindowSize ()I
+	public final fun getMetricsSampleWindowFrames ()I
 	public final fun getMetricsThreadName ()Ljava/lang/String;
 	public final fun getMetricsThrottleIntervalMs ()J
 	public final fun getOverlayMode ()Lcom/timkrest/framehud/OverlayMode;
@@ -245,7 +245,7 @@ public final class com/timkrest/framehud/JankCause$Stage : com/timkrest/framehud
 	public final fun copy (Lcom/timkrest/framehud/PipelineStage;F)Lcom/timkrest/framehud/JankCause$Stage;
 	public static synthetic fun copy$default (Lcom/timkrest/framehud/JankCause$Stage;Lcom/timkrest/framehud/PipelineStage;FILjava/lang/Object;)Lcom/timkrest/framehud/JankCause$Stage;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAvgMs ()F
+	public final fun getAverageMs ()F
 	public final fun getStage ()Lcom/timkrest/framehud/PipelineStage;
 	public fun getSummary ()Ljava/lang/String;
 	public fun hashCode ()I

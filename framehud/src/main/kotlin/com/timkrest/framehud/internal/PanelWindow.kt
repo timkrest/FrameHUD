@@ -1,7 +1,9 @@
 package com.timkrest.framehud.internal
 
 import android.annotation.SuppressLint
+import android.content.ComponentCallbacks
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.view.Gravity
 import android.view.View
@@ -21,12 +23,7 @@ internal enum class PanelWindowMode(val windowType: Int) {
     APP(WindowManager.LayoutParams.TYPE_APPLICATION),
 }
 
-/**
- * The window the panel lives in: placement, dragging and teardown. Main thread only.
- *
- * Failures to talk to the window manager are logged, never thrown — a debug overlay must not take
- * the app down with it.
- */
+/** Main thread only. */
 internal class PanelWindow(
     private val context: Context,
     val mode: PanelWindowMode,
@@ -57,6 +54,12 @@ internal class PanelWindow(
     private var positionX = layoutParams.x.toFloat()
     private var positionY = layoutParams.y.toFloat()
 
+    private val configurationCallbacks = object : ComponentCallbacks {
+        override fun onConfigurationChanged(newConfig: Configuration) = clampIntoDisplay()
+
+        override fun onLowMemory() = Unit
+    }
+
     private val view = ComposeView(context).apply {
         setViewTreeLifecycleOwner(lifecycleOwner)
         setViewTreeSavedStateRegistryOwner(lifecycleOwner)
@@ -65,9 +68,12 @@ internal class PanelWindow(
 
     val position: PanelPosition get() = PanelPosition(x = layoutParams.x, y = layoutParams.y)
 
-    fun show() {
+    fun show(): Boolean {
         lifecycleOwner.start()
-        guarded("adding the panel window") { windowManager.addView(view, layoutParams) }
+        context.registerComponentCallbacks(configurationCallbacks)
+        if (guarded("adding the panel window") { windowManager.addView(view, layoutParams) }) return true
+        dismiss()
+        return false
     }
 
     fun setVisible(visible: Boolean) {
@@ -76,16 +82,21 @@ internal class PanelWindow(
     }
 
     fun dismiss() {
+        context.unregisterComponentCallbacks(configurationCallbacks)
         if (view.isAttachedToWindow) {
             guarded("removing the panel window") { windowManager.removeViewImmediate(view) }
         }
         lifecycleOwner.stop()
     }
 
-    private fun moveBy(dx: Float, dy: Float) {
+    private fun moveBy(dx: Float, dy: Float) = moveTo(positionX - dx, positionY + dy)
+
+    private fun clampIntoDisplay() = moveTo(positionX, positionY)
+
+    private fun moveTo(x: Float, y: Float) {
         val displayMetrics = context.resources.displayMetrics
-        positionX = (positionX - dx).coerceIn(0f, travelRange(displayMetrics.widthPixels, view.width))
-        positionY = (positionY + dy).coerceIn(0f, travelRange(displayMetrics.heightPixels, view.height))
+        positionX = x.coerceIn(0f, travelRange(displayMetrics.widthPixels, view.width))
+        positionY = y.coerceIn(0f, travelRange(displayMetrics.heightPixels, view.height))
         layoutParams.x = positionX.roundToInt()
         layoutParams.y = positionY.roundToInt()
         guarded("moving the panel window") { windowManager.updateViewLayout(view, layoutParams) }

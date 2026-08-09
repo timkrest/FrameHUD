@@ -26,14 +26,23 @@ class JankThresholdsTest {
         assertEquals(1, JankThresholds(maxP95FrameMs = 20f).violations(stats).size)
     }
 
+    @Test
+    fun `dropped reports fail the gate, since they undersample everything else`() {
+        val stats = session(droppedReports = 3)
+        assertEquals(1, JankThresholds().violations(stats).size)
+        assertTrue(JankThresholds(maxDroppedReports = 3).violations(stats).isEmpty())
+    }
+
     private fun session(
         jankPercent: Float = 0f,
         frozenFrames: Int = 0,
         p95FrameMs: Float = 0f,
+        droppedReports: Int = 0,
     ) = SessionStats.EMPTY.copy(
         frames = 500,
         jankPercent = jankPercent,
         frozenFrames = frozenFrames,
         p95FrameMs = p95FrameMs,
+        droppedReports = droppedReports,
     )
 }

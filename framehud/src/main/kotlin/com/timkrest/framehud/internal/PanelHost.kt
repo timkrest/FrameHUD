@@ -16,7 +16,7 @@ import com.timkrest.framehud.ui.FrameHudPanel
 import com.timkrest.framehud.ui.PanelActions
 import com.timkrest.framehud.ui.PanelState
 
-/** Decides which kind of window the panel gets and when it is on screen. Main thread only. */
+/** Main thread only. */
 internal class PanelHost(
     val application: Application,
     private val config: () -> FrameHudConfig,
@@ -49,7 +49,9 @@ internal class PanelHost(
             PanelWindowMode.APP -> activity ?: return false
         }
         if (mode == PanelWindowMode.APP && canRequestOverlayPermission) logAppWindowFallbackOnce()
-        window = createWindow(context = windowContext, mode = mode).apply { show() }
+        val created = createWindow(context = windowContext, mode = mode)
+        if (!created.show()) return false
+        window = created
         return true
     }
 
