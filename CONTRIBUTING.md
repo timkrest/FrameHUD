@@ -8,9 +8,17 @@ Bug reports, ideas and pull requests are all welcome.
 ./gradlew build
 ```
 
-That compiles every module, runs the unit tests, applies ktlint and checks the public API against the
-dumps under `api/`. It needs JDK 21 and an Android SDK. CI runs the same command, so a green local
-build means a green CI.
+That compiles every module, runs the unit tests, applies ktlint, checks the public API against the
+dumps under `api/`, and shrinks the sample's release build with R8. It needs JDK 21 and an Android
+SDK.
+
+Thread and window behaviour is covered by instrumentation tests, which need a device or emulator:
+
+```
+./gradlew :framehud:connectedDebugAndroidTest :sample:connectedDebugAndroidTest
+```
+
+CI runs both on API 24, 31 and 36 — the levels where `FrameMetrics` changes what it reports.
 
 To try a change on a device:
 

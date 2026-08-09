@@ -41,6 +41,12 @@ jobs:
 
   instrumentation:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 24 is minSdk, below the level where FrameMetrics carries its own timestamps; 31 is where
+        # DEADLINE and GPU_DURATION arrive; 36 is compileSdk.
+        api-level: [ 24, 31, 36 ]
     steps:
       - uses: actions/checkout@v7
 
@@ -61,18 +67,24 @@ jobs:
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           disable-animations: true
-          script: ./gradlew :sample:connectedDebugAndroidTest --stacktrace
+          script: >
+            ./gradlew
+            :framehud:connectedDebugAndroidTest
+            :sample:connectedDebugAndroidTest
+            --stacktrace
 
       - name: Upload reports
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: instrumentation-reports
+          name: instrumentation-reports-api${{ matrix.api-level }}
           path: |
+            framehud/build/reports/
+            framehud/build/outputs/androidTest-results/
             sample/build/reports/
             sample/build/outputs/androidTest-results/
           retention-days: 7

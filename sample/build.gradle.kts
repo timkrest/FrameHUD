@@ -13,7 +13,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             // Only so the no-op variant can be installed without a keystore; the sample ships nowhere.
             signingConfig = signingConfigs.getByName("debug")
         }
