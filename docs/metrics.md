@@ -18,6 +18,13 @@ Drag the panel with a finger. Tap a collapsed panel to expand it. Long-press to 
 hold still so you can read them while collection continues. `×` resets the window, the session and
 the peaks.
 
+## Header
+
+- **ui N/s** — Choreographer ticks the main thread served in the last second. Drops below the display
+  rate when the main thread is busy; fluctuates on LTPO displays (60↔120)
+- **FPS** — frames actually rendered in the last second. `idle` means no frames at all: a static
+  screen, or a frozen main thread
+
 ## CPU (main thread)
 
 Work on the UI thread — where all your Compose and View code lives.
@@ -57,10 +64,6 @@ send.
 
 ## Footer
 
-- **FPS** — frames actually rendered in the last second. `idle` means no frames at all: a static
-  screen, or a frozen main thread
-- **ui N/s** — Choreographer ticks the main thread served in the last second. Drops below the display
-  rate when the main thread is busy; fluctuates on LTPO displays (60↔120)
 - **jank** — a frame that missed the system deadline (`FrameMetrics.DEADLINE` on API 31+;
   `TOTAL > budget` before that)
 - **win** — the sampling window: jank share, p95 and worst frame

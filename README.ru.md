@@ -37,6 +37,7 @@ dependencies {
 ## Что показывает панель
 
 ```
+ui 118/s · 8.3ms  118 FPS
 ⚠ layout 8.4 ms
 CPU       now   avg  peak
 input     0.1   0.2   1.1
@@ -62,7 +63,8 @@ gc x3 · 18 ms
 therm none · hr 0.68
 ```
 
-Верхняя строка — вердикт, а `◀` помечает строку, о которой он.
+В шапке — частота vsync, бюджет кадра и FPS. Вердикт под ней называет строку, на которую стоит
+смотреть, а `◀` её помечает.
 
 Колонки читаются как `now avg peak`: текущий кадр, среднее по окну и пик с последнего сброса.
 Строки, собранные из других строк, заканчиваются на `avg`.
@@ -88,7 +90,7 @@ releaseImplementation("com.timkrest:framehud-noop:0.4.0")
 Все настройки — один неизменяемый конфиг. Присваиваете копию, она применяется сразу.
 
 ```kotlin
-FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
+FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 ```
 
 | Настройка | По умолчанию | Что задаёт |
@@ -96,7 +98,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
 | `enabled` | `true` | Пока false — окно не добавляется и кадры не собираются. |
 | `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` держит панель внутри окна приложения и не использует разрешение. |
 | `eventListeners` | `[LogcatEventListener]` | Кто получает события о jank, замёрзших кадрах, троттлинге и итогах экрана. |
-| `metricsSampleWindowSize` | `120` | Сколько последних кадров хранит окно — за ним стоят `avg` и перцентили. |
+| `metricsSampleWindowFrames` | `120` | За сколько кадров считаются `avg` и перцентили. |
 | `metricsThrottleIntervalMs` | `400` | Как часто панель может перерисовываться. Меньше — дороже рендер. |
 | `fallbackRefreshRateHz` | `60` | Герцовка, если дисплей её не сообщает. |
 | `metricsThreadName` | `framehud-metrics` | Имя потока сбора — под ним он виден в трейсах. |

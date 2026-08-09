@@ -37,6 +37,7 @@ that reports them.
 ## What the panel shows
 
 ```
+ui 118/s · 8.3ms  118 FPS
 ⚠ layout 8.4 ms
 CPU       now   avg  peak
 input     0.1   0.2   1.1
@@ -62,7 +63,8 @@ gc x3 · 18 ms
 therm none · hr 0.68
 ```
 
-The top line is the verdict, and `◀` marks the row it points at.
+The header carries the vsync rate, the frame budget and FPS. The verdict under it names the row to
+look at, and `◀` marks that row.
 
 Columns read `now avg peak`: the current frame, the average over the window, and the peak since the
 last reset. Rows summed from other rows stop after `avg`.
@@ -88,7 +90,7 @@ It mirrors the API with empty bodies. The calls compile, nothing is measured, no
 Settings live in one immutable config. Assign a copy and it takes effect at once.
 
 ```kotlin
-FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
+FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 ```
 
 | Option | Default | What it controls |
@@ -96,7 +98,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowSize = 240)
 | `enabled` | `true` | While false, no window is added and no frames are collected. |
 | `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` keeps the panel inside the app window and never uses the permission. |
 | `eventListeners` | `[LogcatEventListener]` | Who receives jank burst, frozen frame, thermal and screen summary events. |
-| `metricsSampleWindowSize` | `120` | Frames the rolling window keeps, behind `avg` and the percentiles. |
+| `metricsSampleWindowFrames` | `120` | How much history `avg` and the percentiles cover. |
 | `metricsThrottleIntervalMs` | `400` | How often the panel may redraw. Lower values cost more to render. |
 | `fallbackRefreshRateHz` | `60` | Refresh rate assumed when the display reports none. |
 | `metricsThreadName` | `framehud-metrics` | Name of the collecting thread, as it shows up in traces. |

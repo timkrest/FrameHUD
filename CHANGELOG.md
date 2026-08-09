@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `JankThresholds.maxDroppedReports` — dropped `FrameMetrics` reports fail the gate. They
+  undersample every other figure it checks, so a lossy run could pass on numbers nobody collected.
+  Defaults to zero.
+
+### Changed
+
+- `FrameHudConfig.metricsSampleWindowSize` is now `metricsSampleWindowFrames`, with the default
+  constant renamed to match. The unit belongs in the name, as it already is one line below.
+- `JankCause.Stage.avgMs` is now `averageMs`, spelled like `MetricValue.average`.
+- `FrameHudConfig` rejects a window of no frames, a negative throttle and a fallback refresh rate
+  that is not finite and positive, instead of quietly clamping them once the collector got that far.
+  The artifact is `debugImplementation` only, so the throw lands in the build that wrote the value.
+
+### Fixed
+
+- Events raised after leaving a screen still carried its name instead of null.
+- The `over` row stayed green until a frame lost a whole extra budget. It was coloured as a frame
+  time rather than as the overrun it holds.
+- The panel could land off-screen after a rotation, with no way to drag it back. Its position was
+  clamped to the display only while dragging, never when the display changed underneath it.
+
 ## [0.4.0] - 2026-08-02
 
 ### Added
