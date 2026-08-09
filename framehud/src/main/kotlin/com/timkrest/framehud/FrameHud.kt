@@ -20,10 +20,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * A draggable debug panel showing frame timings on top of your app. Installs itself in the main
- * process and follows the focused activity; nothing to call.
- *
- * The panel renders in its own window, so it stays out of the metrics of the window it measures.
+ * Draggable debug panel for frame timings. It follows the focused activity and renders in a
+ * separate window, outside the metrics it collects.
  */
 @MainThread
 public object FrameHud {
@@ -41,7 +39,7 @@ public object FrameHud {
 
     private val _isFrozen = MutableStateFlow(false)
 
-    /** Readings held still for inspection. Collection continues while frozen. */
+    /** Whether displayed readings are frozen. Collection continues in the background. */
     @get:AnyThread
     public val isFrozen: StateFlow<Boolean> = _isFrozen.asStateFlow()
 
@@ -76,9 +74,8 @@ public object FrameHud {
     private val activityTracker = ActivityTracker(onFocused = ::onActivityFocused, onLost = ::onActivityLost)
 
     /**
-     * Called by the installer; only needed by hand when that installer is removed. Belongs in
-     * [Application.onCreate]: the panel comes up with the next resumed activity, so a call made
-     * later skips the screen already open. Idempotent.
+     * Installs FrameHud when automatic installation is disabled. Call from [Application.onCreate]
+     * before the first activity is resumed. Repeated calls are ignored.
      */
     public fun install(application: Application) {
         checkMainThread()
@@ -107,7 +104,7 @@ public object FrameHud {
         config = currentConfig.copy(enabled = !currentConfig.enabled)
     }
 
-    /** Clears the window, the session aggregates and the peaks, and thaws a frozen panel. */
+    /** Clears rolling and session metrics, including peaks, and unfreezes the panel. */
     @AnyThread
     public fun reset() {
         setFrozen(false)
@@ -120,9 +117,9 @@ public object FrameHud {
     }
 
     /**
-     * Session aggregates since the last [reset], or null when nothing was collected or the read
-     * timed out. Still answers once the panel has stopped, so a test can assert after its activity
-     * is gone. Blocks the caller, so it is for instrumentation tests rather than production code.
+     * Returns session metrics since [reset], or null if nothing was collected or the read timed out.
+     * The last session remains available after collection stops. This method blocks and is intended
+     * for instrumentation tests.
      */
     @WorkerThread
     public fun awaitSessionStats(timeoutMs: Long): SessionStats? {
@@ -176,7 +173,11 @@ public object FrameHud {
 
     private fun bindActivityMetrics() {
         val activity = activityTracker.focusedActivity ?: return
-        engine.bindWindow(window = activity.window, screen = activity.javaClass.simpleName)
+        engine.bindWindow(
+            window = activity.window,
+            screen = activity.javaClass.simpleName,
+            creation = activityTracker.takeScreenCreation(activity),
+        )
     }
 
     @AnyThread

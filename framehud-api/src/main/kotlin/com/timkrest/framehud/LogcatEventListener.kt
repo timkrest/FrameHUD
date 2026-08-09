@@ -2,10 +2,8 @@ package com.timkrest.framehud
 
 import android.util.Log
 
-/** Default listener: writes every event to logcat under [TAG]. */
 public object LogcatEventListener : FrameHudEventListener {
 
-    /** The tag every FrameHud log line carries, panel internals included: `adb logcat -s FrameHud`. */
     public const val TAG: String = "FrameHud"
 
     override fun onEvent(event: FrameHudEvent) {
@@ -13,6 +11,7 @@ public object LogcatEventListener : FrameHudEventListener {
     }
 
     private fun FrameHudEvent.isSevere(): Boolean = when (this) {
+        is FrameHudEvent.FirstFrame -> false
         is FrameHudEvent.JankBurst -> diagnosis.severity == JankSeverity.SEVERE
         is FrameHudEvent.FrozenFrames -> true
         is FrameHudEvent.ThermalChanged -> level.isThrottling

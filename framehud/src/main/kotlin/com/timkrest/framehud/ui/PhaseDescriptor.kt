@@ -15,12 +15,6 @@ internal fun stagePhases(stage: PipelineStage): List<PhaseDescriptor> = when (st
     PipelineStage.GPU -> GPU_PHASES
 }
 
-/**
- * Includes delay and other, which belong to no stage but can still be the slowest thing on screen.
- *
- * On an emulator the render-thread and GPU phases are left out: they time the host machine, so
- * blaming them would send the reader after someone else's hardware.
- */
 internal fun worstPhase(phases: FramePhases, isEmulator: Boolean = false): PhaseDescriptor =
     (if (isEmulator) APP_OWNED_PHASES else ALL_PHASES).maxBy { it.select(phases).average }
 

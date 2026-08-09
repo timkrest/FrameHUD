@@ -8,6 +8,12 @@ import kotlin.test.assertTrue
 class FrameHudEventTest {
 
     @Test
+    fun `a first frame names the screen and time to display`() {
+        val event = FrameHudEvent.FirstFrame(timeToDisplayMs = 123.45f, screen = "MainActivity")
+        assertEquals("MainActivity: first frame in 123.4 ms", event.summary)
+    }
+
+    @Test
     fun `a finished screen is summed up in one line`() {
         val event = FrameHudEvent.ScreenEnded(stats = stats(), screen = "MainActivity")
         assertEquals("MainActivity: 120 frames in 2.0s, jank 7.5%, p95 18.0 ms, frozen 1", event.summary)

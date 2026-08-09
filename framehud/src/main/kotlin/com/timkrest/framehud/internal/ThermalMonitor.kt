@@ -4,17 +4,22 @@ import android.content.Context
 import android.os.Build
 import android.os.PowerManager
 import android.os.SystemClock
+import androidx.annotation.AnyThread
 import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.WorkerThread
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
+@WorkerThread
 internal class ThermalMonitor {
 
-    private val _stats = MutableStateFlow(ThermalStats.EMPTY)
-    val stats: StateFlow<ThermalStats> = _stats.asStateFlow()
+    private val readings = FreezableReading(ThermalStats.EMPTY)
+
+    @get:AnyThread
+    val stats: StateFlow<ThermalStats> = readings.published
+
+    val liveStats: ThermalStats get() = readings.live
 
     @field:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.Q)
     private val hasThermalStatus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
@@ -22,13 +27,8 @@ internal class ThermalMonitor {
     @field:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
     private val hasThermalHeadroom = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
-    @Volatile
-    private var isFrozen = false
-
-    @Volatile
     private var powerManager: PowerManager? = null
 
-    @Volatile
     private var lastSampleMs: Long? = null
 
     fun bind(context: Context) {
@@ -39,25 +39,27 @@ internal class ThermalMonitor {
     fun unbind() {
         powerManager = null
         lastSampleMs = null
-        _stats.value = ThermalStats.EMPTY
+        readings.reset(ThermalStats.EMPTY)
     }
 
+    @AnyThread
     fun setFrozen(frozen: Boolean) {
-        isFrozen = frozen
+        readings.setFrozen(frozen)
     }
 
     fun sample() {
         if (!hasThermalStatus) return
         val manager = powerManager ?: return
-        if (isFrozen) return
         val now = SystemClock.elapsedRealtime()
         val previousMs = lastSampleMs
-        if (previousMs != null && now - previousMs < SAMPLE_INTERVAL_MS) return
+        if (previousMs != null && now - previousMs < MIN_SAMPLE_INTERVAL_MS) return
         lastSampleMs = now
 
-        _stats.value = ThermalStats(
-            level = thermalLevelOf(manager.currentThermalStatus),
-            headroom = readHeadroom(manager),
+        readings.update(
+            ThermalStats(
+                level = thermalLevelOf(manager.currentThermalStatus),
+                headroom = readHeadroom(manager),
+            ),
         )
     }
 
@@ -78,8 +80,7 @@ internal class ThermalMonitor {
     }
 
     private companion object {
-        /** Thermal status moves in minutes, and the platform rate-limits headroom reads anyway. */
-        const val SAMPLE_INTERVAL_MS = 2000L
+        const val MIN_SAMPLE_INTERVAL_MS = 2_000L
 
         const val HEADROOM_FORECAST_SECONDS = 0
     }

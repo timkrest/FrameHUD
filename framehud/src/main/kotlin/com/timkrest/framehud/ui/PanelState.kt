@@ -6,7 +6,6 @@ import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.ThermalStats
 import kotlinx.coroutines.flow.StateFlow
 
-/** The flow references never change, which keeps the panel skippable. */
 @Immutable
 internal class PanelState(
     val metrics: StateFlow<PerformanceMetrics>,

@@ -28,9 +28,16 @@ class MetricsEngineTest {
 
     private val events = CopyOnWriteArrayList<FrameHudEvent>()
 
+    private val deliveryThreads = CopyOnWriteArrayList<String>()
+
     private var config = FrameHudConfig(
         metricsThreadName = threadName,
-        eventListeners = listOf(FrameHudEventListener { events += it }),
+        eventListeners = listOf(
+            FrameHudEventListener {
+                deliveryThreads += Thread.currentThread().name
+                events += it
+            },
+        ),
     )
 
     private val engine = MetricsEngine(config = { config })
@@ -78,8 +85,22 @@ class MetricsEngineTest {
     }
 
     @Test
-    fun workPostedBeforeTheStartRunsOnTheThreadTheStartGoesOnToUse() {
+    fun aMarkEndedBeforeTheStartStillReachesListenersOnTheMetricsThread() {
+        onMainThread { engine.setMark(MARK) }
+        onMainThread { engine.setMark(null) }
+        awaitMetricsThread()
+
+        assertIs<FrameHudEvent.MarkEnded>(events.single())
+        assertEquals(listOf(threadName), deliveryThreads.distinct(), "an event reached a listener off the metrics thread")
+    }
+
+    @Test
+    fun anEngineConfiguredBeforeTheStartRunsNoMetricsThread() {
         engine.reset()
+        onMainThread { engine.applyConfig(config) }
+
+        assertEquals(0, threadsNamed(threadName), "a metrics thread was started before the panel")
+
         onMainThread { engine.start(context) }
         awaitMetricsThread()
 

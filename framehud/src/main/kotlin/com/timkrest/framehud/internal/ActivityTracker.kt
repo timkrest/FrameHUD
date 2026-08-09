@@ -2,16 +2,15 @@ package com.timkrest.framehud.internal
 
 import android.app.Activity
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import android.view.ViewTreeObserver
 import androidx.annotation.MainThread
+import androidx.annotation.RequiresApi
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 
-/**
- * Follows the activity actually in use. Split-screen resumes every visible activity at once, so
- * window focus decides which one that is, not the last resume.
- */
+/** Uses window focus because split-screen can keep several activities resumed at once. */
 @MainThread
 internal class ActivityTracker(
     private val onFocused: (activity: Activity, previous: Activity?) -> Unit,
@@ -22,11 +21,19 @@ internal class ActivityTracker(
 
     private val focusWatchers = WeakHashMap<Activity, ViewTreeObserver.OnWindowFocusChangeListener>()
 
+    private val screenCreations = WeakHashMap<Activity, ScreenCreation>()
+
     val focusedActivity: Activity? get() = focusedRef?.get()
+
+    fun takeScreenCreation(activity: Activity): ScreenCreation? = screenCreations.remove(activity)
 
     override fun onActivityResumed(activity: Activity) {
         watchWindowFocus(activity)
-        if (focusedActivity?.hasWindowFocus() != true) focus(activity)
+        if (focusedActivity?.hasWindowFocus() != true) {
+            focus(activity)
+        } else {
+            screenCreations.remove(activity)
+        }
     }
 
     override fun onActivityPaused(activity: Activity) {
@@ -34,6 +41,11 @@ internal class ActivityTracker(
         if (focusedActivity !== activity) return
         focusedRef = null
         onLost()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
+        screenCreations[activity] = ScreenCreation(System.nanoTime())
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit

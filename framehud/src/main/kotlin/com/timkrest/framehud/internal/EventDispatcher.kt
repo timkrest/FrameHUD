@@ -19,6 +19,10 @@ internal class EventDispatcher {
     private var lastFrozenFrames = 0
     private var lastThermalLevel = ThermalLevel.UNKNOWN
 
+    fun onFirstFrame(listeners: List<FrameHudEventListener>, timeToDisplayMs: Float, screen: String?) {
+        listeners.emit(FrameHudEvent.FirstFrame(timeToDisplayMs = timeToDisplayMs, screen = screen))
+    }
+
     fun onSample(
         listeners: List<FrameHudEventListener>,
         metrics: PerformanceMetrics,

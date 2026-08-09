@@ -9,7 +9,7 @@ import kotlin.test.assertNull
 
 class FrameAggregatorTest {
 
-    private val clock = TestMetricsClock().apply { elapsedMs = START_MS }
+    private val clock = TestMetricsClock().apply { elapsedMs = FIRST_SAMPLE_TIME_MS }
     private val aggregator = FrameAggregator(FrameHudConfig(), clock)
 
     @Test
@@ -65,6 +65,30 @@ class FrameAggregatorTest {
     }
 
     @Test
+    fun `a frozen panel holds its readings while the live ones keep moving`() {
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.setFrozen(true)
+
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 40f)
+
+        assertEquals(10f, aggregator.metrics.value.phases.total.current, TOLERANCE)
+        assertEquals(40f, aggregator.liveMetrics.phases.total.current, TOLERANCE)
+    }
+
+    @Test
+    fun `thawing publishes what was measured while frozen`() {
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.setFrozen(true)
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 40f)
+
+        aggregator.setFrozen(false)
+
+        assertEquals(40f, aggregator.metrics.value.phases.total.current, TOLERANCE)
+    }
+
+    @Test
     fun `a frame with headroom reports a negative overrun, peak included`() {
         aggregator.addFrame(totalMs = 10f, deadlineNs = DEADLINE_60HZ_NS, totalDurationNs = 10_000_000L)
 
@@ -81,7 +105,6 @@ class FrameAggregatorTest {
         aggregator.onTick()
         assertEquals(0, aggregator.metrics.value.window.fps)
 
-        // The drain is over, so nothing else reaches the readings until a frame arrives.
         aggregator.addDroppedReports(3)
         advance(PAST_FPS_WINDOW_MS)
         aggregator.onTick()
@@ -167,6 +190,16 @@ class FrameAggregatorTest {
     }
 
     @Test
+    fun `resizing the window publishes the empty one instead of the readings it dropped`() {
+        aggregator.addFrame(totalMs = 10f)
+
+        aggregator.updateConfig(FrameHudConfig(metricsSampleWindowFrames = 4))
+
+        assertEquals(0, aggregator.metrics.value.window.history.size)
+        assertEquals(0, aggregator.metrics.value.window.fps)
+    }
+
+    @Test
     fun `reset empties the readings and the aggregates`() {
         aggregator.startCollecting()
         aggregator.addFrame(totalMs = 40f)
@@ -205,13 +238,11 @@ class FrameAggregatorTest {
     }
 
     private companion object {
-        /** Past the throttle interval, so the very first frame publishes like it does on a device. */
-        const val START_MS = 10_000L
+        const val FIRST_SAMPLE_TIME_MS = FrameHudConfig.DEFAULT_METRICS_THROTTLE_INTERVAL_MS
         const val DEADLINE_60HZ_NS = 16_666_666L
         const val TOLERANCE = 0.001f
         const val NS_PER_MS_LONG = 1_000_000L
 
-        /** Long enough for every frame to fall out of the one-second FPS window. */
         const val PAST_FPS_WINDOW_MS = 1_500L
     }
 }

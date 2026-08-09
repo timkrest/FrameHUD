@@ -70,6 +70,21 @@ public abstract interface class com/timkrest/framehud/FrameHudEvent {
 	public abstract fun getSummary ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/FrameHudEvent$FirstFrame : com/timkrest/framehud/FrameHudEvent {
+	public fun <init> (FLjava/lang/String;)V
+	public final fun component1 ()F
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (FLjava/lang/String;)Lcom/timkrest/framehud/FrameHudEvent$FirstFrame;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$FirstFrame;FLjava/lang/String;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$FirstFrame;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMark ()Ljava/lang/String;
+	public fun getScreen ()Ljava/lang/String;
+	public fun getSummary ()Ljava/lang/String;
+	public final fun getTimeToDisplayMs ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/timkrest/framehud/FrameHudEvent$FrozenFrames : com/timkrest/framehud/FrameHudEvent {
 	public fun <init> (ILjava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()I

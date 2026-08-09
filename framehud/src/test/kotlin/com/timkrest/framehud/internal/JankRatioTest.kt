@@ -34,9 +34,11 @@ class JankRatioTest {
     @Test
     fun `the count stays right across several wraps`() {
         val jank = JankRatio(capacity = 3)
-        repeat(10) { index -> jank.add(isJanky = index % 3 == 0) }
-        // The window holds frames 7, 8 and 9, of which only 9 was janky.
-        assertEquals(100f / 3f, jank.percent(), TOLERANCE)
+        val samples = List(10) { index -> index % 3 == 0 }
+        samples.forEach(jank::add)
+
+        val expectedPercent = samples.takeLast(3).count { it } * 100f / 3f
+        assertEquals(expectedPercent, jank.percent(), TOLERANCE)
     }
 
     @Test

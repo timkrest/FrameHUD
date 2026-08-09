@@ -13,7 +13,7 @@ import android.view.WindowManager
 internal fun canDrawOverlays(context: Context): Boolean =
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Settings.canDrawOverlays(context)
 
-/** An overlay window needs a context tied to a display; an application context is rejected on API 30+. */
+/** API 30+ rejects an application context for overlay windows. */
 internal fun systemOverlayContext(context: Context): Context {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return context
     val display = context.getSystemService(DisplayManager::class.java)

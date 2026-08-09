@@ -2,10 +2,7 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 
-/**
- * Recent frames, oldest first. Backed by `FloatArray`s so the sparkline can be drawn without
- * boxing on every sample.
- */
+/** Recent frames in chronological order. */
 @Immutable
 public class FrameHistory private constructor(
     private val totalsMs: FloatArray,

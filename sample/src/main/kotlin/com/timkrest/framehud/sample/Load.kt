@@ -10,7 +10,6 @@ enum class Load(val label: String) {
     GcChurn("GC churn"),
 }
 
-/** A bare `Set` is unstable to Compose, which would recompose every row on any toggle. */
 @Immutable
 data class ActiveLoads(private val values: Set<Load> = emptySet()) {
 

@@ -17,15 +17,14 @@ mavenPublish = "0.33.0"
 androidMinSdk = "24"
 androidCompileSdk = "36"
 
-# Built with a modern JDK, but the published bytecode targets 11 so that consumers on older
-# toolchains can still use the library. Nothing here needs a language feature newer than that.
+# Run Gradle on JDK 21 and publish Java 11 bytecode.
 jvmToolchain = "21"
 jvmTarget = "11"
 
 [libraries]
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
-# @Immutable and friends, without the Compose runtime.
+# Compose annotations without the runtime.
 androidx-compose-runtime-annotation = { group = "androidx.compose.runtime", name = "runtime-annotation" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
@@ -46,7 +45,7 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "android
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestJunit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
-# Pulled in by build-logic so the convention plugins can apply them; not for module dependencies.
+# Dependencies of the convention plugins in build-logic.
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 mavenPublish-gradlePlugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }

@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `FrameHudEvent.FirstFrame` reports how long each Activity instance took from before `onCreate` to
+  its first displayed frame, on API 29 and newer. First draws remain excluded from jank and
+  percentile statistics.
+
 ## [0.5.0] - 2026-08-09
 
 ### Added
@@ -146,6 +154,7 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.5.0
 [0.4.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.4.0
 [0.3.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.3.0

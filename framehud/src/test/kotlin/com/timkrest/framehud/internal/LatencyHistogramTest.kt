@@ -37,11 +37,11 @@ class LatencyHistogramTest {
     fun `a frame past the last bucket still counts toward the percentiles`() {
         val histogram = LatencyHistogram()
         repeat(9) { histogram.add(10f) }
-        histogram.add(BEYOND_LAST_BUCKET_MS)
+        histogram.add(OUTSIDE_HISTOGRAM_RANGE_MS)
 
         assertEquals(10, histogram.count)
         assertEquals(10.25f, histogram.percentile(50f), TOLERANCE)
-        assertEquals(BEYOND_LAST_BUCKET_MS, histogram.percentile(100f), TOLERANCE)
+        assertEquals(OUTSIDE_HISTOGRAM_RANGE_MS, histogram.percentile(100f), TOLERANCE)
     }
 
     @Test
@@ -57,7 +57,6 @@ class LatencyHistogramTest {
     private companion object {
         const val TOLERANCE = 0.0001f
 
-        /** Well past the widest bucket, which tops out around eleven minutes. */
-        const val BEYOND_LAST_BUCKET_MS = 5_000_000f
+        const val OUTSIDE_HISTOGRAM_RANGE_MS = 5_000_000f
     }
 }

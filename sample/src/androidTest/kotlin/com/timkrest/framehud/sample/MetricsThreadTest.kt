@@ -15,7 +15,6 @@ class MetricsThreadTest {
     @get:Rule
     val config = FrameHudConfigRule()
 
-    /** Renaming the thread retires the old one, which takes the frame metrics listener with it. */
     @Test
     fun renamingTheMetricsThreadKeepsCollecting() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->

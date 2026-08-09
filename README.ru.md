@@ -97,7 +97,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | --- | --- | --- |
 | `enabled` | `true` | Пока false — окно не добавляется и кадры не собираются. |
 | `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` держит панель внутри окна приложения и не использует разрешение. |
-| `eventListeners` | `[LogcatEventListener]` | Кто получает события о jank, замёрзших кадрах, троттлинге, итогах экрана и взаимодействия. |
+| `eventListeners` | `[LogcatEventListener]` | Кто получает события о первом кадре, jank, замёрзших кадрах, троттлинге, итогах экрана и взаимодействия. |
 | `metricsSampleWindowFrames` | `120` | За сколько кадров считаются `avg` и перцентили. |
 | `metricsThrottleIntervalMs` | `400` | Как часто панель может перерисовываться. Меньше — дороже рендер. |
 | `fallbackRefreshRateHz` | `60` | Герцовка, если дисплей её не сообщает. |
@@ -109,6 +109,20 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 `choreographerTicksPerSecond` — обычные `StateFlow`. Показание разложено на `phases` (тайминги по
 стадиям), `window` (fps, jank и p95 по окну выборки), `session` (с последнего сброса) и `display`
 (герцовка и бюджет кадра).
+
+## Первый кадр
+
+`FrameHudEvent.FirstFrame` сообщает, сколько экземпляр Activity шёл до первого показанного кадра.
+Отсчёт начинается до `onCreate` и заканчивается в конце этого кадра. Слушатель по умолчанию пишет в
+logcat: `MainActivity: first frame in 123.4 ms`.
+
+Android считает первые кадры ожидаемо медленными, поэтому FrameHUD сообщает их отдельно и не
+добавляет в оконную и сессионную статистику jank. Пересоздание Activity — новый замер, возврат в уже
+существующую Activity — нет.
+
+Событию нужен API 29 или новее: стартовая отметка берётся из `onActivityPreCreated`, который появился
+в API 29. На старых версиях первый кадр по-прежнему исключается из статистики jank, но событие
+`FirstFrame` не приходит.
 
 ## События о jank
 
@@ -208,6 +222,8 @@ Render thread и GPU принадлежат хост-машине, поэтом�
 
 - [Как читать панель](docs/metrics.ru.md) — что означает каждая строка, как замерять экран и что
   делать, когда что-то красное
+- [Сравнение инструментов](docs/comparison.ru.md) — чем FrameHUD отличается от JankStats,
+  Macrobenchmark, Perfetto и Play Vitals
 - [Справочник API](https://javadoc.io/doc/com.timkrest/framehud) — генерируется из исходников
   каждого релиза
 - [Карта развития](ROADMAP.ru.md) — что планируется дальше и что сделано не будет

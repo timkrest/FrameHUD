@@ -17,8 +17,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 class MetricsSamplerTest {
 
-    /** Threads are named per test: they outlive the test that started them, and names are compared. */
-    private val threadName = "framehud-sampler-${NEXT_ID.getAndIncrement()}"
+    private val uniqueThreadName = "framehud-sampler-${NEXT_ID.getAndIncrement()}"
 
     private val started = mutableListOf<MetricsSampler>()
 
@@ -34,7 +33,7 @@ class MetricsSamplerTest {
 
         assertTrue(sampler.post { ranOn.put(Thread.currentThread().name) }, "the task was rejected")
 
-        assertEquals(threadName, ranOn.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+        assertEquals(uniqueThreadName, ranOn.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
     }
 
     @Test
@@ -68,14 +67,14 @@ class MetricsSamplerTest {
     @Test
     fun aReplacementWaitsForTheThreadItRetires() {
         val order = Collections.synchronizedList(mutableListOf<String>())
-        val retiring = startSampler(threadName = "$threadName-old")
+        val retiring = startSampler(threadName = "$uniqueThreadName-old")
         retiring.post {
             SystemClock.sleep(HANDOVER_WORK_MS)
             order += "old"
         }
         retiring.quit()
 
-        val replacement = startSampler(threadName = "$threadName-new", predecessor = retiring)
+        val replacement = startSampler(threadName = "$uniqueThreadName-new", previousSampler = retiring)
         val ran = CountDownLatch(1)
         replacement.post {
             order += "new"
@@ -95,19 +94,19 @@ class MetricsSamplerTest {
         sampler.quit()
 
         assertTrue(ran.await(TIMEOUT_MS, TimeUnit.MILLISECONDS), "queued work was dropped")
-        assertTrue(awaitThreadGone(threadName), "the metrics thread outlived quit()")
+        assertTrue(awaitThreadGone(uniqueThreadName), "the metrics thread outlived quit()")
     }
 
     private fun startSampler(
-        threadName: String = this.threadName,
+        threadName: String = uniqueThreadName,
         onTick: () -> Unit = {},
-        predecessor: MetricsSampler? = null,
+        previousSampler: MetricsSampler? = null,
     ): MetricsSampler = MetricsSampler(
         threadName = threadName,
         listener = IDLE_LISTENER,
         tickIntervalMs = { TICK_INTERVAL_MS },
         onTick = onTick,
-        predecessor = predecessor,
+        previousSampler = previousSampler,
     ).also { started += it }
 
     private fun awaitTicks(ticks: AtomicInteger, atLeast: Int) {

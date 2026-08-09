@@ -8,21 +8,13 @@ import android.view.Window
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 
-/**
- * Owns the thread `FrameMetrics` callbacks arrive on, plus the tick that keeps readings fresh once
- * the screen goes idle and no more callbacks come.
- *
- * The thread outlives a single screen: stopping only unbinds the window and stops the tick, so
- * leaving a screen never waits on it. It is torn down only when the configured thread name changes,
- * and even then the replacement waits for it on its own thread — never on the caller's.
- */
 @MainThread
 internal class MetricsSampler(
     threadName: String,
     private val listener: Window.OnFrameMetricsAvailableListener,
     private val tickIntervalMs: () -> Long,
     private val onTick: () -> Unit,
-    predecessor: MetricsSampler? = null,
+    previousSampler: MetricsSampler? = null,
 ) {
 
     private val thread = HandlerThread(threadName).apply { start() }
@@ -37,8 +29,7 @@ internal class MetricsSampler(
     private var tickGeneration = 0
 
     init {
-        // The aggregator is shared with the thread being replaced; keep the two from overlapping.
-        if (predecessor != null) handler.post { awaitTermination(predecessor.thread) }
+        if (previousSampler != null) handler.post { waitForTermination(previousSampler.thread) }
     }
 
     val threadName: String get() = thread.name
@@ -49,6 +40,8 @@ internal class MetricsSampler(
     @get:AnyThread
     val display: Display? get() = boundDisplay
 
+    fun isBoundTo(window: Window): Boolean = boundWindow === window
+
     fun startTicking() {
         handler.post { postTick(++tickGeneration) }
     }
@@ -57,30 +50,28 @@ internal class MetricsSampler(
         handler.post { tickGeneration++ }
     }
 
-    fun bind(window: Window): Boolean {
-        if (boundWindow === window) return false
+    fun bind(window: Window) {
         unbind()
         boundWindow = window
         boundDisplay = window.decorView.display
         window.addOnFrameMetricsAvailableListener(listener, handler)
-        return true
+        startTicking()
     }
 
-    fun unbind(): Boolean {
-        val window = boundWindow ?: return false
+    fun unbind(): Window? {
+        val window = boundWindow ?: return null
         boundWindow = null
         boundDisplay = null
         guarded("removing the frame metrics listener") { window.removeOnFrameMetricsAvailableListener(listener) }
-        return true
+        stopTicking()
+        return window
     }
 
     @AnyThread
     fun post(action: () -> Unit): Boolean = handler.post { guarded("running a metrics task", action) }
 
     fun quit(): Window? {
-        val window = boundWindow
-        unbind()
-        stopTicking()
+        val window = unbind()
         thread.quitSafely()
         return window
     }
@@ -96,7 +87,7 @@ internal class MetricsSampler(
         )
     }
 
-    private fun awaitTermination(thread: Thread) {
+    private fun waitForTermination(thread: Thread) {
         var interrupted = false
         while (thread.isAlive) {
             try {

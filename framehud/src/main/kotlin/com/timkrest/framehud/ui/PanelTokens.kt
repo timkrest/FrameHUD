@@ -7,7 +7,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Fits the widest line the panel prints — the session totals of a long run — in a monospace 10sp. */
 internal val PanelWidth = 250.dp
 internal val ItemSpacing = 6.dp
 internal val IconButtonSize = 26.dp

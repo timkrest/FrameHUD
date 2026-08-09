@@ -2,7 +2,6 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 
-/** What the display asks of each frame. Both values are positive. */
 @Immutable
 public data class DisplayInfo(
     val refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ,
@@ -15,7 +14,6 @@ public data class DisplayInfo(
     }
 
     public companion object {
-        /** Assumed when the display reports no usable rate. */
         public const val DEFAULT_REFRESH_RATE_HZ: Float = 60f
 
         public val DEFAULT: DisplayInfo = DisplayInfo()

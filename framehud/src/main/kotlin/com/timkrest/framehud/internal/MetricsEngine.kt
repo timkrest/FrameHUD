@@ -25,11 +25,16 @@ internal class MetricsEngine(
 ) {
 
     private val aggregator = FrameAggregator(config(), clock)
-    private val collector = FrameMetricsCollector(aggregator, clock) { sampler?.display }
+    private val eventDispatcher = EventDispatcher()
+    private val collector = FrameMetricsCollector(
+        aggregator = aggregator,
+        clock = clock,
+        display = { sampler?.display },
+        onFirstFrame = ::onFirstFrame,
+    )
     private val choreographerTickMonitor = ChoreographerTickMonitor()
     private val memoryMonitor = MemoryStatsMonitor()
     private val thermalMonitor = ThermalMonitor()
-    private val eventDispatcher = EventDispatcher()
 
     @Volatile
     private var screenName: String? = null
@@ -60,23 +65,24 @@ internal class MetricsEngine(
 
     fun start(context: Context) {
         isRunning = true
-        thermalMonitor.bind(context)
-        val running = requireSampler()
-        running.post(::sampleMonitors)
-        running.startTicking()
+        requireSampler().post {
+            thermalMonitor.bind(context)
+            sampleMonitors()
+        }
     }
 
     fun stop() {
         isRunning = false
         unbindWindow()
-        thermalMonitor.unbind()
-        sampler?.stopTicking()
+        sampler?.post(thermalMonitor::unbind)
         setFrozen(false)
     }
 
-    fun bindWindow(window: Window, screen: String?) {
+    fun bindWindow(window: Window, screen: String?, creation: ScreenCreation?) {
         val sampler = sampler?.takeIf { isRunning } ?: return
-        if (!sampler.bind(window)) return
+        if (sampler.isBoundTo(window)) return
+        collector.expectFirstFrame(window = window, creation = creation, screen = screen)
+        sampler.bind(window)
         screenName = screen
         sampler.post(aggregator::startCollecting)
         choreographerTickMonitor.start()
@@ -87,12 +93,13 @@ internal class MetricsEngine(
         endMark()
         if (name == null) return
         _activeMark.value = name
-        onMetricsThread(aggregator::beginMark)
+        onAggregates(aggregator::beginMark)
     }
 
     fun unbindWindow() {
         val sampler = sampler ?: return
-        if (!sampler.unbind()) return
+        if (sampler.unbind() == null) return
+        collector.forgetFirstFrame()
         endMark()
         val endedScreen = screenName
         screenName = null
@@ -109,7 +116,7 @@ internal class MetricsEngine(
         if (running != null && running.threadName != newConfig.metricsThreadName) {
             replaceSampler(newConfig.metricsThreadName)
         }
-        onMetricsThread { aggregator.updateConfig(newConfig) }
+        onAggregates { aggregator.updateConfig(newConfig) }
     }
 
     @AnyThread
@@ -122,7 +129,7 @@ internal class MetricsEngine(
 
     @AnyThread
     fun reset() {
-        onMetricsThread {
+        onAggregates {
             aggregator.reset()
             memoryMonitor.reset()
             eventDispatcher.reset()
@@ -157,13 +164,22 @@ internal class MetricsEngine(
         }
     }
 
-    private fun startSampler(threadName: String, predecessor: MetricsSampler? = null): MetricsSampler {
+    @WorkerThread
+    private fun onFirstFrame(timeToDisplayMs: Float, screen: String?) {
+        eventDispatcher.onFirstFrame(
+            listeners = config().eventListeners,
+            timeToDisplayMs = timeToDisplayMs,
+            screen = screen,
+        )
+    }
+
+    private fun startSampler(threadName: String, previousSampler: MetricsSampler? = null): MetricsSampler {
         val started = MetricsSampler(
             threadName = threadName,
             listener = collector,
             tickIntervalMs = ::tickIntervalMs,
             onTick = ::onTick,
-            predecessor = predecessor,
+            previousSampler = previousSampler,
         )
         synchronized(samplerLock) { sampler = started }
         return started
@@ -172,9 +188,8 @@ internal class MetricsEngine(
     private fun replaceSampler(threadName: String) {
         synchronized(samplerLock) {
             val previous = sampler ?: return
-            val started = startSampler(threadName, predecessor = previous)
+            val started = startSampler(threadName, previousSampler = previous)
             previous.quit()?.let(started::bind)
-            if (isRunning) started.startTicking()
         }
     }
 
@@ -185,11 +200,19 @@ internal class MetricsEngine(
 
     @AnyThread
     private fun onMetricsThread(action: () -> Unit) {
+        synchronized(samplerLock) { postOrWarn(requireSampler(), action) }
+    }
+
+    @AnyThread
+    private fun onAggregates(action: () -> Unit) {
         synchronized(samplerLock) {
-            if (!requireSampler().post(action)) {
-                Log.w(LOG_TAG, "The metrics thread is gone, dropped a metrics task")
-            }
+            val running = sampler ?: return action()
+            postOrWarn(running, action)
         }
+    }
+
+    private fun postOrWarn(sampler: MetricsSampler, action: () -> Unit) {
+        if (!sampler.post(action)) Log.w(LOG_TAG, "The metrics thread is gone, dropped a metrics task")
     }
 
     @WorkerThread
@@ -205,10 +228,10 @@ internal class MetricsEngine(
         if (sampler?.isBound != true) return
         eventDispatcher.onSample(
             listeners = config().eventListeners,
-            metrics = aggregator.metrics.value,
-            memory = memoryMonitor.stats.value,
-            thermal = thermalMonitor.stats.value,
-            choreographerTicksPerSecond = choreographerTickMonitor.ticksPerSecond.value,
+            metrics = aggregator.liveMetrics,
+            memory = memoryMonitor.liveStats,
+            thermal = thermalMonitor.liveStats,
+            choreographerTicksPerSecond = choreographerTickMonitor.liveTicksPerSecond,
             screen = screenName,
             mark = _activeMark.value,
         )

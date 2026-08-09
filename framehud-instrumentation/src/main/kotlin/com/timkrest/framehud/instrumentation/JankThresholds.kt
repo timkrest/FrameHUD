@@ -4,7 +4,7 @@ import com.timkrest.framehud.JankSeverity
 import com.timkrest.framehud.SessionStats
 import java.util.Locale
 
-/** What counts as a failure. A threshold of [Float.POSITIVE_INFINITY] is not checked. */
+/** Infinite thresholds are ignored. */
 public data class JankThresholds(
     val maxJankPercent: Float = JankSeverity.WARNING_JANK_PERCENT,
     val maxFrozenFrames: Int = 0,

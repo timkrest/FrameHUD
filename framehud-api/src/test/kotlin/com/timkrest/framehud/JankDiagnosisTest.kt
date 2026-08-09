@@ -50,7 +50,7 @@ class JankDiagnosisTest {
     @Test
     fun `brief gc is not blamed`() {
         val diagnosis = diagnose(
-            metrics = metrics(jankPercent = 30f, sessionDurationMs = 10_000L, bottleneckMs = 12f),
+            metrics = metrics(jankPercent = 30f, sessionDurationMs = 10_000L, busiestStageMs = 12f),
             memory = MemoryStats.EMPTY.copy(gcTimeMs = 100L),
         )
         assertIs<JankCause.Stage>(diagnosis.cause)
@@ -59,7 +59,7 @@ class JankDiagnosisTest {
     @Test
     fun `starved vsync is reported before frame phases`() {
         val diagnosis = diagnose(
-            metrics = metrics(jankPercent = 30f, bottleneckMs = 12f),
+            metrics = metrics(jankPercent = 30f, busiestStageMs = 12f),
             choreographerTicksPerSecond = 30,
         )
         assertEquals(JankCause.VsyncStarvation(ticksPerSecond = 30, refreshRateHz = 60f), diagnosis.cause)
@@ -67,7 +67,7 @@ class JankDiagnosisTest {
 
     @Test
     fun `late start beats the busiest stage`() {
-        val diagnosis = diagnose(metrics = metrics(jankPercent = 30f, unknownDelayMs = 14f, bottleneckMs = 9f))
+        val diagnosis = diagnose(metrics = metrics(jankPercent = 30f, unknownDelayMs = 14f, busiestStageMs = 9f))
         assertEquals(JankCause.LateStart(delayMs = 14f), diagnosis.cause)
     }
 
@@ -77,7 +77,7 @@ class JankDiagnosisTest {
             metrics = metrics(
                 jankPercent = 30f,
                 unknownDelayMs = 1f,
-                bottleneckMs = 11f,
+                busiestStageMs = 11f,
                 bottleneckStage = PipelineStage.GPU,
             ),
         )
@@ -96,21 +96,20 @@ class JankDiagnosisTest {
         choreographerTicksPerSecond = choreographerTicksPerSecond,
     )
 
-    /** Bottleneck is derived — load the phase that should win. */
     private fun metrics(
         jankPercent: Float,
         unknownDelayMs: Float = 0f,
-        bottleneckMs: Float = 0f,
+        busiestStageMs: Float = 0f,
         bottleneckStage: PipelineStage = PipelineStage.CPU,
         sessionDurationMs: Long = 1_000L,
     ): PerformanceMetrics {
-        val busiest = MetricValue(average = bottleneckMs)
+        val busiestStage = MetricValue(average = busiestStageMs)
         val unknownDelay = MetricValue(average = unknownDelayMs)
         return PerformanceMetrics(
             phases = when (bottleneckStage) {
-                PipelineStage.CPU -> FramePhases(unknownDelay = unknownDelay, draw = busiest)
-                PipelineStage.RENDER -> FramePhases(unknownDelay = unknownDelay, sync = busiest)
-                PipelineStage.GPU -> FramePhases(unknownDelay = unknownDelay, gpu = busiest)
+                PipelineStage.CPU -> FramePhases(unknownDelay = unknownDelay, draw = busiestStage)
+                PipelineStage.RENDER -> FramePhases(unknownDelay = unknownDelay, sync = busiestStage)
+                PipelineStage.GPU -> FramePhases(unknownDelay = unknownDelay, gpu = busiestStage)
             },
             window = FrameWindowStats(jankPercent = jankPercent),
             session = SessionStats.EMPTY.copy(durationMs = sessionDurationMs),

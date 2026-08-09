@@ -6,7 +6,6 @@ internal const val LABEL_CPU_SECTION = "CPU"
 internal const val LABEL_RENDER_SECTION = "RENDER"
 internal const val LABEL_GPU_SECTION = "GPU"
 
-/** Marks the sections an emulator measures on the host machine rather than on a device. */
 internal const val LABEL_HOST_SECTION = " · host"
 internal const val LABEL_INPUT = "input"
 internal const val LABEL_ANIMATION = "anim"

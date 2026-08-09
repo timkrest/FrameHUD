@@ -51,9 +51,8 @@ internal class PanelWindow(
         title = LOG_TAG
     }
 
-    // A slow drag delivers fractions of a pixel per frame, which would round to nothing every time.
-    private var positionX = layoutParams.x.toFloat()
-    private var positionY = layoutParams.y.toFloat()
+    private var preciseX = layoutParams.x.toFloat()
+    private var preciseY = layoutParams.y.toFloat()
 
     private val configurationCallbacks = object : ComponentCallbacks {
         override fun onConfigurationChanged(newConfig: Configuration) = clampIntoDisplay()
@@ -90,16 +89,16 @@ internal class PanelWindow(
         lifecycleOwner.stop()
     }
 
-    private fun moveBy(dx: Float, dy: Float) = moveTo(positionX - dx, positionY + dy)
+    private fun moveBy(dx: Float, dy: Float) = moveTo(preciseX - dx, preciseY + dy)
 
-    private fun clampIntoDisplay() = moveTo(positionX, positionY)
+    private fun clampIntoDisplay() = moveTo(preciseX, preciseY)
 
     private fun moveTo(x: Float, y: Float) {
         val displayMetrics = context.resources.displayMetrics
-        positionX = x.coerceIn(0f, travelRange(displayMetrics.widthPixels, view.width))
-        positionY = y.coerceIn(0f, travelRange(displayMetrics.heightPixels, view.height))
-        layoutParams.x = positionX.roundToInt()
-        layoutParams.y = positionY.roundToInt()
+        preciseX = x.coerceIn(0f, travelRange(displayMetrics.widthPixels, view.width))
+        preciseY = y.coerceIn(0f, travelRange(displayMetrics.heightPixels, view.height))
+        layoutParams.x = preciseX.roundToInt()
+        layoutParams.y = preciseY.roundToInt()
         guarded("moving the panel window") { windowManager.updateViewLayout(view, layoutParams) }
     }
 

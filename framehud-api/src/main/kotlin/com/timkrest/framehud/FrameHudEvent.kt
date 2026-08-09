@@ -14,6 +14,23 @@ public sealed interface FrameHudEvent {
     /** One line ready for a log, a notification or a test failure message. */
     public val summary: String
 
+    /**
+     * Emitted at most once for each Activity instance, and only on API 29+, where
+     * `onActivityPreCreated` provides a start timestamp before `onCreate`. [timeToDisplayMs] spans
+     * that callback and the end of the first frame. The frame itself is not included in rolling or
+     * session stats.
+     */
+    public data class FirstFrame(
+        val timeToDisplayMs: Float,
+        override val screen: String?,
+    ) : FrameHudEvent {
+
+        /** Always null. */
+        override val mark: String? get() = null
+
+        override val summary: String get() = formatInvariant("%s: first frame in %.1f ms", origin(), timeToDisplayMs)
+    }
+
     /** The rolling window crossed [JankSeverity.WARNING]. Sent once per burst, not per frame. */
     public data class JankBurst(
         val diagnosis: JankDiagnosis,
@@ -41,18 +58,18 @@ public sealed interface FrameHudEvent {
             get() = "${origin()}: thermal status is now ${level.name.lowercase(Locale.US)}"
     }
 
-    /** Collection for one screen finished — it paused, was replaced, or the panel was disabled. */
+    /** Collection ended because the screen paused, was replaced, or FrameHud was disabled. */
     public data class ScreenEnded(val stats: SessionStats, override val screen: String?) : FrameHudEvent {
 
-        /** Always null: a screen spans interactions, and each of them reports on its own. */
+        /** Always null. */
         override val mark: String? get() = null
 
         override val summary: String get() = stats.summarize(origin())
     }
 
     /**
-     * An interaction ended, either because `FrameHud.mark` was cleared or because the screen it ran
-     * on went away. [stats] cover the frames drawn while it was open, and nothing else.
+     * An interaction ended because `FrameHud.mark` was cleared or its screen went away. [stats]
+     * contain only frames drawn while the mark was active.
      */
     public data class MarkEnded(
         val stats: SessionStats,
@@ -72,7 +89,7 @@ public fun interface FrameHudEventListener {
 private fun FrameHudEvent.origin(): String =
     listOfNotNull(screen, mark).joinToString(separator = "/").ifEmpty { "no screen" }
 
-private fun SessionStats.summarize(origin: String): String = format(
+private fun SessionStats.summarize(origin: String): String = formatInvariant(
     "%s: %d frames in %.1fs, jank %.1f%%, p95 %.1f ms, frozen %d",
     origin,
     frames,

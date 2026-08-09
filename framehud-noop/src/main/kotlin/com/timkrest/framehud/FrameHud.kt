@@ -8,9 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * No-op stand-in for the real `FrameHud`, matching its API exactly. Depend on it in release builds:
- * calls still compile, but nothing is measured, no window is added and no `SYSTEM_ALERT_WINDOW`
- * permission reaches your manifest.
+ * No-op replacement for `FrameHud`. It keeps release calls compiling without collecting metrics,
+ * adding a window, or merging the overlay permission.
  */
 @MainThread
 public object FrameHud {

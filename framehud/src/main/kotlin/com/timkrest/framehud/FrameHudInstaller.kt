@@ -10,9 +10,6 @@ import com.timkrest.framehud.internal.isMainProcess
 /**
  * Installs [FrameHud] before the first activity is created. Remove it from the merged manifest to
  * opt out and call [FrameHud.install] yourself.
- *
- * Apps name this class in their manifest, so its package is public contract even though the class
- * is not meant to be called.
  */
 internal class FrameHudInstaller : ContentProvider() {
 

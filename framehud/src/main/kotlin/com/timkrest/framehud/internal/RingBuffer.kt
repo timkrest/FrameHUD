@@ -3,10 +3,6 @@ package com.timkrest.framehud.internal
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * The last [capacity] samples, with a running sum so the average costs nothing to read. Sampling
- * runs on every frame, so nothing here allocates once the buffer is built.
- */
 internal class RingBuffer(private val capacity: Int) {
 
     private val buffer = FloatArray(capacity)
@@ -21,10 +17,7 @@ internal class RingBuffer(private val capacity: Int) {
     var size = 0
         private set
 
-    /**
-     * Highest value since the last [clear], including samples the window has since evicted, or null
-     * while nothing has been added. Samples can be negative, so zero cannot stand in for "no peak".
-     */
+    /** Highest value since [clear], including samples no longer in the ring. */
     val peak: Float? get() = if (hasPeak) peakValue else null
 
     fun add(value: Float) {

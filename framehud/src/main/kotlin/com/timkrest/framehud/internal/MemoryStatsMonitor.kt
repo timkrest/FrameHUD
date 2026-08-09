@@ -1,19 +1,21 @@
 package com.timkrest.framehud.internal
 
 import android.os.Debug
+import androidx.annotation.AnyThread
+import androidx.annotation.WorkerThread
 import com.timkrest.framehud.MemoryStats
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.max
 
+@WorkerThread
 internal class MemoryStatsMonitor {
 
-    private val _stats = MutableStateFlow(MemoryStats.EMPTY)
-    val stats: StateFlow<MemoryStats> = _stats.asStateFlow()
+    private val readings = FreezableReading(MemoryStats.EMPTY)
 
-    @Volatile
-    private var isFrozen = false
+    @get:AnyThread
+    val stats: StateFlow<MemoryStats> = readings.published
+
+    val liveStats: MemoryStats get() = readings.live
 
     private var gcBaseline: GcBaseline? = null
     private var peakUsedHeapMb = 0
@@ -26,28 +28,30 @@ internal class MemoryStatsMonitor {
         val nativeHeapMb = (Debug.getNativeHeapAllocatedSize() / BYTES_PER_MB).toInt()
         peakUsedHeapMb = max(peakUsedHeapMb, usedHeapMb)
         peakNativeHeapMb = max(peakNativeHeapMb, nativeHeapMb)
-        if (isFrozen) return
 
-        _stats.value = MemoryStats(
-            usedHeapMb = usedHeapMb,
-            maxHeapMb = (runtime.maxMemory() / BYTES_PER_MB).toInt(),
-            nativeHeapMb = nativeHeapMb,
-            peakUsedHeapMb = peakUsedHeapMb,
-            peakNativeHeapMb = peakNativeHeapMb,
-            gcCount = readGcCount() - baseline.count,
-            gcTimeMs = readGcTimeMs() - baseline.timeMs,
+        readings.update(
+            MemoryStats(
+                usedHeapMb = usedHeapMb,
+                maxHeapMb = (runtime.maxMemory() / BYTES_PER_MB).toInt(),
+                nativeHeapMb = nativeHeapMb,
+                peakUsedHeapMb = peakUsedHeapMb,
+                peakNativeHeapMb = peakNativeHeapMb,
+                gcCount = readGcCount() - baseline.count,
+                gcTimeMs = readGcTimeMs() - baseline.timeMs,
+            ),
         )
     }
 
+    @AnyThread
     fun setFrozen(frozen: Boolean) {
-        isFrozen = frozen
+        readings.setFrozen(frozen)
     }
 
     fun reset() {
         gcBaseline = readGcBaseline()
         peakUsedHeapMb = 0
         peakNativeHeapMb = 0
-        _stats.value = MemoryStats.EMPTY
+        readings.reset(MemoryStats.EMPTY)
     }
 
     private fun readGcBaseline(): GcBaseline = GcBaseline(count = readGcCount(), timeMs = readGcTimeMs())
@@ -56,7 +60,6 @@ internal class MemoryStatsMonitor {
 
     private fun readGcTimeMs(): Long = Debug.getRuntimeStat(STAT_GC_TIME)?.toLongOrNull() ?: 0L
 
-    /** GC counters are cumulative for the process, so they are only meaningful against a baseline. */
     private data class GcBaseline(val count: Int, val timeMs: Long)
 
     private companion object {

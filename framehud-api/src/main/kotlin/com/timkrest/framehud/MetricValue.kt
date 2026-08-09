@@ -19,13 +19,11 @@ public data class MetricValue(
     }
 }
 
-/** Derived timings carry no peak of their own, so [MetricValue.peak] stays null. */
 internal operator fun MetricValue.plus(other: MetricValue): MetricValue = MetricValue(
     current = current + other.current,
     average = average + other.average,
 )
 
-/** Clamped at zero — phases must not sum to a negative timing. */
 internal operator fun MetricValue.minus(other: MetricValue): MetricValue = MetricValue(
     current = (current - other.current).coerceAtLeast(0f),
     average = (average - other.average).coerceAtLeast(0f),

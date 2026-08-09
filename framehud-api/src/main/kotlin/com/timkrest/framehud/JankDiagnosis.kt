@@ -3,7 +3,6 @@ package com.timkrest.framehud
 import androidx.compose.runtime.Immutable
 import java.util.Locale
 
-/** Why frames are missing their deadline. */
 public sealed interface JankCause {
 
     public val summary: String
@@ -18,22 +17,23 @@ public sealed interface JankCause {
 
     /** [timeShare] is the fraction of the session spent in GC pauses, 0..1. */
     public data class Gc(val timeShare: Float) : JankCause {
-        override val summary: String get() = format("GC pauses take %.1f%% of the session", timeShare * PERCENT)
+        override val summary: String get() = formatInvariant("GC pauses take %.1f%% of the session", timeShare * PERCENT)
     }
 
     /** Ticks keep arriving on a still screen, so a low count means a blocked main thread, not an idle one. */
     public data class VsyncStarvation(val ticksPerSecond: Int, val refreshRateHz: Float) : JankCause {
-        override val summary: String get() = format("main thread handled %d ticks/s on a %.0f Hz display", ticksPerSecond, refreshRateHz)
+        override val summary: String
+            get() = formatInvariant("main thread handled %d ticks/s on a %.0f Hz display", ticksPerSecond, refreshRateHz)
     }
 
     /** Frames start late: work queued before rendering is holding the main thread. */
     public data class LateStart(val delayMs: Float) : JankCause {
-        override val summary: String get() = format("frames start %.1f ms late", delayMs)
+        override val summary: String get() = formatInvariant("frames start %.1f ms late", delayMs)
     }
 
     public data class Stage(val stage: PipelineStage, val averageMs: Float) : JankCause {
         override val summary: String
-            get() = format("%s bound, %.1f ms per frame", stage.name.lowercase(Locale.US), averageMs)
+            get() = formatInvariant("%s bound, %.1f ms per frame", stage.name.lowercase(Locale.US), averageMs)
     }
 }
 
@@ -55,7 +55,7 @@ public enum class JankSeverity {
     }
 }
 
-/** The rolling window boiled down to one cause, for logs, listeners and test assertions. */
+/** Diagnosis for the current rolling window. */
 @Immutable
 public data class JankDiagnosis(
     val cause: JankCause,
@@ -65,7 +65,13 @@ public data class JankDiagnosis(
     val frameBudgetMs: Float,
 ) {
     public val summary: String
-        get() = format("jank %.1f%%, worst %.1f ms of %.1f ms — %s", jankPercent, worstFrameMs, frameBudgetMs, cause.summary)
+        get() = formatInvariant(
+            "jank %.1f%%, worst %.1f ms of %.1f ms — %s",
+            jankPercent,
+            worstFrameMs,
+            frameBudgetMs,
+            cause.summary,
+        )
 
     public companion object {
         public val HEALTHY: JankDiagnosis = JankDiagnosis(
@@ -76,13 +82,10 @@ public data class JankDiagnosis(
             frameBudgetMs = 0f,
         )
 
-        /** Below this, GC pauses are lost in the noise and explain nothing. */
-        private const val GC_TIME_SHARE_THRESHOLD = 0.02f
+        private const val MIN_GC_TIME_SHARE = 0.02f
 
-        /** Serving fewer than this share of vsyncs means the main thread is busy outside rendering. */
         private const val VSYNC_STARVATION_RATIO = 0.7f
 
-        /** Attributes jank to the most specific cause that fires: thermal, GC, vsync, late start, stage. */
         public fun of(
             metrics: PerformanceMetrics,
             memory: MemoryStats,
@@ -97,7 +100,7 @@ public data class JankDiagnosis(
             val gcTimeShare = gcTimeShare(memory, metrics.session)
             val cause = when {
                 thermal.level.isThrottling -> JankCause.Thermal(thermal.level)
-                gcTimeShare >= GC_TIME_SHARE_THRESHOLD -> JankCause.Gc(gcTimeShare)
+                gcTimeShare >= MIN_GC_TIME_SHARE -> JankCause.Gc(gcTimeShare)
                 isVsyncStarved(choreographerTicksPerSecond, refreshRateHz) ->
                     JankCause.VsyncStarvation(choreographerTicksPerSecond, refreshRateHz)
 

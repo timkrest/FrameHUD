@@ -5,9 +5,9 @@ import androidx.compose.runtime.Immutable
 /**
  * A frame broken down by pipeline phase, sampled from `FrameMetrics`. All timings are milliseconds.
  *
- * [input], [animation], [layout] and [draw] happen on the UI thread; [sync], [commandIssue] and
- * [swapBuffers] on the render thread; [gpu] on the GPU. Those three stages run in parallel, so
- * under sustained load the frame rate is bound by [bottleneck] rather than by [total].
+ * [input], [animation], [layout] and [draw] run on the UI thread; [sync], [commandIssue] and
+ * [swapBuffers] run on the render thread; [gpu] runs on the GPU. The stages overlap, so sustained
+ * throughput is limited by [bottleneck], not [total].
  */
 @Immutable
 public data class FramePhases(
@@ -29,7 +29,7 @@ public data class FramePhases(
     val total: MetricValue = MetricValue.ZERO,
     /** [total] minus [DisplayInfo.frameBudgetMs]. Negative means the frame finished with headroom. */
     val overrun: MetricValue = MetricValue.ZERO,
-    /** False until a real [gpu] sample lands — a zero [gpu] is never an idle GPU. */
+    /** True after `FrameMetrics` reports a positive GPU duration. */
     val isGpuAvailable: Boolean = false,
 ) {
     public val cpu: MetricValue = input + animation + layout + draw
@@ -39,14 +39,13 @@ public data class FramePhases(
     /** Unattributed remainder of [total]. Normally near zero. */
     public val other: MetricValue = total - unknownDelay - cpu - render
 
-    /** Stage with the highest average. */
     public val bottleneckStage: PipelineStage = when {
         cpu.average >= render.average && cpu.average >= gpu.average -> PipelineStage.CPU
         render.average >= gpu.average -> PipelineStage.RENDER
         else -> PipelineStage.GPU
     }
 
-    /** The [bottleneckStage] timing. [MetricValue.peak] is always null, even for [gpu], which tracks one. */
+    /** Timing for [bottleneckStage]. Its [MetricValue.peak] is always null. */
     public val bottleneck: MetricValue = when (bottleneckStage) {
         PipelineStage.CPU -> cpu
         PipelineStage.RENDER -> render

@@ -4,18 +4,16 @@ import android.os.Build
 import android.view.Display
 import android.view.FrameMetrics
 import android.view.Window
+import androidx.annotation.AnyThread
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.WorkerThread
+import java.util.concurrent.atomic.AtomicReference
 
-/**
- * Reads `FrameMetrics` and hands the numbers to [FrameAggregator]. Everything version-dependent
- * lives here, so the aggregation stays platform-free and testable.
- */
-@WorkerThread
 internal class FrameMetricsCollector(
     private val aggregator: FrameAggregator,
     private val clock: MetricsClock,
     private val display: () -> Display?,
+    private val onFirstFrame: (timeToDisplayMs: Float, screen: String?) -> Unit,
 ) : Window.OnFrameMetricsAvailableListener {
 
     @field:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
@@ -26,6 +24,19 @@ internal class FrameMetricsCollector(
 
     private val scratchDurationsMs = FloatArray(FramePhase.entries.size)
 
+    private val pendingFirstFrame = AtomicReference<PendingFirstFrame?>()
+
+    @AnyThread
+    fun expectFirstFrame(window: Window, creation: ScreenCreation?, screen: String?) {
+        pendingFirstFrame.set(creation?.let { PendingFirstFrame(window = window, creation = it, screen = screen) })
+    }
+
+    @AnyThread
+    fun forgetFirstFrame() {
+        pendingFirstFrame.set(null)
+    }
+
+    @WorkerThread
     override fun onFrameMetricsAvailable(
         window: Window,
         frameMetrics: FrameMetrics,
@@ -33,7 +44,11 @@ internal class FrameMetricsCollector(
     ) {
         guarded("reading frame metrics") {
             aggregator.addDroppedReports(dropCountSinceLastInvocation)
-            if (frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) != 0L) return@guarded
+            val expected = takeExpectedFirstFrame(window)
+            if (frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) != 0L) {
+                expected?.let { reportFirstFrame(it, frameEndTimestampNs(frameMetrics)) }
+                return@guarded
+            }
 
             frameMetrics.readPhaseDurationsMs(scratchDurationsMs)
             aggregator.addFrame(
@@ -46,6 +61,16 @@ internal class FrameMetricsCollector(
         }
     }
 
+    private fun takeExpectedFirstFrame(window: Window): PendingFirstFrame? {
+        val expected = pendingFirstFrame.get() ?: return null
+        if (expected.window !== window) return null
+        return if (pendingFirstFrame.compareAndSet(expected, null)) expected else null
+    }
+
+    private fun reportFirstFrame(expected: PendingFirstFrame, frameEndNs: Long) {
+        expected.creation.timeToDisplayMs(frameEndNs)?.let { onFirstFrame(it, expected.screen) }
+    }
+
     private fun frameDeadlineNs(frameMetrics: FrameMetrics): Long? =
         if (hasApi31FrameMetrics) frameMetrics.getMetric(FrameMetrics.DEADLINE).takeIf { it > 0L } else null
 
@@ -55,4 +80,6 @@ internal class FrameMetricsCollector(
     } else {
         clock.nanoTime()
     }
+
+    private class PendingFirstFrame(val window: Window, val creation: ScreenCreation, val screen: String?)
 }

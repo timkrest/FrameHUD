@@ -3,31 +3,25 @@ package com.timkrest.framehud.internal
 import android.view.Choreographer
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.roundToInt
 
 /**
- * Counts the Choreographer ticks the main thread serves each second — the reading that tells a
- * blocked main thread apart from a screen with nothing to draw, since neither produces frames.
- *
- * It costs a frame callback posted for as long as a window is bound, which wakes the main thread
- * every vsync even on a still screen. Nothing cheaper reports the same thing, so it is kept to the
- * shortest span that answers the question: [start] and [stop] follow the bound window, not the
- * process.
+ * Counts main-thread Choreographer callbacks while a window is bound. They continue on a still
+ * screen, so a low count distinguishes a blocked main thread from an idle renderer.
  */
 internal class ChoreographerTickMonitor {
 
-    private val _ticksPerSecond = MutableStateFlow(0)
-    val ticksPerSecond: StateFlow<Int> = _ticksPerSecond.asStateFlow()
+    private val readings = FreezableReading(0)
+
+    @get:AnyThread
+    val ticksPerSecond: StateFlow<Int> = readings.published
+
+    val liveTicksPerSecond: Int get() = readings.live
 
     private var activeCallback: Choreographer.FrameCallback? = null
     private var windowStartNs: Long? = null
     private var tickCount = 0
-
-    @Volatile
-    private var isFrozen = false
 
     @MainThread
     fun start() {
@@ -49,12 +43,12 @@ internal class ChoreographerTickMonitor {
     fun stop() {
         activeCallback?.let(Choreographer.getInstance()::removeFrameCallback)
         activeCallback = null
-        _ticksPerSecond.value = 0
+        readings.reset(0)
     }
 
     @AnyThread
     fun setFrozen(frozen: Boolean) {
-        isFrozen = frozen
+        readings.setFrozen(frozen)
     }
 
     private fun onTick(frameTimeNanos: Long) {
@@ -66,9 +60,7 @@ internal class ChoreographerTickMonitor {
         tickCount++
         val elapsedNs = frameTimeNanos - startNs
         if (elapsedNs >= NS_PER_SECOND) {
-            if (!isFrozen) {
-                _ticksPerSecond.value = ((tickCount * NS_PER_SECOND).toFloat() / elapsedNs).roundToInt()
-            }
+            readings.update(((tickCount * NS_PER_SECOND).toFloat() / elapsedNs).roundToInt())
             tickCount = 0
             windowStartNs = frameTimeNanos
         }

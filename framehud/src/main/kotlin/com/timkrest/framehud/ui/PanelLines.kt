@@ -22,7 +22,6 @@ internal data class PanelLine(
     val hasSeparatorAbove: Boolean,
 )
 
-/** Wraps the list so the panel composables stay skippable. */
 @Immutable
 internal data class PanelLines(val values: List<PanelLine>)
 
@@ -111,7 +110,6 @@ internal fun buildCollapsedLine(
     }
 }
 
-/** One string for the whole block, so the panel lays out its text in a single pass. */
 internal fun PanelLines.toAnnotatedString(): AnnotatedString = buildAnnotatedString {
     values.forEachIndexed { index, line ->
         if (index > 0) append('\n')

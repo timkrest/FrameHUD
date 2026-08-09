@@ -97,7 +97,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | --- | --- | --- |
 | `enabled` | `true` | While false, no window is added and no frames are collected. |
 | `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` keeps the panel inside the app window and never uses the permission. |
-| `eventListeners` | `[LogcatEventListener]` | Who receives jank burst, frozen frame, thermal, screen and interaction events. |
+| `eventListeners` | `[LogcatEventListener]` | Who receives first-frame, jank, frozen-frame, thermal, screen and interaction events. |
 | `metricsSampleWindowFrames` | `120` | How much history `avg` and the percentiles cover. |
 | `metricsThrottleIntervalMs` | `400` | How often the panel may redraw. Lower values cost more to render. |
 | `fallbackRefreshRateHz` | `60` | Refresh rate assumed when the display reports none. |
@@ -109,6 +109,20 @@ The panel is not the only way to read the numbers. `FrameHud.metrics`, `memorySt
 and `choreographerTicksPerSecond` are plain `StateFlow`s. A reading groups into `phases` (per-stage
 timings), `window` (fps, jank and p95 over the sampling window), `session` (since the last reset) and
 `display` (refresh rate and frame budget).
+
+## First frame
+
+`FrameHudEvent.FirstFrame` reports how long an Activity instance took to reach its first displayed
+frame. The timer starts before `onCreate` and stops at the end of that frame. The default listener
+writes `MainActivity: first frame in 123.4 ms` to logcat.
+
+Android marks first draws as expectedly slow, so FrameHUD reports them separately and keeps them out
+of the rolling and session jank statistics. An Activity recreation is a new measurement; returning
+to an existing Activity is not.
+
+This event needs API 29 or newer because its start timestamp comes from `onActivityPreCreated`,
+which was added in API 29. On older versions first draws remain excluded from jank statistics, but
+no `FirstFrame` event is sent.
 
 ## Jank events
 
@@ -208,6 +222,8 @@ layouts, churning garbage. Each one moves a different metric.
 
 - [Reading the panel](docs/metrics.md) — what every row means, how to measure a screen, and what to
   do when something turns red
+- [Comparing the tools](docs/comparison.md) — how FrameHUD differs from JankStats, Macrobenchmark,
+  Perfetto and Play Vitals
 - [API reference](https://javadoc.io/doc/com.timkrest/framehud) — generated from the sources of
   each release
 - [Roadmap](ROADMAP.md) — what is planned next, and what is deliberately not

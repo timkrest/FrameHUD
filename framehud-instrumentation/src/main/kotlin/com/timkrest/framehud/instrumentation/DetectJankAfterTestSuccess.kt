@@ -5,15 +5,12 @@ import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
-/** Leaves the annotated test or class out of [DetectJankAfterTestSuccess]. */
+/** Disables [DetectJankAfterTestSuccess] for a test or class. */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 public annotation class SkipJankDetection
 
-/**
- * Resets FrameHud before each test and asserts on jank once the test passes; a failing test is
- * reported as-is. Opt out of a test or class with [SkipJankDetection].
- */
+/** Resets FrameHud before a test and checks jank after it succeeds. */
 public class DetectJankAfterTestSuccess(
     private val thresholds: JankThresholds = JankThresholds(),
 ) : TestRule {

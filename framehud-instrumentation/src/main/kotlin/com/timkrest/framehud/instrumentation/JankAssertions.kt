@@ -5,9 +5,8 @@ import com.timkrest.framehud.FrameHud
 public object JankAssertions {
 
     /**
-     * Fails when the frames collected since the last [FrameHud.reset] break [thresholds], and also
-     * when nothing was collected — a silently green gate is worse than no gate. Call from the test
-     * thread, not the main thread.
+     * Fails when frames collected since [FrameHud.reset] exceed [thresholds], or when no frames were
+     * collected. Must not be called from the main thread.
      */
     @JvmStatic
     @JvmOverloads

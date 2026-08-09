@@ -8,15 +8,8 @@ import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.SessionStats
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
-/**
- * Takes plain numbers rather than `FrameMetrics`, so the rules that matter — what counts as janky,
- * what the frame budget is, when a reading is published — are covered by unit tests.
- * [FrameMetricsCollector] does the platform reading.
- */
 @WorkerThread
 internal class FrameAggregator(private var config: FrameHudConfig, private val clock: MetricsClock) {
 
@@ -28,23 +21,18 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
 
     private var mark: SessionAccumulator? = null
 
-    private val _metrics = MutableStateFlow(PerformanceMetrics.EMPTY)
+    private val readings = FreezableReading(PerformanceMetrics.EMPTY)
 
     @get:AnyThread
-    val metrics: StateFlow<PerformanceMetrics> = _metrics.asStateFlow()
+    val metrics: StateFlow<PerformanceMetrics> = readings.published
 
-    @Volatile
-    private var isFrozen = false
+    val liveMetrics: PerformanceMetrics get() = readings.live
 
     private var lastUpdateTime = 0L
     private var display = displayOf(config.fallbackRefreshRateHz)
     private var isDrainingToIdle = false
 
-    /**
-     * API 31 exposes `GPU_DURATION`, but many drivers and emulators answer 0 forever, which is
-     * indistinguishable from an idle GPU. The phase counts as available only once real data lands.
-     */
-    private var hasGpuSample = false
+    private var hasReportedGpuDuration = false
 
     fun addFrame(
         durationsMs: FloatArray,
@@ -55,16 +43,11 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
     ) {
         display = displayOf(refreshRateHz ?: config.fallbackRefreshRateHz, deadlineNs)
 
-        if (!hasGpuSample && durationsMs[FramePhase.GPU.ordinal] > 0f) hasGpuSample = true
-        val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
-
-        // Milliseconds are too coarse to tell a frame that lands exactly on the deadline from one
-        // that missed it.
-        val overrunMs = if (deadlineNs != null) {
-            (totalDurationNs - deadlineNs) / NS_PER_MS
-        } else {
-            totalMs - display.frameBudgetMs
+        if (!hasReportedGpuDuration && durationsMs[FramePhase.GPU.ordinal] > 0f) {
+            hasReportedGpuDuration = true
         }
+        val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
+        val overrunMs = frameOverrunMs(totalDurationNs, deadlineNs, totalMs)
         val isJanky = overrunMs > 0f
 
         frameWindow.add(durationsMs = durationsMs, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
@@ -89,7 +72,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
 
     @AnyThread
     fun setFrozen(frozen: Boolean) {
-        isFrozen = frozen
+        readings.setFrozen(frozen)
     }
 
     fun startCollecting() {
@@ -125,26 +108,27 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         mark?.clear()
         isDrainingToIdle = false
         lastUpdateTime = 0L
-        _metrics.value = PerformanceMetrics.EMPTY
+        readings.reset(PerformanceMetrics.EMPTY)
     }
 
     fun updateConfig(newConfig: FrameHudConfig) {
         val previousWindowFrames = config.metricsSampleWindowFrames
         config = newConfig
-        if (newConfig.metricsSampleWindowFrames != previousWindowFrames) frameWindow = FrameWindow(newConfig.metricsSampleWindowFrames)
+        if (newConfig.metricsSampleWindowFrames == previousWindowFrames) return
+        frameWindow = FrameWindow(newConfig.metricsSampleWindowFrames)
+        emitMetrics(clock.elapsedRealtimeMs())
     }
 
     private fun maybeEmit() {
-        if (isFrozen) return
         val now = clock.elapsedRealtimeMs()
         if (now - lastUpdateTime < config.metricsThrottleIntervalMs) return
-        lastUpdateTime = now
-        emitMetrics()
+        emitMetrics(now)
     }
 
-    private fun emitMetrics() {
+    private fun emitMetrics(now: Long) {
+        lastUpdateTime = now
         val fps = frameWindow.fps(clock.nanoTime())
-        _metrics.value = PerformanceMetrics(
+        val metrics = PerformanceMetrics(
             phases = FramePhases(
                 unknownDelay = frameWindow.metricValue(FramePhase.UNKNOWN_DELAY),
                 input = frameWindow.metricValue(FramePhase.INPUT),
@@ -157,7 +141,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
                 gpu = frameWindow.metricValue(FramePhase.GPU),
                 total = frameWindow.metricValue(FramePhase.TOTAL),
                 overrun = frameWindow.overrunValue(),
-                isGpuAvailable = FramePhase.GPU.isAvailable && hasGpuSample,
+                isGpuAvailable = FramePhase.GPU.isAvailable && hasReportedGpuDuration,
             ),
             window = FrameWindowStats(
                 fps = fps,
@@ -169,8 +153,16 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
             session = session.stats(),
             display = display,
         )
+        readings.update(metrics)
         if (fps == 0) isDrainingToIdle = false
     }
+
+    private fun frameOverrunMs(totalDurationNs: Long, deadlineNs: Long?, totalDurationMs: Float): Float =
+        if (deadlineNs != null) {
+            (totalDurationNs - deadlineNs) / NS_PER_MS
+        } else {
+            totalDurationMs - display.frameBudgetMs
+        }
 }
 
 private fun displayOf(refreshRateHz: Float, deadlineNs: Long? = null) = DisplayInfo(

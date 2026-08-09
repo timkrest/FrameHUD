@@ -1,6 +1,6 @@
 package com.timkrest.framehud
 
-/** Tuning knobs. Assign a copy at any time; changes apply at once. */
+/** Runtime configuration. Changes take effect when assigned to `FrameHud.config`. */
 public data class FrameHudConfig(
     /** While disabled, no window is added and no frames are collected. */
     val enabled: Boolean = true,
