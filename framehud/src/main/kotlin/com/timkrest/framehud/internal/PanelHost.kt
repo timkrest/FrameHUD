@@ -1,7 +1,6 @@
 package com.timkrest.framehud.internal
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.os.Build
@@ -11,52 +10,75 @@ import android.util.Log
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.MainThread
 import androidx.compose.runtime.remember
-import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.FrameHud
+import com.timkrest.framehud.FrameHudPanel
 import com.timkrest.framehud.OverlayMode
-import com.timkrest.framehud.ui.FrameHudPanel
+import com.timkrest.framehud.ui.Panel
 import com.timkrest.framehud.ui.PanelActions
 import com.timkrest.framehud.ui.PanelState
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @MainThread
-internal class PanelHost(
-    val application: Application,
-    private val config: () -> FrameHudConfig,
-    private val panelState: (canRequestOverlayPermission: Boolean) -> PanelState,
-    private val panelActions: (onDrag: (dx: Float, dy: Float) -> Unit) -> PanelActions,
-) {
+internal class PanelHost(private val application: Application) : FrameHudPanel {
 
     @SuppressLint("StaticFieldLeak")
     private var window: PanelWindow? = null
+
     private var lastPosition: PanelPosition? = null
+
     private var hasLoggedAppWindowFallback = false
 
+    private val isCollapsed = MutableStateFlow(false)
+
     private val mainHandler = Handler(Looper.getMainLooper())
+
     private val hideInBackground = Runnable { window?.setVisible(false) }
 
-    val isShowing: Boolean get() = window != null
-
-    val isAppWindow: Boolean get() = window?.mode == PanelWindowMode.APP
-
     @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
-    val canRequestOverlayPermission: Boolean
-        get() = config().overlayMode == OverlayMode.PREFER_SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+    private val canRequestOverlayPermission: Boolean
+        get() = FrameHud.config.overlayMode == OverlayMode.PREFER_SYSTEM &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
-    fun show(activity: Activity?): Boolean {
+    override fun onConfigChanged() {
+        if (!FrameHud.config.enabled) {
+            dismiss()
+            return
+        }
+        dismissIfWindowModeChanged()
+        show()
+    }
+
+    override fun onScreenFocused() {
         cancelPendingHide()
-        if (window != null) return true
+        if (FrameHud.config.enabled) {
+            dismissIfWindowModeChanged()
+            show()
+        }
+        window?.setVisible(true)
+    }
+
+    override fun onScreenLost() {
+        if (window?.mode == PanelWindowMode.APP) {
+            dismiss()
+        } else {
+            mainHandler.postDelayed(hideInBackground, BACKGROUND_HIDE_DELAY_MS)
+        }
+    }
+
+    private fun show() {
+        cancelPendingHide()
+        if (window != null) return
         val mode = resolveWindowMode()
         val windowContext = when (mode) {
             PanelWindowMode.SYSTEM -> systemOverlayContext(application)
-            PanelWindowMode.APP -> activity ?: return false
+            PanelWindowMode.APP -> FrameHud.focusedActivity ?: return
         }
         if (mode == PanelWindowMode.APP && canRequestOverlayPermission) logAppWindowFallbackOnce()
         val created = createWindow(context = windowContext, mode = mode)
-        if (!created.show()) return false
-        window = created
-        return true
+        if (created.show()) window = created
     }
 
-    fun dismiss() {
+    private fun dismiss() {
         cancelPendingHide()
         window?.let { current ->
             lastPosition = current.position
@@ -65,18 +87,9 @@ internal class PanelHost(
         window = null
     }
 
-    fun dismissIfWindowModeChanged() {
+    private fun dismissIfWindowModeChanged() {
         val current = window ?: return
         if (current.mode != resolveWindowMode()) dismiss()
-    }
-
-    fun makeVisible() {
-        cancelPendingHide()
-        window?.setVisible(true)
-    }
-
-    fun hideAfterActivitySwap() {
-        mainHandler.postDelayed(hideInBackground, BACKGROUND_HIDE_DELAY_MS)
     }
 
     private fun cancelPendingHide() {
@@ -86,15 +99,35 @@ internal class PanelHost(
     private fun createWindow(context: Context, mode: PanelWindowMode): PanelWindow {
         val canRequest = mode == PanelWindowMode.APP && canRequestOverlayPermission
         return PanelWindow(context = context, mode = mode, startPosition = lastPosition) { onDrag ->
-            FrameHudPanel(
+            Panel(
                 state = remember(canRequest) { panelState(canRequest) },
                 actions = remember(onDrag) { panelActions(onDrag) },
             )
         }
     }
 
+    private fun panelState(canRequestOverlayPermission: Boolean) = PanelState(
+        metrics = FrameHud.metrics,
+        choreographerTicksPerSecond = FrameHud.choreographerTicksPerSecond,
+        memory = FrameHud.memoryStats,
+        thermal = FrameHud.thermalStats,
+        activeMark = FrameHud.activeMark,
+        isCollapsed = isCollapsed,
+        isFrozen = FrameHud.isFrozen,
+        canRequestOverlayPermission = canRequestOverlayPermission,
+        isEmulator = isEmulatorDevice,
+    )
+
+    private fun panelActions(onDrag: (dx: Float, dy: Float) -> Unit) = PanelActions(
+        toggleCollapsed = { isCollapsed.value = !isCollapsed.value },
+        toggleFrozen = FrameHud::toggleFreeze,
+        reset = FrameHud::reset,
+        drag = onDrag,
+        requestOverlayPermission = { FrameHud.focusedActivity?.let(::openOverlayPermissionSettings) },
+    )
+
     private fun resolveWindowMode(): PanelWindowMode =
-        if (config().overlayMode == OverlayMode.PREFER_SYSTEM && canDrawOverlays(application)) {
+        if (FrameHud.config.overlayMode == OverlayMode.PREFER_SYSTEM && canDrawOverlays(application)) {
             PanelWindowMode.SYSTEM
         } else {
             PanelWindowMode.APP

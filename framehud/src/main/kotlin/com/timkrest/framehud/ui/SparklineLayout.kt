@@ -1,11 +1,9 @@
 package com.timkrest.framehud.ui
 
 import com.timkrest.framehud.FrameHistory
-import com.timkrest.framehud.InternalFrameHudApi
 import kotlin.math.max
 import kotlin.math.min
 
-@OptIn(InternalFrameHudApi::class)
 internal fun worstFramePerSlot(history: FrameHistory, slotCount: Int): FrameHistory {
     if (history.size == 0 || slotCount <= 0) return FrameHistory.EMPTY
 

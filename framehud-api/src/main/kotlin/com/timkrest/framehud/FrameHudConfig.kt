@@ -2,8 +2,9 @@ package com.timkrest.framehud
 
 /** Runtime configuration. Changes take effect when assigned to `FrameHud.config`. */
 public data class FrameHudConfig(
-    /** While disabled, no window is added and no frames are collected. */
+    /** While disabled, no frames are collected and no window is added. */
     val enabled: Boolean = true,
+    /** Ignored by builds that collect without the panel. */
     val overlayMode: OverlayMode = OverlayMode.PREFER_SYSTEM,
     val eventListeners: List<FrameHudEventListener> = listOf(LogcatEventListener),
     val metricsSampleWindowFrames: Int = DEFAULT_METRICS_SAMPLE_WINDOW_FRAMES,

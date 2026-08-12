@@ -1,11 +1,9 @@
 package com.timkrest.framehud.ui
 
 import com.timkrest.framehud.FrameHistory
-import com.timkrest.framehud.InternalFrameHudApi
 import org.junit.Test
 import kotlin.test.assertEquals
 
-@OptIn(InternalFrameHudApi::class)
 class SparklineLayoutTest {
 
     @Test

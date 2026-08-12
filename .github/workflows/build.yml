@@ -73,7 +73,7 @@ jobs:
           disable-animations: true
           script: >
             ./gradlew
-            :framehud:connectedDebugAndroidTest
+            :framehud-metrics:connectedDebugAndroidTest
             :sample:connectedDebugAndroidTest
             --stacktrace
 

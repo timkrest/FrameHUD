@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":framehud"))
+    api(project(":framehud-metrics"))
     api(libs.junit4)
 
     testImplementation(libs.kotlin.test)

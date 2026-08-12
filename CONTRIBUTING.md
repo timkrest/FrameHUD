@@ -15,7 +15,7 @@ SDK.
 Thread and window behaviour is covered by instrumentation tests, which need a device or emulator:
 
 ```
-./gradlew :framehud:connectedDebugAndroidTest :sample:connectedDebugAndroidTest
+./gradlew :framehud-metrics:connectedDebugAndroidTest :sample:connectedDebugAndroidTest
 ```
 
 CI runs both on API 24, 31 and 36 — the levels where `FrameMetrics` changes what it reports.
@@ -31,8 +31,10 @@ To try a change on a device:
 - Run `./gradlew build`.
 - If you changed a public declaration, run `./gradlew apiDump` and commit the updated `.api` files.
   It has to be a separate invocation — Gradle refuses to write and verify the same dumps in one run.
-- Keep `framehud-noop` in step with `framehud`: it mirrors the public API with empty bodies, and
-  `checkApiParity` fails when the two drift apart.
+  Declarations marked `@InternalFrameHudApi` stay out of the dumps, so nothing checks their
+  signatures for you.
+- Keep `framehud-noop` in step with `framehud-metrics`: it mirrors the public API with empty bodies,
+  and `checkApiParity` fails when the two drift apart.
 - Add a line under `Unreleased` in [CHANGELOG.md](CHANGELOG.md) for anything a user would notice.
 
 Contributions are covered by the [CLA](CLA.md); a bot asks you to sign it on your first pull request.

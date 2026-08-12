@@ -6,7 +6,6 @@ import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameWindowStats
-import com.timkrest.framehud.InternalFrameHudApi
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.ThermalStats
@@ -14,32 +13,32 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 @Preview(name = "Expanded", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
-private fun FrameHudPanelExpandedPreview() {
-    FrameHudPanel(state = previewState(), actions = previewActions())
+private fun PanelExpandedPreview() {
+    Panel(state = previewState(), actions = previewActions())
 }
 
 @Preview(name = "Collapsed", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
-private fun FrameHudPanelCollapsedPreview() {
-    FrameHudPanel(state = previewState(isCollapsed = true), actions = previewActions())
+private fun PanelCollapsedPreview() {
+    Panel(state = previewState(isCollapsed = true), actions = previewActions())
 }
 
 @Preview(name = "Frozen", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
-private fun FrameHudPanelFrozenPreview() {
-    FrameHudPanel(state = previewState(isFrozen = true), actions = previewActions())
+private fun PanelFrozenPreview() {
+    Panel(state = previewState(isFrozen = true), actions = previewActions())
 }
 
 @Preview(name = "Emulator", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
-private fun FrameHudPanelEmulatorPreview() {
-    FrameHudPanel(state = previewState(isEmulator = true), actions = previewActions())
+private fun PanelEmulatorPreview() {
+    Panel(state = previewState(isEmulator = true), actions = previewActions())
 }
 
 @Preview(name = "Marked", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
-private fun FrameHudPanelMarkedPreview() {
-    FrameHudPanel(state = previewState(activeMark = "scroll"), actions = previewActions())
+private fun PanelMarkedPreview() {
+    Panel(state = previewState(activeMark = "scroll"), actions = previewActions())
 }
 
 private fun previewState(
@@ -71,7 +70,6 @@ private const val PREVIEW_CHOREOGRAPHER_TICKS_PER_SECOND = 120
 
 private val PREVIEW_FRAME_PATTERN_MS = floatArrayOf(11f, 14f, 12f, 23f, 13f, 17f, 11f, 57f, 12f, 15f, 20f, 13f)
 
-@OptIn(InternalFrameHudApi::class)
 private fun previewHistory(): FrameHistory {
     val totalsMs = FloatArray(FrameHudConfig.DEFAULT_METRICS_SAMPLE_WINDOW_FRAMES) {
         PREVIEW_FRAME_PATTERN_MS[it % PREVIEW_FRAME_PATTERN_MS.size]

@@ -1,6 +1,7 @@
 package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
+import com.timkrest.framehud.internal.MS_PER_SECOND
 
 @Immutable
 public data class DisplayInfo(

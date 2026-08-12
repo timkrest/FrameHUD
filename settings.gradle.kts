@@ -18,6 +18,7 @@ dependencyResolutionManagement {
 rootProject.name = "framehud"
 
 include(":framehud-api")
+include(":framehud-metrics")
 include(":framehud")
 include(":framehud-noop")
 include(":framehud-instrumentation")

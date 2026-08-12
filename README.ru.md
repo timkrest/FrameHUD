@@ -17,6 +17,7 @@
 - **Говорит, почему кадры теряются** — троттлинг, паузы GC, редкие тики Choreographer, поздний старт
 - **Меряет приложение, а не себя** — панель рисуется в своём окне
 - **Роняет тесты из-за jank** — JUnit-правило с порогами
+- **Работает и без панели** — `framehud-metrics` собирает и отчитывается без окна и без разрешения
 - **Ничего в релизных сборках** — `debugImplementation` оставляет за бортом панель, её provider и
   `SYSTEM_ALERT_WINDOW`, который объявляет артефакт
 
@@ -24,7 +25,7 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.5.0")
+    debugImplementation("com.timkrest:framehud:0.6.0")
 }
 ```
 
@@ -80,10 +81,24 @@ therm none · hr 0.68
 `FrameHud` вне `src/debug` — релизной сборке всё равно надо скомпилировать эти строки:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.5.0")
+releaseImplementation("com.timkrest:framehud-noop:0.6.0")
 ```
 
 Он повторяет API с пустыми телами. Вызовы компилируются, ничего не измеряется, окно не добавляется.
+
+## Сбор без панели
+
+Сборка, которая должна отчитываться, но не рисовать, берёт `framehud-metrics` вместо `framehud`. Он
+собирает те же числа и шлёт те же события, но не добавляет ни окна, ни `SYSTEM_ALERT_WINDOW` в
+объединённый манифест.
+
+```kotlin
+qaImplementation("com.timkrest:framehud-metrics:0.6.0")
+```
+
+`FrameHud` — тот же объект, так что код вокруг остаётся прежним. `enabled` теперь включает только
+сбор, `show()`, `hide()` и `toggle()` по-прежнему означают `enabled`, а `overlayMode` не используется.
+`framehud` — это тот же артефакт плюс панель, так что debug-сборке больше ничего не нужно.
 
 ## Настройка
 
@@ -160,7 +175,7 @@ FrameHud.mark = null
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.5.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.6.0")
 ```
 
 ```kotlin
@@ -224,7 +239,7 @@ Render thread и GPU принадлежат хост-машине, поэтом�
   делать, когда что-то красное
 - [Сравнение инструментов](docs/comparison.ru.md) — чем FrameHUD отличается от JankStats,
   Macrobenchmark, Perfetto и Play Vitals
-- [Справочник API](https://javadoc.io/doc/com.timkrest/framehud) — генерируется из исходников
+- [Справочник API](https://javadoc.io/doc/com.timkrest/framehud-metrics) — генерируется из исходников
   каждого релиза
 - [Карта развития](ROADMAP.ru.md) — что планируется дальше и что сделано не будет
 - [Список изменений](CHANGELOG.md) — что поменялось в каждом релизе

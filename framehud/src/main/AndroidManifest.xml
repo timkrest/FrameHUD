@@ -5,8 +5,8 @@
 
     <application>
         <provider
-            android:name="com.timkrest.framehud.FrameHudInstaller"
-            android:authorities="${applicationId}.framehud-installer"
+            android:name="com.timkrest.framehud.PanelInstaller"
+            android:authorities="${applicationId}.framehud-panel-installer"
             android:exported="false" />
     </application>
 

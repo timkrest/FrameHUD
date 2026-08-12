@@ -13,7 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-internal fun FrameHudPanel(state: PanelState, actions: PanelActions, modifier: Modifier = Modifier) {
+internal fun Panel(state: PanelState, actions: PanelActions, modifier: Modifier = Modifier) {
     val metrics by state.metrics.collectAsStateWithLifecycle()
     val choreographerTicksPerSecond by state.choreographerTicksPerSecond.collectAsStateWithLifecycle()
     val memory by state.memory.collectAsStateWithLifecycle()

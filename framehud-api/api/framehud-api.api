@@ -29,7 +29,6 @@ public final class com/timkrest/framehud/FrameHistory {
 
 public final class com/timkrest/framehud/FrameHistory$Companion {
 	public final fun getEMPTY ()Lcom/timkrest/framehud/FrameHistory;
-	public final fun of ([F[F)Lcom/timkrest/framehud/FrameHistory;
 }
 
 public final class com/timkrest/framehud/FrameHudConfig {

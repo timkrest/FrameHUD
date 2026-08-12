@@ -21,6 +21,7 @@ kotlin {
     jvmToolchain(libs.int("jvmToolchain"))
     compilerOptions {
         jvmTarget = JvmTarget.fromTarget(libs.javaTarget.toString())
+        optIn.add("com.timkrest.framehud.InternalFrameHudApi")
     }
     explicitApi()
 }

@@ -11,9 +11,9 @@ dependencies {
 
 val checkApiParity by tasks.registering {
     group = "verification"
-    description = "Fails when this module stops mirroring the public API of :framehud."
+    description = "Fails when this module stops mirroring the public API of :framehud-metrics."
 
-    val implDump = rootProject.layout.projectDirectory.file("framehud/api/framehud.api")
+    val implDump = rootProject.layout.projectDirectory.file("framehud-metrics/api/framehud-metrics.api")
     val noOpDump = layout.projectDirectory.file("api/framehud-noop.api")
     inputs.files(implDump, noOpDump)
 
@@ -23,8 +23,7 @@ val checkApiParity by tasks.registering {
             error("Missing API dump(s): ${absent.joinToString()}. Run apiDump first.")
         }
 
-        // Compose adds $stable to the implementation, and the private constructors differ in arity.
-        val ignored = Regex("synthetic|\\\$stable")
+        val ignored = Regex("synthetic")
         fun publicSurface(file: java.io.File) = file.readLines()
             .filterNot { it.contains(ignored) }
             .map { it.trim() }
@@ -36,7 +35,7 @@ val checkApiParity by tasks.registering {
         if (missing.isNotEmpty() || extra.isNotEmpty()) {
             error(
                 buildString {
-                    appendLine("framehud-noop no longer mirrors framehud.")
+                    appendLine("framehud-noop no longer mirrors framehud-metrics.")
                     if (missing.isNotEmpty()) appendLine("Missing from no-op:\n  ${missing.joinToString("\n  ")}")
                     if (extra.isNotEmpty()) appendLine("Only in no-op:\n  ${extra.joinToString("\n  ")}")
                     appendLine("Align the two, then run apiDump.")

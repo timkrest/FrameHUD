@@ -5,17 +5,13 @@ plugins {
 }
 
 android {
-    defaultConfig {
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
     buildFeatures {
         compose = true
     }
 }
 
 dependencies {
-    api(project(":framehud-api"))
+    api(project(":framehud-metrics"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.runtime)
@@ -25,7 +21,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.savedstate)
     implementation(libs.androidx.annotation)
-    api(libs.coroutines.core)
+    implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -33,9 +29,4 @@ dependencies {
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.test)
-
-    androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.kotlin.test)
 }

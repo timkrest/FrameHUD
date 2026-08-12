@@ -13,9 +13,6 @@ deprecated for a release first.
 
 ## Next
 
-- **`framehud-metrics`** — collection without the panel: the same events and session stats, no window,
-  no `SYSTEM_ALERT_WINDOW` in the merged manifest. For QA and CI builds that should report without
-  drawing.
 - **Screen names** — the app names the current screen with a route like `product/{id}`, not
   `product/12345`, and that name replaces the activity class. Setting a new one closes the stats of
   the previous screen and starts the next; the window stays bound. Without this a single-activity

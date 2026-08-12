@@ -1,9 +1,10 @@
 package com.timkrest.framehud.internal
 
 import android.util.Log
+import com.timkrest.framehud.InternalFrameHudApi
 
-/** Keeps overlay failures from crashing the host app. */
-internal inline fun guarded(what: String, block: () -> Unit): Boolean =
+@InternalFrameHudApi
+public inline fun guarded(what: String, block: () -> Unit): Boolean =
     try {
         block()
         true

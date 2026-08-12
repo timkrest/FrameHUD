@@ -57,6 +57,7 @@ internal class PanelWindow(
     private val configurationCallbacks = object : ComponentCallbacks {
         override fun onConfigurationChanged(newConfig: Configuration) = clampIntoDisplay()
 
+        @Suppress("OVERRIDE_DEPRECATION")
         override fun onLowMemory() = Unit
     }
 

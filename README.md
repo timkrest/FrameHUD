@@ -17,6 +17,8 @@ you down.
 - **Says why frames drop** — thermal throttling, GC pauses, too few Choreographer ticks, or a late start
 - **Measures your app, not itself** — the panel draws in its own window
 - **Fails tests on jank** — a JUnit rule with thresholds
+- **Works without the panel** — `framehud-metrics` collects and reports with no window and no
+  permission
 - **Nothing in release builds** — `debugImplementation` leaves out the panel, its provider and the
   `SYSTEM_ALERT_WINDOW` it declares
 
@@ -24,7 +26,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.5.0")
+    debugImplementation("com.timkrest:framehud:0.6.0")
 }
 ```
 
@@ -80,10 +82,24 @@ last reset. Rows summed from other rows stop after `avg`.
 you call `FrameHud` outside `src/debug` — a release build still has to compile those lines:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.5.0")
+releaseImplementation("com.timkrest:framehud-noop:0.6.0")
 ```
 
 It mirrors the API with empty bodies. The calls compile, nothing is measured, no window is added.
+
+## Collect without the panel
+
+A build that has to report but must not draw takes `framehud-metrics` instead of `framehud`. It
+collects the same numbers and sends the same events, but adds no window and no `SYSTEM_ALERT_WINDOW`
+to the merged manifest.
+
+```kotlin
+qaImplementation("com.timkrest:framehud-metrics:0.6.0")
+```
+
+`FrameHud` is the same object, so the code around it stays as it is. `enabled` now switches
+collection alone, `show()`, `hide()` and `toggle()` still mean `enabled`, and `overlayMode` is
+ignored. `framehud` is this artifact plus the panel, so a debug build needs nothing else.
 
 ## Configure
 
@@ -160,7 +176,7 @@ Leaving the screen clears the mark for you, so a gesture never spills into the n
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.5.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.6.0")
 ```
 
 ```kotlin
@@ -224,8 +240,8 @@ layouts, churning garbage. Each one moves a different metric.
   do when something turns red
 - [Comparing the tools](docs/comparison.md) — how FrameHUD differs from JankStats, Macrobenchmark,
   Perfetto and Play Vitals
-- [API reference](https://javadoc.io/doc/com.timkrest/framehud) — generated from the sources of
-  each release
+- [API reference](https://javadoc.io/doc/com.timkrest/framehud-metrics) — generated from the sources
+  of each release
 - [Roadmap](ROADMAP.md) — what is planned next, and what is deliberately not
 - [Changelog](CHANGELOG.md) — what changed in each release
 - [Contributing](CONTRIBUTING.md) — how to build, and what to check before opening a pull request.

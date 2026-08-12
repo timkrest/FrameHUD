@@ -64,6 +64,7 @@ internal class MetricsEngine(
     val activeMark: StateFlow<String?> = _activeMark.asStateFlow()
 
     fun start(context: Context) {
+        if (isRunning) return
         isRunning = true
         requireSampler().post {
             thermalMonitor.bind(context)

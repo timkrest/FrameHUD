@@ -9,4 +9,5 @@ plugins {
 
 apiValidation {
     ignoredProjects += "sample"
+    nonPublicMarkers += "com.timkrest.framehud.InternalFrameHudApi"
 }

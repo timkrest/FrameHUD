@@ -4,13 +4,34 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.0] - 2026-08-12
 
 ### Added
 
+- `com.timkrest:framehud-metrics` collects without the panel: the same `FrameHud` API, the same
+  events and session stats, no window and no `SYSTEM_ALERT_WINDOW` in the merged manifest.
 - `FrameHudEvent.FirstFrame` reports how long each Activity instance took from before `onCreate` to
   its first displayed frame, on API 29 and newer. First draws remain excluded from jank and
   percentile statistics.
+
+### Changed
+
+- `FrameHud` ships in `framehud-metrics` now, and `framehud` holds the panel alone. Its package and
+  all of its declared members are unchanged, and `framehud` depends on `framehud-metrics`, so
+  `debugImplementation("com.timkrest:framehud:x.y.z")` needs no edit and code built against 0.5.0
+  keeps finding the class. Only a build that takes the AAR without its transitive dependencies has
+  to name `com.timkrest:framehud-metrics` itself.
+- The collector is built without the Compose compiler, so `FrameHud` lost the `$stable` field that
+  compiler generated. It was never a declared member, and `framehud-noop` never had one.
+- `framehud-instrumentation` now depends on `framehud-metrics` instead of `framehud`, so a test APK
+  that only asserts jank no longer pulls in Compose and `SYSTEM_ALERT_WINDOW`.
+- A frozen panel stays frozen when the app goes to the background in `APP_WINDOW` mode. It already
+  did with a system overlay.
+
+### Fixed
+
+- Collection no longer waits for the panel window. A window the platform refused to add left the
+  session without frames for as long as it kept refusing.
 
 ## [0.5.0] - 2026-08-09
 
@@ -154,7 +175,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.6.0
 [0.5.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.5.0
 [0.4.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.4.0
 [0.3.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.3.0

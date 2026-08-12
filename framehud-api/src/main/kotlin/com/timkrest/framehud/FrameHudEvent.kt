@@ -1,6 +1,7 @@
 package com.timkrest.framehud
 
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.internal.MS_PER_SECOND
 import java.util.Locale
 
 public sealed interface FrameHudEvent {

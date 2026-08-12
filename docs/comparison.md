@@ -18,7 +18,8 @@ or show its impact after release.
 
 JankStats is the closest match to FrameHUD: on API 24+ both use `FrameMetrics`. The difference is
 how much is already built. JankStats emits every frame; FrameHUD turns those frames into a panel,
-screen and session statistics, events and a jank gate for instrumentation tests.
+screen and session statistics, events and a jank gate for instrumentation tests. `framehud-metrics`
+drops the panel and keeps the rest, which is the closest FrameHUD gets to JankStats.
 
 ## Why the numbers may differ
 
