@@ -1,5 +1,6 @@
 package com.timkrest.framehud
 
+import android.app.Activity
 import android.app.Application
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
@@ -37,6 +38,16 @@ public object FrameHud {
     @Volatile
     @get:AnyThread
     @set:MainThread
+    public var screen: String? = null
+
+    @Volatile
+    @get:AnyThread
+    @set:MainThread
+    public var context: Map<String, String> = emptyMap()
+
+    @Volatile
+    @get:AnyThread
+    @set:MainThread
     public var mark: String? = null
 
     public fun install(application: Application): Unit = Unit
@@ -55,4 +66,9 @@ public object FrameHud {
 
     @WorkerThread
     public fun awaitSessionStats(timeoutMs: Long): SessionStats? = null
+
+    @WorkerThread
+    public fun exportSession(timeoutMs: Long): SessionExport? = null
+
+    public fun shareSession(activity: Activity, export: SessionExport): Unit = Unit
 }

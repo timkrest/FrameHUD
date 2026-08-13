@@ -10,4 +10,5 @@ plugins {
 apiValidation {
     ignoredProjects += "sample"
     nonPublicMarkers += "com.timkrest.framehud.InternalFrameHudApi"
+    ignoredClasses += "com.timkrest.framehud.metrics.BuildConfig"
 }

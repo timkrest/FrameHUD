@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
+import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -30,7 +32,16 @@ class ScreenEventsTest {
 
     @Before
     fun resetCollector() {
+        clearScreenNameAndContext()
         FrameHud.reset()
+    }
+
+    @After
+    fun clearScreenNameAndContext() {
+        runOnMain {
+            FrameHud.screen = null
+            FrameHud.context = emptyMap()
+        }
     }
 
     @Test
@@ -82,6 +93,58 @@ class ScreenEventsTest {
         val ended = awaitEvents<FrameHudEvent.ScreenEnded>(count = 2)
         assertEquals(screens, ended.map { it.screen })
         assertTrue(ended.all { it.stats.frames > 0 }, "a summary reported no frames")
+    }
+
+    @Test
+    fun namingScreensSplitsStatsWithoutTouchingTheWindow() {
+        runOnMain { FrameHud.screen = "cart" }
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.renderFrames(RENDER_MS)
+            runOnMain { FrameHud.screen = "checkout" }
+            scenario.renderFrames(RENDER_MS)
+            runOnMain { FrameHud.screen = null }
+            scenario.renderFrames(RENDER_MS)
+        }
+
+        val ended = awaitEvents<FrameHudEvent.ScreenEnded>(count = 3)
+        assertEquals(listOf("cart", "checkout", MainActivity::class.java.simpleName), ended.map { it.screen })
+        assertTrue(ended.all { it.stats.frames > 0 }, "a named screen reported no frames")
+    }
+
+    @Test
+    fun theFirstFrameCarriesTheScreenNameSetBeforeLaunch() {
+        assumeFirstFramesAreReported()
+        runOnMain { FrameHud.screen = "home" }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            val firstFrame = awaitEvents<FrameHudEvent.FirstFrame>(count = 1).single()
+            assertEquals("home", firstFrame.screen)
+        }
+    }
+
+    @Test
+    fun aScreenSummaryCarriesTheMeasurementContext() {
+        runOnMain { FrameHud.context = mapOf("variant" to "b") }
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.renderFrames(RENDER_MS)
+        }
+
+        val ended = awaitEvents<FrameHudEvent.ScreenEnded>(count = 1).single()
+        assertEquals(mapOf("variant" to "b"), ended.context)
+    }
+
+    @Test
+    fun renamingTheScreenEndsTheActiveMark() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.renderFrames(RENDER_MS)
+            runOnMain { FrameHud.mark = "scroll" }
+            scenario.renderFrames(RENDER_MS)
+            runOnMain { FrameHud.screen = "cart" }
+
+            val ended = awaitEvents<FrameHudEvent.MarkEnded>(count = 1).single()
+            assertEquals("scroll", ended.mark)
+            assertEquals(MainActivity::class.java.simpleName, ended.screen)
+            assertNull(FrameHud.mark, "the mark survived a screen change")
+        }
     }
 
     private fun assumeFirstFramesAreReported() {

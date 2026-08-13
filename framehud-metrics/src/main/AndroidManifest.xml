@@ -1,11 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application>
         <provider
             android:name="com.timkrest.framehud.FrameHudInstaller"
             android:authorities="${applicationId}.framehud-installer"
             android:exported="false" />
+
+        <provider
+            android:name="com.timkrest.framehud.internal.ExportFileProvider"
+            android:authorities="${applicationId}.framehud.exports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/framehud_export_paths" />
+        </provider>
+
+        <receiver
+            android:name="com.timkrest.framehud.FrameHudCommandReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.timkrest.framehud.ENABLE" />
+                <action android:name="com.timkrest.framehud.DISABLE" />
+                <action android:name="com.timkrest.framehud.RESET" />
+                <action android:name="com.timkrest.framehud.SCREEN" />
+                <action android:name="com.timkrest.framehud.MARK" />
+                <action android:name="com.timkrest.framehud.CONTEXT" />
+                <action android:name="com.timkrest.framehud.EXPORT" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

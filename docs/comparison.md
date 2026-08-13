@@ -40,7 +40,8 @@ in the same metric, captured by the same tool under the same conditions.
 
 1. FrameHUD finds the problem and points at a suspicious stage.
 2. Macrobenchmark confirms the regression in a repeatable scenario.
-3. Perfetto finds the specific cause.
+3. Perfetto finds the specific cause; the recorded trace already carries FrameHUD's screens and
+   marks as `framehud:*` sections next to its counters.
 4. Play Vitals shows whether users are affected.
 
 JankStats sits outside this sequence: use it when the app needs custom performance telemetry.

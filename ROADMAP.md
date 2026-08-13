@@ -13,25 +13,6 @@ deprecated for a release first.
 
 ## Next
 
-- **Screen names** — the app names the current screen with a route like `product/{id}`, not
-  `product/12345`, and that name replaces the activity class. Setting a new one closes the stats of
-  the previous screen and starts the next; the window stays bound. Without this a single-activity
-  app is one screen for the whole session.
-- **adb control** — `enable`, `disable`, `reset`, `mark`, `screen` and `export` over a broadcast.
-  Only debug builds register the receiver. A QA build starts reporting, marks a scenario and pulls
-  the result without a rebuild.
-- **Session export** — JSON and a self-contained HTML report with stats, the frame window, worst-frame
-  timestamps, context, device, API, app version, refresh rate and measurement state. The app may add
-  its own diagnostic files; the result goes to CI or the system share sheet, but is never uploaded
-  automatically.
-- **Measurement context** — a few `key=value` pairs next to the screen and `mark`: UI variant, action,
-  test scenario. Events and exports retain the state in which jank happened, as JankStats does.
-- **A Perfetto track** — screens and marks as trace sections, jank and frozen frames as events, and
-  p95, jank and memory as counters. A normal system trace gains FrameHUD context and Macrobenchmark
-  can measure named sections; FrameHUD does not record the trace itself.
-
-## Later
-
 - **Measurement confidence** — mark a report suspect after dropped `FrameMetrics`, throttling, a
   refresh-rate change, an emulator, low battery, a slow listener or a sample that is too short.
   Counted per metric: an emulator says little about GPU timings but measures main-thread jank fine.
@@ -44,6 +25,9 @@ deprecated for a release first.
   passes it to the next run, the device keeps nothing. The report shows the delta, how many runs are
   affected and which phase regressed most. A fixed threshold that fits one device is flaky on the
   next — the usual reason a jank gate ends up switched off.
+
+## Later
+
 - **First usable frame** — the app says when its data is ready and measurement ends on the next
   displayed frame, so a quickly drawn skeleton no longer counts as a ready screen. On startup the
   signal comes from `FullyDrawnReporter`: the `ReportDrawnWhen` an app already has for

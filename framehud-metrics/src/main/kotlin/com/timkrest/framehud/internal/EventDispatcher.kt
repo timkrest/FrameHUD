@@ -15,12 +15,19 @@ import com.timkrest.framehud.ThermalStats
 @WorkerThread
 internal class EventDispatcher {
 
-    private var wasInBurst = false
+    var isInBurst: Boolean = false
+        private set
+
     private var lastFrozenFrames = 0
     private var lastThermalLevel = ThermalLevel.UNKNOWN
 
-    fun onFirstFrame(listeners: List<FrameHudEventListener>, timeToDisplayMs: Float, screen: String?) {
-        listeners.emit(FrameHudEvent.FirstFrame(timeToDisplayMs = timeToDisplayMs, screen = screen))
+    fun onFirstFrame(
+        listeners: List<FrameHudEventListener>,
+        timeToDisplayMs: Float,
+        screen: String?,
+        context: Map<String, String>,
+    ) {
+        listeners.emit(FrameHudEvent.FirstFrame(timeToDisplayMs = timeToDisplayMs, screen = screen, context = context))
     }
 
     fun onSample(
@@ -31,6 +38,7 @@ internal class EventDispatcher {
         choreographerTicksPerSecond: Int,
         screen: String?,
         mark: String?,
+        context: Map<String, String>,
     ) {
         val diagnosis = JankDiagnosis.of(
             metrics = metrics,
@@ -38,16 +46,23 @@ internal class EventDispatcher {
             thermal = thermal,
             choreographerTicksPerSecond = choreographerTicksPerSecond,
         )
-        val isInBurst = diagnosis.severity != JankSeverity.NONE
-        if (isInBurst && !wasInBurst) {
-            listeners.emit(FrameHudEvent.JankBurst(diagnosis = diagnosis, screen = screen, mark = mark))
+        val burst = diagnosis.severity != JankSeverity.NONE
+        if (burst && !isInBurst) {
+            listeners.emit(
+                FrameHudEvent.JankBurst(diagnosis = diagnosis, screen = screen, mark = mark, context = context),
+            )
         }
-        wasInBurst = isInBurst
+        isInBurst = burst
 
         val frozenFrames = metrics.session.frozenFrames
         if (frozenFrames > lastFrozenFrames) {
             listeners.emit(
-                FrameHudEvent.FrozenFrames(count = frozenFrames - lastFrozenFrames, screen = screen, mark = mark),
+                FrameHudEvent.FrozenFrames(
+                    count = frozenFrames - lastFrozenFrames,
+                    screen = screen,
+                    mark = mark,
+                    context = context,
+                ),
             )
         }
         lastFrozenFrames = frozenFrames
@@ -55,14 +70,23 @@ internal class EventDispatcher {
         if (thermal.level != lastThermalLevel) {
             val isFirstReading = lastThermalLevel == ThermalLevel.UNKNOWN
             if (!isFirstReading || thermal.level.isThrottling) {
-                listeners.emit(FrameHudEvent.ThermalChanged(level = thermal.level, screen = screen, mark = mark))
+                listeners.emit(
+                    FrameHudEvent.ThermalChanged(level = thermal.level, screen = screen, mark = mark, context = context),
+                )
             }
             lastThermalLevel = thermal.level
         }
     }
 
-    fun onScreenEnded(listeners: List<FrameHudEventListener>, stats: SessionStats, screen: String?) {
-        if (stats.frames > 0) listeners.emit(FrameHudEvent.ScreenEnded(stats = stats, screen = screen))
+    fun onScreenEnded(
+        listeners: List<FrameHudEventListener>,
+        stats: SessionStats,
+        screen: String?,
+        context: Map<String, String>,
+    ) {
+        if (stats.frames > 0) {
+            listeners.emit(FrameHudEvent.ScreenEnded(stats = stats, screen = screen, context = context))
+        }
     }
 
     fun onMarkEnded(
@@ -70,12 +94,13 @@ internal class EventDispatcher {
         stats: SessionStats,
         mark: String,
         screen: String?,
+        context: Map<String, String>,
     ) {
-        listeners.emit(FrameHudEvent.MarkEnded(stats = stats, mark = mark, screen = screen))
+        listeners.emit(FrameHudEvent.MarkEnded(stats = stats, mark = mark, screen = screen, context = context))
     }
 
     fun reset() {
-        wasInBurst = false
+        isInBurst = false
         lastFrozenFrames = 0
         lastThermalLevel = ThermalLevel.UNKNOWN
     }

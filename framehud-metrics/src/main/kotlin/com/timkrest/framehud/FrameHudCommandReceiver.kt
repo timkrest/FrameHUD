@@ -1,0 +1,93 @@
+package com.timkrest.framehud
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ApplicationInfo
+import android.util.Log
+import com.timkrest.framehud.internal.LOG_TAG
+
+/**
+ * Drives [FrameHud] over `adb shell am broadcast -a com.timkrest.framehud.<COMMAND> <package>`.
+ * Exported, because the shell cannot reach it otherwise — so any app on the device can send the
+ * same commands. They only touch debug state and exports never leave the app's own storage.
+ */
+internal class FrameHudCommandReceiver : BroadcastReceiver() {
+
+    override fun onReceive(context: Context, intent: Intent) {
+        if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
+            Log.w(LOG_TAG, "Ignoring ${intent.action}: the app is not debuggable")
+            return
+        }
+        when (intent.action) {
+            ACTION_ENABLE -> {
+                FrameHud.show()
+                resultData = "enabled"
+            }
+            ACTION_DISABLE -> {
+                FrameHud.hide()
+                resultData = "disabled"
+            }
+            ACTION_RESET -> {
+                FrameHud.reset()
+                resultData = "reset"
+            }
+            ACTION_SCREEN -> {
+                val name = intent.name
+                FrameHud.screen = name
+                resultData = "screen ${name ?: "cleared"}"
+            }
+            ACTION_MARK -> {
+                val name = intent.name
+                FrameHud.mark = name
+                resultData = "mark ${name ?: "cleared"}"
+            }
+            ACTION_CONTEXT -> {
+                val pairs = intent.contextPairs()
+                FrameHud.context = pairs
+                resultData = if (pairs.isEmpty()) "context cleared" else "context $pairs"
+            }
+            ACTION_EXPORT -> exportAsync()
+        }
+    }
+
+    private val Intent.name: String? get() = getStringExtra(EXTRA_NAME)?.takeIf { it.isNotBlank() }
+
+    private fun Intent.contextPairs(): Map<String, String> {
+        val bundle = extras ?: return emptyMap()
+        return buildMap {
+            for (key in bundle.keySet()) {
+                if (key.isBlank()) continue
+                val value = bundle.getString(key)?.takeIf { it.isNotBlank() } ?: continue
+                put(key, value)
+            }
+        }
+    }
+
+    private fun exportAsync() {
+        val pending = goAsync()
+        Thread({
+            try {
+                val export = FrameHud.exportSession(EXPORT_TIMEOUT_MS)
+                pending.resultData = export?.json?.absolutePath ?: "nothing collected"
+            } catch (e: Exception) {
+                Log.w(LOG_TAG, "Export over adb failed", e)
+                pending.resultData = "failed: $e"
+            } finally {
+                pending.finish()
+            }
+        }, "framehud-export").start()
+    }
+
+    companion object {
+        const val ACTION_ENABLE = "com.timkrest.framehud.ENABLE"
+        const val ACTION_DISABLE = "com.timkrest.framehud.DISABLE"
+        const val ACTION_RESET = "com.timkrest.framehud.RESET"
+        const val ACTION_SCREEN = "com.timkrest.framehud.SCREEN"
+        const val ACTION_MARK = "com.timkrest.framehud.MARK"
+        const val ACTION_CONTEXT = "com.timkrest.framehud.CONTEXT"
+        const val ACTION_EXPORT = "com.timkrest.framehud.EXPORT"
+        const val EXTRA_NAME = "name"
+        const val EXPORT_TIMEOUT_MS = 5_000L
+    }
+}

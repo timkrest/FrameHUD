@@ -59,17 +59,17 @@ class EventDispatcherTest {
 
     @Test
     fun `a screen without frames ends without a summary`() {
-        dispatcher.onScreenEnded(listeners = listeners, stats = SessionStats.EMPTY, screen = SCREEN)
+        dispatcher.onScreenEnded(listeners = listeners, stats = SessionStats.EMPTY, screen = SCREEN, context = emptyMap())
         assertTrue(events.isEmpty())
 
-        dispatcher.onScreenEnded(listeners, SessionStats.EMPTY.copy(frames = 12), SCREEN)
+        dispatcher.onScreenEnded(listeners, SessionStats.EMPTY.copy(frames = 12), SCREEN, context = emptyMap())
         assertIs<FrameHudEvent.ScreenEnded>(events.single())
     }
 
     @Test
     fun `a finished screen does not restart burst tracking`() {
         sample(jankPercent = 30f, frozenFrames = 4)
-        dispatcher.onScreenEnded(listeners, SessionStats.EMPTY.copy(frames = 4), SCREEN)
+        dispatcher.onScreenEnded(listeners, SessionStats.EMPTY.copy(frames = 4), SCREEN, context = emptyMap())
         events.clear()
 
         sample(jankPercent = 30f, frozenFrames = 4)
@@ -78,7 +78,7 @@ class EventDispatcherTest {
 
     @Test
     fun `an interaction is reported even when nothing was drawn while it was open`() {
-        dispatcher.onMarkEnded(listeners = listeners, stats = SessionStats.EMPTY, mark = MARK, screen = SCREEN)
+        dispatcher.onMarkEnded(listeners = listeners, stats = SessionStats.EMPTY, mark = MARK, screen = SCREEN, context = emptyMap())
 
         val event = assertIs<FrameHudEvent.MarkEnded>(events.single())
         assertEquals(MARK, event.mark)
@@ -105,6 +105,7 @@ class EventDispatcherTest {
             choreographerTicksPerSecond = choreographerTicksPerSecond,
             screen = SCREEN,
             mark = mark,
+            context = emptyMap(),
         )
     }
 

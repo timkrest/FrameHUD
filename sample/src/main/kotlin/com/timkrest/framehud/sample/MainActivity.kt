@@ -13,7 +13,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.timkrest.framehud.FrameHud
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
 
@@ -30,21 +34,34 @@ class MainActivity : ComponentActivity() {
                         SampleActions(
                             onToggleOverlay = FrameHud::toggle,
                             onOpenDetails = { startActivity(Intent(this, DetailsActivity::class.java)) },
+                            onShareReport = ::shareReport,
                         )
                     },
                 )
             }
         }
     }
+
+    private fun shareReport() {
+        lifecycleScope.launch {
+            val export = withContext(Dispatchers.IO) { FrameHud.exportSession(EXPORT_TIMEOUT_MS) } ?: return@launch
+            FrameHud.shareSession(this@MainActivity, export)
+        }
+    }
+
+    private companion object {
+        const val EXPORT_TIMEOUT_MS = 5_000L
+    }
 }
 
 @Composable
-private fun SampleActions(onToggleOverlay: () -> Unit, onOpenDetails: () -> Unit) {
+private fun SampleActions(onToggleOverlay: () -> Unit, onOpenDetails: () -> Unit, onShareReport: () -> Unit) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedButton(onClick = onToggleOverlay) { Text(text = "Toggle overlay", maxLines = 1) }
         Button(onClick = onOpenDetails) { Text(text = "Second screen", maxLines = 1) }
+        OutlinedButton(onClick = onShareReport) { Text(text = "Share report", maxLines = 1) }
     }
 }

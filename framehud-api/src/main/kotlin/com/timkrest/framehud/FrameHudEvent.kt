@@ -6,11 +6,14 @@ import java.util.Locale
 
 public sealed interface FrameHudEvent {
 
-    /** Activity on screen when the event fired, when one was bound. */
+    /** Screen in focus when the event fired: `FrameHud.screen` when set, the activity class otherwise. */
     public val screen: String?
 
     /** Interaction open when the event fired, from `FrameHud.mark`. */
     public val mark: String?
+
+    /** Measurement context pairs set when the event fired, from `FrameHud.context`. */
+    public val context: Map<String, String>
 
     /** One line ready for a log, a notification or a test failure message. */
     public val summary: String
@@ -24,6 +27,7 @@ public sealed interface FrameHudEvent {
     public data class FirstFrame(
         val timeToDisplayMs: Float,
         override val screen: String?,
+        override val context: Map<String, String> = emptyMap(),
     ) : FrameHudEvent {
 
         /** Always null. */
@@ -37,6 +41,7 @@ public sealed interface FrameHudEvent {
         val diagnosis: JankDiagnosis,
         override val screen: String?,
         override val mark: String?,
+        override val context: Map<String, String> = emptyMap(),
     ) : FrameHudEvent {
         override val summary: String get() = "${origin()}: ${diagnosis.summary}"
     }
@@ -46,6 +51,7 @@ public sealed interface FrameHudEvent {
         val count: Int,
         override val screen: String?,
         override val mark: String?,
+        override val context: Map<String, String> = emptyMap(),
     ) : FrameHudEvent {
         override val summary: String get() = "${origin()}: $count frozen frame(s)"
     }
@@ -54,13 +60,18 @@ public sealed interface FrameHudEvent {
         val level: ThermalLevel,
         override val screen: String?,
         override val mark: String?,
+        override val context: Map<String, String> = emptyMap(),
     ) : FrameHudEvent {
         override val summary: String
             get() = "${origin()}: thermal status is now ${level.name.lowercase(Locale.US)}"
     }
 
-    /** Collection ended because the screen paused, was replaced, or FrameHud was disabled. */
-    public data class ScreenEnded(val stats: SessionStats, override val screen: String?) : FrameHudEvent {
+    /** Collection ended because the screen paused, was replaced, renamed, or FrameHud was disabled. */
+    public data class ScreenEnded(
+        val stats: SessionStats,
+        override val screen: String?,
+        override val context: Map<String, String> = emptyMap(),
+    ) : FrameHudEvent {
 
         /** Always null. */
         override val mark: String? get() = null
@@ -76,6 +87,7 @@ public sealed interface FrameHudEvent {
         val stats: SessionStats,
         override val mark: String,
         override val screen: String?,
+        override val context: Map<String, String> = emptyMap(),
     ) : FrameHudEvent {
         override val summary: String get() = stats.summarize(origin())
     }
@@ -87,8 +99,13 @@ public fun interface FrameHudEventListener {
     public fun onEvent(event: FrameHudEvent)
 }
 
-private fun FrameHudEvent.origin(): String =
-    listOfNotNull(screen, mark).joinToString(separator = "/").ifEmpty { "no screen" }
+private fun FrameHudEvent.origin(): String {
+    val name = listOfNotNull(screen, mark).joinToString(separator = "/").ifEmpty { "no screen" }
+    if (context.isEmpty()) return name
+    return context.entries.joinToString(separator = ", ", prefix = "$name [", postfix = "]") { (key, value) ->
+        "$key=$value"
+    }
+}
 
 private fun SessionStats.summarize(origin: String): String = formatInvariant(
     "%s: %d frames in %.1fs, jank %.1f%%, p95 %.1f ms, frozen %d",

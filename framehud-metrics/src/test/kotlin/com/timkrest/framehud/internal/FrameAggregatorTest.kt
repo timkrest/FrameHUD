@@ -146,6 +146,43 @@ class FrameAggregatorTest {
     }
 
     @Test
+    fun `restarting the screen hands back its stats and starts the next one empty`() {
+        aggregator.startCollecting()
+        aggregator.addFrame(totalMs = 10f)
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 40f)
+
+        val ended = aggregator.restartScreen()
+
+        assertEquals(2, ended.frames)
+        assertEquals(0, aggregator.screenStats().frames)
+        assertEquals(2, aggregator.sessionStats().frames)
+    }
+
+    @Test
+    fun `an export reads fresh metrics without waiting for the throttle`() {
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.addFrame(totalMs = 40f)
+        assertEquals(10f, aggregator.metrics.value.phases.total.current, TOLERANCE)
+
+        assertEquals(40f, aggregator.refreshMetrics().phases.total.current, TOLERANCE)
+    }
+
+    @Test
+    fun `the worst frames survive screen restarts and clear on reset`() {
+        aggregator.startCollecting()
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.restartScreen()
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 800f)
+
+        assertEquals(listOf(800f, 10f), aggregator.worstFrames().map { it.totalMs })
+
+        aggregator.reset()
+        assertEquals(emptyList(), aggregator.worstFrames())
+    }
+
+    @Test
     fun `a mark covers the frames drawn while it was open and nothing before it`() {
         aggregator.startCollecting()
         aggregator.addFrame(totalMs = 10f)

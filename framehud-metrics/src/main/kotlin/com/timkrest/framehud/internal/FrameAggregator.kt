@@ -21,6 +21,8 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
 
     private var mark: SessionAccumulator? = null
 
+    private val worstFrames = WorstFrames(WORST_FRAME_CAPACITY)
+
     private val readings = FreezableReading(PerformanceMetrics.EMPTY)
 
     @get:AnyThread
@@ -54,6 +56,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         session.addFrame(totalMs = totalMs, isJanky = isJanky)
         screen.addFrame(totalMs = totalMs, isJanky = isJanky)
         mark?.addFrame(totalMs = totalMs, isJanky = isJanky)
+        worstFrames.add(totalMs = totalMs, endNs = frameEndNs)
 
         isDrainingToIdle = true
         maybeEmit()
@@ -86,6 +89,14 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         screen.stopCollecting()
     }
 
+    fun restartScreen(): SessionStats {
+        screen.stopCollecting()
+        val ended = screen.stats()
+        screen.clear()
+        screen.startCollecting()
+        return ended
+    }
+
     fun beginMark() {
         mark = SessionAccumulator(clock).apply { startCollecting() }
     }
@@ -97,15 +108,24 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         return ended.stats()
     }
 
+    /** Recomputes instead of waiting for the throttle, so an export never carries lagged readings. */
+    fun refreshMetrics(): PerformanceMetrics {
+        emitMetrics(clock.elapsedRealtimeMs())
+        return liveMetrics
+    }
+
     fun sessionStats(): SessionStats = session.stats()
 
     fun screenStats(): SessionStats = screen.stats()
+
+    fun worstFrames(): List<WorstFrames.Frame> = worstFrames.snapshot()
 
     fun reset() {
         frameWindow.clear()
         session.clear()
         screen.clear()
         mark?.clear()
+        worstFrames.clear()
         isDrainingToIdle = false
         lastUpdateTime = 0L
         readings.reset(PerformanceMetrics.EMPTY)
@@ -164,6 +184,8 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
             totalDurationMs - display.frameBudgetMs
         }
 }
+
+private const val WORST_FRAME_CAPACITY = 10
 
 private fun displayOf(refreshRateHz: Float, deadlineNs: Long? = null) = DisplayInfo(
     refreshRateHz = refreshRateHz,

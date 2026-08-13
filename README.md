@@ -19,6 +19,8 @@ you down.
 - **Fails tests on jank** — a JUnit rule with thresholds
 - **Works without the panel** — `framehud-metrics` collects and reports with no window and no
   permission
+- **Made for QA runs** — adb commands, JSON and HTML session exports, sections and counters in a
+  system trace
 - **Nothing in release builds** — `debugImplementation` leaves out the panel, its provider and the
   `SYSTEM_ALERT_WINDOW` it declares
 
@@ -26,7 +28,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.6.0")
+    debugImplementation("com.timkrest:framehud:0.7.0")
 }
 ```
 
@@ -82,7 +84,7 @@ last reset. Rows summed from other rows stop after `avg`.
 you call `FrameHud` outside `src/debug` — a release build still has to compile those lines:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.6.0")
+releaseImplementation("com.timkrest:framehud-noop:0.7.0")
 ```
 
 It mirrors the API with empty bodies. The calls compile, nothing is measured, no window is added.
@@ -94,7 +96,7 @@ collects the same numbers and sends the same events, but adds no window and no `
 to the merged manifest.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.6.0")
+qaImplementation("com.timkrest:framehud-metrics:0.7.0")
 ```
 
 `FrameHud` is the same object, so the code around it stays as it is. `enabled` now switches
@@ -156,6 +158,22 @@ FrameHud.config = FrameHud.config.copy(
 
 Events arrive on the metrics thread. Don't block it and don't touch views from it.
 
+## Naming screens
+
+Stats split by screen, and a screen is its activity class by default — which makes a
+single-activity app one screen for the whole session. Name the screen with a route instead:
+
+```kotlin
+navController.addOnDestinationChangedListener { _, destination, _ ->
+    FrameHud.screen = destination.route
+}
+```
+
+Use the pattern — `product/{id}`, not `product/12345` — so every product page counts as one screen.
+A new name closes the stats of the previous screen and starts the next; the window stays bound. The
+name holds until the next assignment, so an app that names screens must name every screen it shows.
+`null` returns to activity class names.
+
 ## Marking an interaction
 
 A screen summary tells you which screen is slow. A mark tells you which interaction is.
@@ -171,12 +189,69 @@ and every event fired meanwhile carries the name; clearing the mark reports a `M
 stats cover that stretch alone. The panel's own rows keep covering the usual window and session —
 the header labels them, it does not narrow them.
 
-Leaving the screen clears the mark for you, so a gesture never spills into the next screen.
+Leaving or renaming the screen clears the mark for you, so a gesture never spills into the next
+screen.
+
+## Measurement context
+
+`FrameHud.context` keeps a few `key=value` pairs next to the screen and the mark — a UI variant, an
+action, a test scenario. Every event carries the pairs set at the moment it fired, and exports
+retain them, so a report says not just where jank happened but under which conditions.
+
+```kotlin
+FrameHud.context = mapOf("variant" to "new_checkout")
+```
+
+Changing the context closes nothing; it only annotates what follows.
+
+## Exporting a session
+
+`exportSession` writes the session since the last reset — stats, the frame window, the worst frames
+with wall-clock timestamps, context, device, app version and measurement state — as JSON and a
+self-contained HTML report, and returns both files. They land in `framehud/` under the app's
+external files directory, so CI pulls them without root; `shareSession` opens the system share
+sheet with them. Nothing is ever uploaded.
+
+```kotlin
+val export = FrameHud.exportSession(timeoutMs = 5_000) ?: return
+FrameHud.shareSession(activity, export)
+```
+
+```
+adb pull /sdcard/Android/data/<package>/files/framehud/
+```
+
+The app may put its own diagnostic files next to the returned ones.
+
+## Driving over adb
+
+A debuggable build with `framehud-metrics` answers broadcasts, so a QA build starts reporting,
+marks a scenario and pulls the result without a rebuild:
+
+```
+adb shell am broadcast -a com.timkrest.framehud.ENABLE <package>
+adb shell am broadcast -a com.timkrest.framehud.SCREEN --es name "product/{id}" <package>
+adb shell am broadcast -a com.timkrest.framehud.MARK --es name checkout <package>
+adb shell am broadcast -a com.timkrest.framehud.CONTEXT --es scenario smoke <package>
+adb shell am broadcast -a com.timkrest.framehud.EXPORT <package>
+```
+
+`DISABLE` and `RESET` complete the set. Omitting `--es name` clears the screen or the mark, and
+`CONTEXT` without extras clears the context. `EXPORT` answers with the report's path in the
+broadcast result, ready for `adb pull`. A build that is not debuggable ignores every command.
+
+## In a system trace
+
+While a system trace records, screens and marks show up as `framehud:screen:<name>` and
+`framehud:mark:<name>` sections, a jank burst as `framehud:jank_burst`, and jank percent, p95,
+frozen frames and heap use as `framehud.*` counters. Macrobenchmark's `TraceSectionMetric` measures
+the named sections. FrameHUD leaves markers only; recording and analyzing the trace stays with
+Perfetto.
 
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.6.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.7.0")
 ```
 
 ```kotlin

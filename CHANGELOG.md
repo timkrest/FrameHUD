@@ -4,6 +4,38 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-08-13
+
+### Added
+
+- `FrameHud.screen` names the current screen with a route pattern like `product/{id}` instead of
+  the activity class. A new name closes the stats of the previous screen and starts the next while
+  the window stays bound, so a single-activity app is no longer one screen for the whole session.
+- `FrameHud.context` keeps `key=value` measurement context — a UI variant, an action, a test
+  scenario. Every `FrameHudEvent` carries the pairs set at the moment it fired.
+- `FrameHud.exportSession` writes the session as JSON and a self-contained HTML report — stats, the
+  frame window, the worst frames with wall-clock timestamps, context, device, API level, app
+  version, refresh rate and measurement state — into `framehud/` under the app's external files
+  directory. `FrameHud.shareSession` opens the system share sheet with both files. Nothing is
+  uploaded anywhere.
+- Broadcast commands `com.timkrest.framehud.ENABLE`, `DISABLE`, `RESET`, `SCREEN`, `MARK`,
+  `CONTEXT` and `EXPORT` drive a debuggable build over `adb shell am broadcast`; `EXPORT` answers
+  with the report's path. Builds that are not debuggable ignore them, and `framehud-noop` registers
+  no receiver.
+- A recorded system trace gains `framehud:screen:<name>` and `framehud:mark:<name>` sections, a
+  `framehud:jank_burst` section, and `framehud.*` counters for jank percent, p95, frozen frames and
+  heap use.
+
+### Changed
+
+- The `FrameHudEvent` data classes gained a `context` constructor parameter with a default, so
+  sources compile as they are, but code compiled against 0.6.0 that constructs or `copy`-ies events
+  needs a recompile.
+- `FrameHudEvent.ScreenEnded` also fires when a screen is renamed through `FrameHud.screen`, not
+  only when it pauses, is replaced or collection stops.
+- `framehud-metrics` depends on `androidx.core` and `androidx.tracing` and declares a
+  `FileProvider` limited to its own `framehud/` export directory.
+
 ## [0.6.0] - 2026-08-12
 
 ### Added
@@ -175,7 +207,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.7.0
 [0.6.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.6.0
 [0.5.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.5.0
 [0.4.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.4.0

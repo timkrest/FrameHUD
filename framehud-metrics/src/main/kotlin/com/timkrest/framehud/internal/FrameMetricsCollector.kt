@@ -13,7 +13,7 @@ internal class FrameMetricsCollector(
     private val aggregator: FrameAggregator,
     private val clock: MetricsClock,
     private val display: () -> Display?,
-    private val onFirstFrame: (timeToDisplayMs: Float, screen: String?) -> Unit,
+    private val onFirstFrame: (timeToDisplayMs: Float) -> Unit,
 ) : Window.OnFrameMetricsAvailableListener {
 
     @field:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
@@ -27,8 +27,8 @@ internal class FrameMetricsCollector(
     private val pendingFirstFrame = AtomicReference<PendingFirstFrame?>()
 
     @AnyThread
-    fun expectFirstFrame(window: Window, creation: ScreenCreation?, screen: String?) {
-        pendingFirstFrame.set(creation?.let { PendingFirstFrame(window = window, creation = it, screen = screen) })
+    fun expectFirstFrame(window: Window, creation: ScreenCreation?) {
+        pendingFirstFrame.set(creation?.let { PendingFirstFrame(window = window, creation = it) })
     }
 
     @AnyThread
@@ -68,7 +68,7 @@ internal class FrameMetricsCollector(
     }
 
     private fun reportFirstFrame(expected: PendingFirstFrame, frameEndNs: Long) {
-        expected.creation.timeToDisplayMs(frameEndNs)?.let { onFirstFrame(it, expected.screen) }
+        expected.creation.timeToDisplayMs(frameEndNs)?.let(onFirstFrame)
     }
 
     private fun frameDeadlineNs(frameMetrics: FrameMetrics): Long? =
@@ -81,5 +81,5 @@ internal class FrameMetricsCollector(
         clock.nanoTime()
     }
 
-    private class PendingFirstFrame(val window: Window, val creation: ScreenCreation, val screen: String?)
+    private class PendingFirstFrame(val window: Window, val creation: ScreenCreation)
 }

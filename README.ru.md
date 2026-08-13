@@ -18,6 +18,8 @@
 - **Меряет приложение, а не себя** — панель рисуется в своём окне
 - **Роняет тесты из-за jank** — JUnit-правило с порогами
 - **Работает и без панели** — `framehud-metrics` собирает и отчитывается без окна и без разрешения
+- **Сделан для QA-прогонов** — команды adb, экспорт сессии в JSON и HTML, секции и счётчики в
+  системном трейсе
 - **Ничего в релизных сборках** — `debugImplementation` оставляет за бортом панель, её provider и
   `SYSTEM_ALERT_WINDOW`, который объявляет артефакт
 
@@ -25,7 +27,7 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.6.0")
+    debugImplementation("com.timkrest:framehud:0.7.0")
 }
 ```
 
@@ -81,7 +83,7 @@ therm none · hr 0.68
 `FrameHud` вне `src/debug` — релизной сборке всё равно надо скомпилировать эти строки:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.6.0")
+releaseImplementation("com.timkrest:framehud-noop:0.7.0")
 ```
 
 Он повторяет API с пустыми телами. Вызовы компилируются, ничего не измеряется, окно не добавляется.
@@ -93,7 +95,7 @@ releaseImplementation("com.timkrest:framehud-noop:0.6.0")
 объединённый манифест.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.6.0")
+qaImplementation("com.timkrest:framehud-metrics:0.7.0")
 ```
 
 `FrameHud` — тот же объект, так что код вокруг остаётся прежним. `enabled` теперь включает только
@@ -155,6 +157,22 @@ FrameHud.config = FrameHud.config.copy(
 
 События приходят на metrics-потоке. Не блокируйте его и не обращайтесь из него к view.
 
+## Имена экранов
+
+Статистика режется по экранам, а экран по умолчанию — это класс activity, из-за чего
+single-activity-приложение оказывается одним экраном на всю сессию. Назовите экран роутом:
+
+```kotlin
+navController.addOnDestinationChangedListener { _, destination, _ ->
+    FrameHud.screen = destination.route
+}
+```
+
+Используйте шаблон — `product/{id}`, а не `product/12345`, — чтобы каждая карточка товара считалась
+одним экраном. Новое имя закрывает статистику предыдущего экрана и начинает следующий; окно остаётся
+привязанным. Имя действует до следующего присваивания, поэтому приложение, которое называет экраны,
+должно называть каждый показанный экран. `null` возвращает имена по классам activity.
+
 ## Метка взаимодействия
 
 Итог по экрану говорит, какой экран медленный. Метка — какое взаимодействие.
@@ -170,12 +188,68 @@ FrameHud.mark = null
 только по этому отрезку. Строки самой панели остаются на обычном окне и сессии — шапка их
 подписывает, а не сужает.
 
-Уход с экрана сбрасывает метку сам, так что жест не перетекает на следующий экран.
+Уход с экрана или его переименование сбрасывает метку сам, так что жест не перетекает на следующий
+экран.
+
+## Контекст измерений
+
+`FrameHud.context` хранит несколько пар `key=value` рядом с экраном и меткой — вариант UI, действие,
+тестовый сценарий. Каждое событие несёт пары, выставленные в момент, когда оно случилось, и экспорт
+их сохраняет — отчёт говорит не только где был jank, но и при каких условиях.
+
+```kotlin
+FrameHud.context = mapOf("variant" to "new_checkout")
+```
+
+Смена контекста ничего не закрывает — только подписывает то, что происходит дальше.
+
+## Экспорт сессии
+
+`exportSession` записывает сессию с последнего сброса — статистику, окно кадров, худшие кадры с
+временем по часам, контекст, устройство, версию приложения и состояние измерений — как JSON и
+самодостаточный HTML-отчёт, и возвращает оба файла. Они ложатся в `framehud/` во внешнем каталоге
+файлов приложения, так что CI забирает их без root; `shareSession` открывает с ними системное окно
+«Поделиться». Ничего никуда не загружается.
+
+```kotlin
+val export = FrameHud.exportSession(timeoutMs = 5_000) ?: return
+FrameHud.shareSession(activity, export)
+```
+
+```
+adb pull /sdcard/Android/data/<package>/files/framehud/
+```
+
+Приложение может положить свои диагностические файлы рядом с возвращёнными.
+
+## Управление через adb
+
+Отлаживаемая сборка с `framehud-metrics` отвечает на броадкасты, так что QA-сборка начинает
+отчитываться, помечает сценарий и забирает результат без пересборки:
+
+```
+adb shell am broadcast -a com.timkrest.framehud.ENABLE <package>
+adb shell am broadcast -a com.timkrest.framehud.SCREEN --es name "product/{id}" <package>
+adb shell am broadcast -a com.timkrest.framehud.MARK --es name checkout <package>
+adb shell am broadcast -a com.timkrest.framehud.CONTEXT --es scenario smoke <package>
+adb shell am broadcast -a com.timkrest.framehud.EXPORT <package>
+```
+
+`DISABLE` и `RESET` дополняют набор. Без `--es name` экран или метка сбрасываются, `CONTEXT` без
+extras очищает контекст. `EXPORT` отвечает путём к отчёту в результате броадкаста — сразу под
+`adb pull`. Сборка без флага отладки игнорирует все команды.
+
+## В системном трейсе
+
+Пока пишется системный трейс, экраны и метки видны как секции `framehud:screen:<имя>` и
+`framehud:mark:<имя>`, всплеск jank — как `framehud:jank_burst`, а процент jank, p95, замёрзшие
+кадры и heap — как счётчики `framehud.*`. `TraceSectionMetric` из Macrobenchmark меряет именованные
+секции. FrameHUD только оставляет маркеры; запись и анализ трейса остаются за Perfetto.
 
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.6.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.7.0")
 ```
 
 ```kotlin

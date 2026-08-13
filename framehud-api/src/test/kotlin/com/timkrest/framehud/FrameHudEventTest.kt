@@ -45,6 +45,13 @@ class FrameHudEventTest {
     }
 
     @Test
+    fun `the measurement context follows the origin in brackets`() {
+        val context = mapOf("variant" to "new_checkout", "scenario" to "smoke")
+        val event = FrameHudEvent.FrozenFrames(count = 2, screen = "Feed", mark = "scroll", context = context)
+        assertEquals("Feed/scroll [variant=new_checkout, scenario=smoke]: 2 frozen frame(s)", event.summary)
+    }
+
+    @Test
     fun `summaries keep their dots on a comma locale`() {
         val previous = Locale.getDefault()
         Locale.setDefault(Locale.GERMANY)
