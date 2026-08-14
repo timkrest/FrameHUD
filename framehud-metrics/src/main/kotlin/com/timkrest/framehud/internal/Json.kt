@@ -21,9 +21,9 @@ internal class JsonObjectScope(private val out: StringBuilder) {
         out.append(value)
     }
 
-    fun put(name: String, value: Int) {
+    fun put(name: String, value: Int?) {
         writeName(name)
-        out.append(value)
+        if (value == null) out.append("null") else out.append(value)
     }
 
     fun put(name: String, value: Long) {
@@ -72,6 +72,11 @@ internal class JsonArrayScope(private val out: StringBuilder) {
     fun add(value: Float?) {
         writeSeparator()
         writeFloat(out, value)
+    }
+
+    fun add(value: Int) {
+        writeSeparator()
+        out.append(value)
     }
 
     fun addObject(build: JsonObjectScope.() -> Unit) {

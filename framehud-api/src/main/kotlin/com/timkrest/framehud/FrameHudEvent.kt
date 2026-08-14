@@ -107,12 +107,15 @@ private fun FrameHudEvent.origin(): String {
     }
 }
 
-private fun SessionStats.summarize(origin: String): String = formatInvariant(
-    "%s: %d frames in %.1fs, jank %.1f%%, p95 %.1f ms, frozen %d",
-    origin,
-    frames,
-    durationMs / MS_PER_SECOND,
-    jankPercent,
-    p95FrameMs,
-    frozenFrames,
-)
+private fun SessionStats.summarize(origin: String): String {
+    val summary = formatInvariant(
+        "%s: %d frames in %.1fs, jank %.1f%%, p95 %.1f ms, frozen %d",
+        origin,
+        frames,
+        durationMs / MS_PER_SECOND,
+        jankPercent,
+        p95FrameMs,
+        frozenFrames,
+    )
+    return if (confidence.isSuspect) "$summary (suspect measurement)" else summary
+}

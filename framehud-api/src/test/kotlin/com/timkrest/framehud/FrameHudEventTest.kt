@@ -20,6 +20,13 @@ class FrameHudEventTest {
     }
 
     @Test
+    fun `a suspect measurement adds a note to the summary`() {
+        val suspect = stats().copy(confidence = MeasurementConfidence(listOf(ConfidenceIssue.Emulator)))
+        val event = FrameHudEvent.ScreenEnded(stats = suspect, screen = "MainActivity")
+        assertTrue(event.summary.endsWith("(suspect measurement)"))
+    }
+
+    @Test
     fun `a jank burst carries the diagnosis`() {
         val event = FrameHudEvent.JankBurst(diagnosis = diagnosis(), screen = "Feed", mark = null)
         assertEquals("Feed: jank 25.0%, worst 42.0 ms of 16.7 ms — cpu bound, 19.3 ms per frame", event.summary)

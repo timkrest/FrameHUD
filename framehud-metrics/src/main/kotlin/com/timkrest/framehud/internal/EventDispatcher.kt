@@ -13,7 +13,7 @@ import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
 
 @WorkerThread
-internal class EventDispatcher {
+internal class EventDispatcher(private val clock: MetricsClock, private val onSlowListener: (callMs: Float) -> Unit) {
 
     var isInBurst: Boolean = false
         private set
@@ -107,11 +107,18 @@ internal class EventDispatcher {
 
     private fun List<FrameHudEventListener>.emit(event: FrameHudEvent) {
         forEach { listener ->
+            val startNs = clock.nanoTime()
             try {
                 listener.onEvent(event)
             } catch (e: Exception) {
                 Log.w(LOG_TAG, "Listener ${listener.javaClass.name} threw on $event", e)
             }
+            val elapsedMs = (clock.nanoTime() - startNs) / NS_PER_MS
+            if (elapsedMs > SLOW_LISTENER_THRESHOLD_MS) onSlowListener(elapsedMs)
         }
+    }
+
+    private companion object {
+        const val SLOW_LISTENER_THRESHOLD_MS = 50f
     }
 }

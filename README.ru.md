@@ -27,7 +27,7 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.7.0")
+    debugImplementation("com.timkrest:framehud:0.8.0")
 }
 ```
 
@@ -83,7 +83,7 @@ therm none · hr 0.68
 `FrameHud` вне `src/debug` — релизной сборке всё равно надо скомпилировать эти строки:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.7.0")
+releaseImplementation("com.timkrest:framehud-noop:0.8.0")
 ```
 
 Он повторяет API с пустыми телами. Вызовы компилируются, ничего не измеряется, окно не добавляется.
@@ -95,7 +95,7 @@ releaseImplementation("com.timkrest:framehud-noop:0.7.0")
 объединённый манифест.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.7.0")
+qaImplementation("com.timkrest:framehud-metrics:0.8.0")
 ```
 
 `FrameHud` — тот же объект, так что код вокруг остаётся прежним. `enabled` теперь включает только
@@ -206,10 +206,10 @@ FrameHud.context = mapOf("variant" to "new_checkout")
 ## Экспорт сессии
 
 `exportSession` записывает сессию с последнего сброса — статистику, окно кадров, худшие кадры с
-временем по часам, контекст, устройство, версию приложения и состояние измерений — как JSON и
-самодостаточный HTML-отчёт, и возвращает оба файла. Они ложатся в `framehud/` во внешнем каталоге
-файлов приложения, так что CI забирает их без root; `shareSession` открывает с ними системное окно
-«Поделиться». Ничего никуда не загружается.
+временем по часам, контекст, устройство, версию приложения, состояние измерений и проблемы
+достоверности — как JSON и самодостаточный HTML-отчёт, и возвращает оба файла. Они ложатся в
+`framehud/` во внешнем каталоге файлов приложения, так что CI забирает их без root; `shareSession`
+открывает с ними системное окно «Поделиться». Ничего никуда не загружается.
 
 ```kotlin
 val export = FrameHud.exportSession(timeoutMs = 5_000) ?: return
@@ -246,10 +246,23 @@ extras очищает контекст. `EXPORT` отвечает путём к 
 кадры и heap — как счётчики `framehud.*`. `TraceSectionMetric` из Macrobenchmark меряет именованные
 секции. FrameHUD только оставляет маркеры; запись и анализ трейса остаются за Perfetto.
 
+## Достоверность замера
+
+`SessionStats.confidence` перечисляет, что мешало сбору: потерянные отчёты `FrameMetrics`,
+слушатель событий, занявший поток метрик, троттлинг, энергосбережение или заряд не выше 15%,
+смена герцовки, эмулятор, слишком короткая выборка. Каждая проблема называет цифры, которые она
+портит. Эмулятор портит только фазы render-потока и GPU. Смена герцовки — только jank-процент и
+серию.
+Короткая выборка — перцентили, на которые не хватает кадров: p99 меньше 300 кадров, p95 и
+jank-процент меньше 60, p50 меньше 20. Остальные портят все цифры.
+
+JSON-экспорт несёт проблемы для сессии и экрана, HTML-отчёт их перечисляет, а сводки
+`ScreenEnded`/`MarkEnded` заканчиваются пометкой `(suspect measurement)`.
+
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.7.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.8.0")
 ```
 
 ```kotlin
@@ -259,6 +272,11 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.7.0")
 Правило сбрасывает сборщик перед каждым тестом и проверяет пороги после того, как тест прошёл — так
 упавший тест остаётся со своей ошибкой. Итоги сессии переживают закрытие панели, поэтому цифры есть
 и после того, как `ActivityScenario` закрыл activity.
+
+Порог, чью цифру портит проблема достоверности, не может честно ни пройти, ни упасть, поэтому гейт
+считает прогон inconclusive и пишет и саму цифру, и проблему. По умолчанию `OnInconclusive.FAIL`
+валит тест, `OnInconclusive.WARN` пишет сообщение в лог и пропускает. Нарушенный порог с чистой
+цифрой падает в обоих режимах.
 
 Чтобы отключить проверку, пометьте тест или класс `@SkipJankDetection` либо вызовите
 `JankAssertions.assertNoJank("scroll")` в нужный момент сами.

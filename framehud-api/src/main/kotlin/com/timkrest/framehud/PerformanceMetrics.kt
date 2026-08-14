@@ -2,7 +2,6 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 
-/** Current frame timings, rolling-window metrics, session totals, and display limits. */
 @Immutable
 public data class PerformanceMetrics(
     val phases: FramePhases = FramePhases.EMPTY,

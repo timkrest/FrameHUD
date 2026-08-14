@@ -5,11 +5,7 @@ import kotlin.math.ln
 import kotlin.math.min
 import kotlin.math.pow
 
-/**
- * Frame times bucketed so a session of any length costs a fixed amount of memory: 0.25 ms buckets
- * up to 64 ms, then buckets widening by 5% each. Percentiles are therefore approximate, and read as
- * the upper bound of the bucket the rank lands in.
- */
+/** Bucketed rather than kept raw, so a session of any length costs a fixed amount of memory. */
 internal class LatencyHistogram {
 
     private val fineBuckets = IntArray(FINE_BUCKET_COUNT)

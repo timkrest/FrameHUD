@@ -18,7 +18,9 @@ import kotlin.test.assertTrue
 
 class EventDispatcherTest {
 
-    private val dispatcher = EventDispatcher()
+    private val clock = TestMetricsClock()
+    private val slowListenerReports = mutableListOf<Float>()
+    private val dispatcher = EventDispatcher(clock = clock, onSlowListener = { slowListenerReports += it })
     private val events = mutableListOf<FrameHudEvent>()
     private val listeners = listOf(FrameHudEventListener { events += it })
 
@@ -77,6 +79,17 @@ class EventDispatcherTest {
     }
 
     @Test
+    fun `a listener at exactly 50 ms is not reported, a millisecond past it is`() {
+        val onTimeListener = listOf(FrameHudEventListener { clock.nanos += SLOW_LISTENER_THRESHOLD_NS })
+        dispatcher.onScreenEnded(onTimeListener, SessionStats.EMPTY.copy(frames = 1), SCREEN, context = emptyMap())
+        assertTrue(slowListenerReports.isEmpty())
+
+        val slowListener = listOf(FrameHudEventListener { clock.nanos += SLOW_LISTENER_THRESHOLD_NS + NS_PER_MS_LONG })
+        dispatcher.onScreenEnded(slowListener, SessionStats.EMPTY.copy(frames = 1), SCREEN, context = emptyMap())
+        assertEquals(1, slowListenerReports.size)
+    }
+
+    @Test
     fun `an interaction is reported even when nothing was drawn while it was open`() {
         dispatcher.onMarkEnded(listeners = listeners, stats = SessionStats.EMPTY, mark = MARK, screen = SCREEN, context = emptyMap())
 
@@ -112,5 +125,6 @@ class EventDispatcherTest {
     private companion object {
         const val SCREEN = "SampleActivity"
         const val MARK = "scroll"
+        const val SLOW_LISTENER_THRESHOLD_NS = 50_000_000L
     }
 }

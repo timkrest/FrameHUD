@@ -46,7 +46,7 @@ public object FrameHud {
         get() = currentConfig
         set(value) = applyConfig(value)
 
-    /** Whether displayed readings are frozen. Collection continues in the background. */
+    /** Collection continues in the background while frozen. */
     @get:AnyThread
     public val isFrozen: StateFlow<Boolean> = _isFrozen.asStateFlow()
 
@@ -54,7 +54,7 @@ public object FrameHud {
     @get:AnyThread
     public val metrics: StateFlow<PerformanceMetrics> get() = engine.metrics
 
-    /** Choreographer ticks handled by the main thread per second, over the latest completed interval. */
+    /** Ticks the main thread handled, over the latest completed interval. */
     @get:AnyThread
     public val choreographerTicksPerSecond: StateFlow<Int> get() = engine.choreographerTicksPerSecond
 

@@ -16,7 +16,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Only so the no-op variant can be installed without a keystore; the sample ships nowhere.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -26,7 +25,6 @@ android {
     }
 
     lint {
-        // A developer harness that ships nowhere: no launcher icon, and nothing worth backing up.
         disable += setOf("MissingApplicationIcon", "DataExtractionRules")
     }
 }

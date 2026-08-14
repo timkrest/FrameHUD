@@ -28,7 +28,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.7.0")
+    debugImplementation("com.timkrest:framehud:0.8.0")
 }
 ```
 
@@ -84,7 +84,7 @@ last reset. Rows summed from other rows stop after `avg`.
 you call `FrameHud` outside `src/debug` — a release build still has to compile those lines:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.7.0")
+releaseImplementation("com.timkrest:framehud-noop:0.8.0")
 ```
 
 It mirrors the API with empty bodies. The calls compile, nothing is measured, no window is added.
@@ -96,7 +96,7 @@ collects the same numbers and sends the same events, but adds no window and no `
 to the merged manifest.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.7.0")
+qaImplementation("com.timkrest:framehud-metrics:0.8.0")
 ```
 
 `FrameHud` is the same object, so the code around it stays as it is. `enabled` now switches
@@ -207,10 +207,10 @@ Changing the context closes nothing; it only annotates what follows.
 ## Exporting a session
 
 `exportSession` writes the session since the last reset — stats, the frame window, the worst frames
-with wall-clock timestamps, context, device, app version and measurement state — as JSON and a
-self-contained HTML report, and returns both files. They land in `framehud/` under the app's
-external files directory, so CI pulls them without root; `shareSession` opens the system share
-sheet with them. Nothing is ever uploaded.
+with wall-clock timestamps, context, device, app version, measurement state and confidence issues —
+as JSON and a self-contained HTML report, and returns both files. They land in `framehud/` under
+the app's external files directory, so CI pulls them without root; `shareSession` opens the system
+share sheet with them. Nothing is ever uploaded.
 
 ```kotlin
 val export = FrameHud.exportSession(timeoutMs = 5_000) ?: return
@@ -248,10 +248,23 @@ frozen frames and heap use as `framehud.*` counters. Macrobenchmark's `TraceSect
 the named sections. FrameHUD leaves markers only; recording and analyzing the trace stays with
 Perfetto.
 
+## Measurement confidence
+
+`SessionStats.confidence` lists what got in the way while the stats collected: dropped
+`FrameMetrics` reports, an event listener that held the metrics thread, thermal throttling, power
+save or a battery at 15% or below, a refresh-rate change, an emulator, a sample too short for its
+percentiles. Each issue names the figures it taints. An emulator taints only the render-thread and
+GPU phases. A refresh-rate change taints only jank percent and streak. A short sample taints the
+percentiles it cannot support: p99 below 300 frames, p95 and jank percent below 60, p50 below 20.
+The rest taint every figure.
+
+The JSON export carries the issues for the session and the screen, the HTML report lists them, and
+`ScreenEnded`/`MarkEnded` summaries end with `(suspect measurement)`.
+
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.7.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.8.0")
 ```
 
 ```kotlin
@@ -261,6 +274,11 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.7.0")
 The rule resets the collector before each test and checks the thresholds after the test passes, so a
 failing test keeps its own error. Session totals outlive the panel, so there are still numbers after
 `ActivityScenario` closes the activity.
+
+A threshold whose figure a confidence issue taints cannot pass or fail honestly, so the gate calls
+the run inconclusive and reports both the figure and the issue. The default `OnInconclusive.FAIL`
+fails the test, `OnInconclusive.WARN` logs the message and lets it pass. A violated threshold with
+a clean figure fails in both modes.
 
 To opt out, annotate a test or class with `@SkipJankDetection`, or call
 `JankAssertions.assertNoJank("scroll")` at a point you choose.

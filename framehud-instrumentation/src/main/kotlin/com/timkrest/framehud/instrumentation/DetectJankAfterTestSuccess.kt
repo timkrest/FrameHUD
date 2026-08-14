@@ -10,9 +10,10 @@ import org.junit.runners.model.Statement
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 public annotation class SkipJankDetection
 
-/** Resets FrameHud before a test and checks jank after it succeeds. */
-public class DetectJankAfterTestSuccess(
+/** Resets FrameHud before each test it checks. */
+public class DetectJankAfterTestSuccess @JvmOverloads constructor(
     private val thresholds: JankThresholds = JankThresholds(),
+    private val onInconclusive: OnInconclusive = OnInconclusive.FAIL,
 ) : TestRule {
 
     override fun apply(base: Statement, description: Description): Statement = object : Statement() {
@@ -23,7 +24,7 @@ public class DetectJankAfterTestSuccess(
             }
             FrameHud.reset()
             base.evaluate()
-            JankAssertions.assertNoJank(tag = description.displayName, thresholds = thresholds)
+            JankAssertions.assertNoJank(tag = description.displayName, thresholds = thresholds, onInconclusive = onInconclusive)
         }
     }
 

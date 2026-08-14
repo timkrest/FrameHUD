@@ -7,11 +7,7 @@ import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import kotlin.math.roundToInt
 
-/**
- * Mirrors FrameHUD state into the system trace: screens and marks as async sections, the current
- * jank burst as a section, and the readings as counters. Perfetto records and analyzes the trace;
- * FrameHUD never does.
- */
+/** Emits trace markers for Perfetto to record; FrameHUD never reads them back. */
 internal class FrameHudTracer {
 
     private var openScreen: String? = null

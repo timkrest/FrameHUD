@@ -52,13 +52,17 @@ internal class ThermalMonitor {
         val manager = powerManager ?: return
         val now = SystemClock.elapsedRealtime()
         val previousMs = lastSampleMs
-        if (previousMs != null && now - previousMs < MIN_SAMPLE_INTERVAL_MS) return
-        lastSampleMs = now
+        val headroom = if (previousMs == null || now - previousMs >= MIN_HEADROOM_INTERVAL_MS) {
+            lastSampleMs = now
+            readHeadroom(manager)
+        } else {
+            readings.live.headroom
+        }
 
         readings.update(
             ThermalStats(
                 level = thermalLevelOf(manager.currentThermalStatus),
-                headroom = readHeadroom(manager),
+                headroom = headroom,
             ),
         )
     }
@@ -80,7 +84,7 @@ internal class ThermalMonitor {
     }
 
     private companion object {
-        const val MIN_SAMPLE_INTERVAL_MS = 2_000L
+        const val MIN_HEADROOM_INTERVAL_MS = 2_000L
 
         const val HEADROOM_FORECAST_SECONDS = 0
     }

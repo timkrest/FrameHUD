@@ -1,5 +1,7 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.SessionStats
 import org.junit.Test
 import kotlin.test.assertContains
@@ -7,6 +9,20 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SessionHtmlTest {
+
+    @Test
+    fun `a clean session says the measurement has no issues`() {
+        val html = sessionSnapshotFixture().toHtml()
+        assertContains(html, "Measurement confidence")
+        assertContains(html, "No issues.")
+    }
+
+    @Test
+    fun `confidence issues list their summaries`() {
+        val confidence = MeasurementConfidence(issues = listOf(ConfidenceIssue.Emulator))
+        val html = sessionSnapshotFixture(session = SessionStats.EMPTY.copy(confidence = confidence)).toHtml()
+        assertContains(html, "running on an emulator")
+    }
 
     @Test
     fun `the report is a self-contained page with the session on it`() {

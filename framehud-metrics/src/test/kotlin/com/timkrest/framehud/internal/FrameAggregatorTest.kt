@@ -1,16 +1,21 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.PerformanceMetrics
+import com.timkrest.framehud.SessionStats
+import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class FrameAggregatorTest {
 
     private val clock = TestMetricsClock().apply { elapsedMs = FIRST_SAMPLE_TIME_MS }
-    private val aggregator = FrameAggregator(FrameHudConfig(), clock)
+    private val aggregator = FrameAggregator(FrameHudConfig(), clock, isEmulator = false)
 
     @Test
     fun `a frame that lands on the deadline is not janky, a nanosecond past it is`() {
@@ -160,12 +165,67 @@ class FrameAggregatorTest {
     }
 
     @Test
+    fun `a restarted screen inherits the standing throttle and starts clean after a cool sample`() {
+        aggregator.startCollecting()
+        aggregator.addThermalLevel(ThermalLevel.SEVERE)
+        aggregator.addFrame(totalMs = 10f)
+
+        aggregator.restartScreen()
+        assertTrue(hasThermalIssue(aggregator.screenStats()))
+
+        aggregator.addThermalLevel(ThermalLevel.NONE)
+        aggregator.restartScreen()
+        assertFalse(hasThermalIssue(aggregator.screenStats()))
+        assertTrue(hasThermalIssue(aggregator.sessionStats()))
+    }
+
+    @Test
+    fun `a mark inherits the standing throttle and starts clean after a cool sample`() {
+        aggregator.startCollecting()
+        aggregator.addThermalLevel(ThermalLevel.SEVERE)
+
+        aggregator.beginMark()
+        aggregator.addFrame(totalMs = 10f)
+        assertTrue(hasThermalIssue(assertNotNull(aggregator.endMark())))
+
+        aggregator.addThermalLevel(ThermalLevel.NONE)
+        aggregator.beginMark()
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 10f)
+        assertFalse(hasThermalIssue(assertNotNull(aggregator.endMark())))
+    }
+
+    @Test
+    fun `a screen started after a gap in collection does not inherit the pre-gap throttle`() {
+        aggregator.startCollecting()
+        aggregator.addThermalLevel(ThermalLevel.SEVERE)
+        aggregator.stopCollecting()
+
+        aggregator.startCollecting()
+
+        assertFalse(hasThermalIssue(aggregator.screenStats()))
+    }
+
+    @Test
+    fun `reset keeps the standing environment for the next session`() {
+        aggregator.startCollecting()
+        aggregator.addThermalLevel(ThermalLevel.SEVERE)
+        aggregator.addBattery(BatterySample(powerSaveMode = true, levelPercent = 10))
+
+        aggregator.reset()
+
+        val issues = aggregator.sessionStats().confidence.issues
+        assertTrue(issues.any { it is ConfidenceIssue.ThermalThrottling })
+        assertTrue(issues.any { it is ConfidenceIssue.LowBattery })
+    }
+
+    @Test
     fun `an export reads fresh metrics without waiting for the throttle`() {
         aggregator.addFrame(totalMs = 10f)
         aggregator.addFrame(totalMs = 40f)
         assertEquals(10f, aggregator.metrics.value.phases.total.current, TOLERANCE)
 
-        assertEquals(40f, aggregator.refreshMetrics().phases.total.current, TOLERANCE)
+        assertEquals(40f, aggregator.refreshMetricsIgnoringThrottle().phases.total.current, TOLERANCE)
     }
 
     @Test
@@ -247,6 +307,8 @@ class FrameAggregatorTest {
         assertEquals(0, aggregator.sessionStats().frames)
         assertNull(aggregator.metrics.value.phases.total.peak)
     }
+
+    private fun hasThermalIssue(stats: SessionStats): Boolean = stats.confidence.issues.any { it is ConfidenceIssue.ThermalThrottling }
 
     private fun advancePastThrottle() {
         clock.elapsedMs += FrameHudConfig.DEFAULT_METRICS_THROTTLE_INTERVAL_MS

@@ -8,7 +8,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/** Invalidates the activity every vsync for [durationMs] to produce `FrameMetrics` callbacks. */
 fun ActivityScenario<out Activity>.renderFrames(durationMs: Long) {
     val done = CountDownLatch(1)
     onActivity { activity ->

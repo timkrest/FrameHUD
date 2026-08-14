@@ -13,11 +13,6 @@ deprecated for a release first.
 
 ## Next
 
-- **Measurement confidence** — mark a report suspect after dropped `FrameMetrics`, throttling, a
-  refresh-rate change, an emulator, low battery, a slow listener or a sample that is too short.
-  Counted per metric: an emulator says little about GPU timings but measures main-thread jank fine.
-  The jank gate gets a third result, inconclusive: strict CI fails it with its own reason, a warn
-  mode only reports it. Baselines refuse to compare incompatible conditions.
 - **Lost time** — sum positive overrun per screen and mark. The jank percentage counts 18 ms and
   300 ms frames as one bad frame each; lost time keeps the difference.
 - **Baselines** — compare p50, p95, jank, lost time and frame phases per screen and mark with earlier

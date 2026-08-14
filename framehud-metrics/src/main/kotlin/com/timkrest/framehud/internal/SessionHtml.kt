@@ -13,6 +13,7 @@ internal fun SessionSnapshot.toHtml(): String = buildString {
 
     appendHeader(this@toHtml)
     appendVerdict(this@toHtml)
+    appendConfidence(this@toHtml)
     appendMeasurement(this@toHtml)
     appendStats(this@toHtml)
     appendWindow(this@toHtml)
@@ -47,6 +48,18 @@ private fun StringBuilder.appendVerdict(snapshot: SessionSnapshot) = with(snapsh
 private fun StringBuilder.appendTile(value: String, label: String) {
     append("<div class=\"tile\"><strong>").append(value).append("</strong><span>").append(label)
     append("</span></div>\n")
+}
+
+private fun StringBuilder.appendConfidence(snapshot: SessionSnapshot) {
+    append("<section>\n<h2>Measurement confidence</h2>\n")
+    val issues = snapshot.session.confidence.issues
+    if (issues.isEmpty()) {
+        append("<p class=\"meta\">No issues.</p>\n</section>\n")
+        return
+    }
+    append("<ul>\n")
+    for (issue in issues) append("<li>").append(escapeHtml(issue.summary)).append("</li>\n")
+    append("</ul>\n</section>\n")
 }
 
 private fun StringBuilder.appendMeasurement(snapshot: SessionSnapshot) = with(snapshot) {

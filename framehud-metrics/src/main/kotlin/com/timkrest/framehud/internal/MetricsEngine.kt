@@ -24,8 +24,8 @@ internal class MetricsEngine(
     clock: MetricsClock = SystemMetricsClock,
 ) {
 
-    private val aggregator = FrameAggregator(config(), clock)
-    private val eventDispatcher = EventDispatcher()
+    private val aggregator = FrameAggregator(config(), clock, isEmulator = isRunningOnEmulator())
+    private val eventDispatcher = EventDispatcher(clock = clock, onSlowListener = aggregator::addSlowListener)
     private val tracer = FrameHudTracer()
     private val collector = FrameMetricsCollector(
         aggregator = aggregator,
@@ -36,6 +36,7 @@ internal class MetricsEngine(
     private val choreographerTickMonitor = ChoreographerTickMonitor()
     private val memoryMonitor = MemoryStatsMonitor()
     private val thermalMonitor = ThermalMonitor()
+    private val batteryMonitor = BatteryMonitor()
 
     @Volatile
     private var boundScreen: String? = null
@@ -84,6 +85,7 @@ internal class MetricsEngine(
         isRunning = true
         requireSampler().post {
             thermalMonitor.bind(context)
+            batteryMonitor.bind(context)
             sampleMonitors()
         }
     }
@@ -91,7 +93,10 @@ internal class MetricsEngine(
     fun stop() {
         isRunning = false
         unbindWindow()
-        sampler?.post(thermalMonitor::unbind)
+        sampler?.post {
+            thermalMonitor.unbind()
+            batteryMonitor.unbind()
+        }
         setFrozen(false)
     }
 
@@ -104,7 +109,10 @@ internal class MetricsEngine(
         tracer.screenChanged(label)
         collector.expectFirstFrame(window = window, creation = creation)
         sampler.bind(window)
-        sampler.post(aggregator::startCollecting)
+        sampler.post {
+            sampleMonitors()
+            aggregator.startCollecting()
+        }
         choreographerTickMonitor.start()
     }
 
@@ -196,7 +204,7 @@ internal class MetricsEngine(
         ExportStats(
             session = aggregator.sessionStats(),
             screen = aggregator.screenStats(),
-            metrics = aggregator.refreshMetrics(),
+            metrics = aggregator.refreshMetricsIgnoringThrottle(),
             memory = memoryMonitor.liveStats,
             thermal = thermalMonitor.liveStats,
             worstFrames = aggregator.worstFrames(),
@@ -298,6 +306,9 @@ internal class MetricsEngine(
     private fun sampleMonitors() {
         memoryMonitor.sample()
         thermalMonitor.sample()
+        batteryMonitor.sample()
+        aggregator.addThermalLevel(thermalMonitor.liveStats.level)
+        aggregator.addBattery(batteryMonitor.sample)
     }
 
     @WorkerThread

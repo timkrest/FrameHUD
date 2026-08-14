@@ -4,6 +4,38 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-15
+
+### Added
+
+- `SessionStats.confidence` lists what got in the way while the stats collected: dropped
+  `FrameMetrics` reports, a slow event listener, thermal throttling, power save or low battery, a
+  refresh-rate change, an emulator, a short sample. Each issue names the figures it taints.
+  Exported reports carry the issues, and `ScreenEnded`/`MarkEnded` summaries end with
+  `(suspect measurement)`.
+- The jank gate has a third result. A checked threshold whose figure a confidence issue taints is
+  inconclusive instead of passed or failed, and the message names both the figure and the issue.
+  `OnInconclusive.FAIL` is the default and fails the test; `OnInconclusive.WARN` logs the message
+  and passes. `assertNoJank` and `DetectJankAfterTestSuccess` take the new parameter.
+
+### Changed
+
+- The export schema is 2: `session` and `screen` stats carry a `confidence` block with the issues
+  and the figures they affect.
+- The `SessionStats` data class gained a `confidence` constructor parameter with a default, so
+  sources compile as they are, but code compiled against 0.7.0 that constructs or `copy`-ies it
+  needs a recompile.
+- `assertNoJank` and the `DetectJankAfterTestSuccess` constructor gained an `onInconclusive`
+  parameter with a default. Sources compile as they are and Java keeps the shorter overloads, but a
+  test binary compiled against 0.7.0 needs a recompile.
+- A gate run with fewer than 60 frames is inconclusive for jank percent and fails under the strict
+  default. Render longer, or pass `OnInconclusive.WARN`.
+
+### Removed
+
+- `JankThresholds.maxDroppedReports`. Dropped reports now make the gate inconclusive; the strict
+  default still fails CI. Delete the argument.
+
 ## [0.7.0] - 2026-08-13
 
 ### Added
@@ -207,7 +239,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.8.0
 [0.7.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.7.0
 [0.6.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.6.0
 [0.5.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.5.0

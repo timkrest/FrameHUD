@@ -7,7 +7,6 @@ internal class WorstFrames(private val capacity: Int) {
 
     private val frames = ArrayList<Frame>(capacity)
 
-    /** Runs per frame, so the common case — not a worst frame — is one comparison, no allocation. */
     private var entryBarMs = Float.MAX_VALUE
 
     fun add(totalMs: Float, endNs: Long) {

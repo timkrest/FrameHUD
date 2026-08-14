@@ -1,9 +1,11 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.SessionStats
 
-internal const val EXPORT_SCHEMA_VERSION = 1
+internal const val EXPORT_SCHEMA_VERSION = 2
 
 internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     put("schema", EXPORT_SCHEMA_VERSION)
@@ -101,6 +103,48 @@ private fun JsonObjectScope.putStats(stats: SessionStats) {
     put("frozenFrames", stats.frozenFrames)
     put("maxJankStreak", stats.maxJankStreak)
     put("droppedReports", stats.droppedReports)
+    putObject("confidence") { putConfidence(stats.confidence) }
+}
+
+private fun JsonObjectScope.putConfidence(confidence: MeasurementConfidence) {
+    put("suspect", confidence.isSuspect)
+    putArray("issues") {
+        for (issue in confidence.issues) addObject { putIssue(issue) }
+    }
+}
+
+private fun JsonObjectScope.putIssue(issue: ConfidenceIssue) {
+    when (issue) {
+        is ConfidenceIssue.DroppedReports -> {
+            put("type", "droppedReports")
+            put("count", issue.count)
+        }
+        is ConfidenceIssue.SlowListener -> {
+            put("type", "slowListener")
+            put("longestCallMs", issue.longestCallMs)
+        }
+        is ConfidenceIssue.ThermalThrottling -> {
+            put("type", "thermalThrottling")
+            put("worstLevel", issue.worstLevel.name)
+        }
+        is ConfidenceIssue.LowBattery -> {
+            put("type", "lowBattery")
+            put("powerSaveMode", issue.powerSaveMode)
+            put("levelPercent", issue.levelPercent)
+        }
+        is ConfidenceIssue.RefreshRateChanged -> {
+            put("type", "refreshRateChanged")
+            putArray("ratesHz") { for (rate in issue.ratesHz.sorted()) add(rate) }
+        }
+        is ConfidenceIssue.Emulator -> {
+            put("type", "emulator")
+        }
+        is ConfidenceIssue.ShortSample -> {
+            put("type", "shortSample")
+            put("frames", issue.frames)
+        }
+    }
+    putArray("affected") { for (metric in issue.affected) add(metric.name) }
 }
 
 private fun JsonObjectScope.putPhase(name: String, value: MetricValue) {

@@ -8,16 +8,21 @@ import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.SessionStats
+import com.timkrest.framehud.ThermalLevel
 import kotlinx.coroutines.flow.StateFlow
 
 @WorkerThread
-internal class FrameAggregator(private var config: FrameHudConfig, private val clock: MetricsClock) {
+internal class FrameAggregator(
+    private var config: FrameHudConfig,
+    private val clock: MetricsClock,
+    private val isEmulator: Boolean,
+) {
 
     private var frameWindow = FrameWindow(config.metricsSampleWindowFrames)
 
-    private val session = SessionAccumulator(clock)
+    private val session = SessionAccumulator(clock, isEmulator)
 
-    private val screen = SessionAccumulator(clock)
+    private val screen = SessionAccumulator(clock, isEmulator)
 
     private var mark: SessionAccumulator? = null
 
@@ -36,6 +41,9 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
 
     private var hasReportedGpuDuration = false
 
+    private var latestThermalLevel: ThermalLevel? = null
+    private var latestBattery: BatterySample? = null
+
     fun addFrame(
         durationsMs: FloatArray,
         totalDurationNs: Long,
@@ -53,19 +61,31 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         val isJanky = overrunMs > 0f
 
         frameWindow.add(durationsMs = durationsMs, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
-        session.addFrame(totalMs = totalMs, isJanky = isJanky)
-        screen.addFrame(totalMs = totalMs, isJanky = isJanky)
-        mark?.addFrame(totalMs = totalMs, isJanky = isJanky)
+        eachAccumulator { it.addFrame(totalMs = totalMs, isJanky = isJanky, refreshRateHz = display.refreshRateHz) }
         worstFrames.add(totalMs = totalMs, endNs = frameEndNs)
 
         isDrainingToIdle = true
         maybeEmit()
     }
 
-    fun addDroppedReports(count: Int) {
-        session.addDroppedReports(count)
-        screen.addDroppedReports(count)
-        mark?.addDroppedReports(count)
+    fun addDroppedReports(count: Int) = eachAccumulator { it.addDroppedReports(count) }
+
+    fun addThermalLevel(level: ThermalLevel) {
+        latestThermalLevel = level
+        eachAccumulator { it.addThermalLevel(level) }
+    }
+
+    fun addBattery(sample: BatterySample) {
+        latestBattery = sample
+        eachAccumulator { it.addBattery(sample) }
+    }
+
+    fun addSlowListener(callMs: Float) = eachAccumulator { it.addSlowListener(callMs) }
+
+    private inline fun eachAccumulator(action: (SessionAccumulator) -> Unit) {
+        action(session)
+        action(screen)
+        mark?.let(action)
     }
 
     fun onTick() {
@@ -82,11 +102,18 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         session.startCollecting()
         screen.clear()
         screen.startCollecting()
+        seedEnvironment(screen)
     }
 
     fun stopCollecting() {
         session.stopCollecting()
         screen.stopCollecting()
+        forgetStaleEnvironment()
+    }
+
+    private fun forgetStaleEnvironment() {
+        latestThermalLevel = null
+        latestBattery = null
     }
 
     fun restartScreen(): SessionStats {
@@ -94,11 +121,17 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         val ended = screen.stats()
         screen.clear()
         screen.startCollecting()
+        seedEnvironment(screen)
         return ended
     }
 
     fun beginMark() {
-        mark = SessionAccumulator(clock).apply { startCollecting() }
+        mark = SessionAccumulator(clock, isEmulator).apply { startCollecting() }.also(::seedEnvironment)
+    }
+
+    private fun seedEnvironment(accumulator: SessionAccumulator) {
+        latestThermalLevel?.let(accumulator::addThermalLevel)
+        latestBattery?.let(accumulator::addBattery)
     }
 
     fun endMark(): SessionStats? {
@@ -108,8 +141,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         return ended.stats()
     }
 
-    /** Recomputes instead of waiting for the throttle, so an export never carries lagged readings. */
-    fun refreshMetrics(): PerformanceMetrics {
+    fun refreshMetricsIgnoringThrottle(): PerformanceMetrics {
         emitMetrics(clock.elapsedRealtimeMs())
         return liveMetrics
     }
@@ -126,6 +158,7 @@ internal class FrameAggregator(private var config: FrameHudConfig, private val c
         screen.clear()
         mark?.clear()
         worstFrames.clear()
+        eachAccumulator(::seedEnvironment)
         isDrainingToIdle = false
         lastUpdateTime = 0L
         readings.reset(PerformanceMetrics.EMPTY)

@@ -2,12 +2,14 @@ package com.timkrest.framehud.internal
 
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.SessionStats
+import com.timkrest.framehud.ThermalLevel
 import kotlin.math.max
 
 @WorkerThread
-internal class SessionAccumulator(private val clock: MetricsClock) {
+internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: Boolean = false) {
 
     private val totals = LatencyHistogram()
+    private val confidence = ConfidenceTracker(isEmulator)
     private var collectingSinceMs: Long? = null
     private var collectedMs = 0L
     private var jankyFrames = 0
@@ -16,7 +18,7 @@ internal class SessionAccumulator(private val clock: MetricsClock) {
     private var currentJankStreak = 0
     private var maxJankStreak = 0
 
-    fun addFrame(totalMs: Float, isJanky: Boolean) {
+    fun addFrame(totalMs: Float, isJanky: Boolean, refreshRateHz: Float) {
         totals.add(totalMs)
         if (isJanky) {
             jankyFrames++
@@ -26,11 +28,18 @@ internal class SessionAccumulator(private val clock: MetricsClock) {
             currentJankStreak = 0
         }
         if (totalMs > SessionStats.FROZEN_FRAME_MS) frozenFrames++
+        confidence.addRefreshRate(refreshRateHz)
     }
 
     fun addDroppedReports(count: Int) {
         droppedReports += count
     }
+
+    fun addThermalLevel(level: ThermalLevel) = confidence.addThermalLevel(level)
+
+    fun addSlowListener(callMs: Float) = confidence.addSlowListener(callMs)
+
+    fun addBattery(sample: BatterySample) = confidence.addBattery(sample)
 
     fun startCollecting() {
         if (collectingSinceMs == null) collectingSinceMs = clock.elapsedRealtimeMs()
@@ -54,11 +63,13 @@ internal class SessionAccumulator(private val clock: MetricsClock) {
             frozenFrames = frozenFrames,
             maxJankStreak = maxJankStreak,
             droppedReports = droppedReports,
+            confidence = confidence.confidence(frames = frames, droppedReports = droppedReports),
         )
     }
 
     fun clear() {
         totals.clear()
+        confidence.clear()
         jankyFrames = 0
         frozenFrames = 0
         droppedReports = 0

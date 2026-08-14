@@ -1,48 +1,99 @@
 package com.timkrest.framehud.instrumentation
 
+import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.SessionStats
 import org.junit.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.fail
 
 class JankThresholdsTest {
 
     @Test
-    fun `a clean session has nothing to report`() {
-        val violations = JankThresholds().violations(session(jankPercent = 2f, p95FrameMs = 40f))
-        assertTrue(violations.isEmpty())
+    fun `a clean session passes`() {
+        val verdict = JankThresholds().verdict(TAG, session(jankPercent = 2f, p95FrameMs = 40f))
+        assertIs<GateVerdict.Pass>(verdict)
     }
 
     @Test
-    fun `jank share and frozen frames are checked by default`() {
-        val violations = JankThresholds().violations(session(jankPercent = 12f, frozenFrames = 1))
-        assertEquals(2, violations.size)
+    fun `an untainted violation fails`() {
+        val verdict = JankThresholds().verdict(TAG, session(jankPercent = 12f, frozenFrames = 1))
+        val failed = assertIs<GateVerdict.Fail>(verdict)
+        assertContains(failed.message, "jank")
+        assertContains(failed.message, "frozen")
     }
 
     @Test
     fun `p95 is only checked once a limit is set`() {
         val stats = session(p95FrameMs = 30f)
-        assertTrue(JankThresholds().violations(stats).isEmpty())
-        assertEquals(1, JankThresholds(maxP95FrameMs = 20f).violations(stats).size)
+        assertIs<GateVerdict.Pass>(JankThresholds().verdict(TAG, stats))
+        assertIs<GateVerdict.Fail>(JankThresholds(maxP95FrameMs = 20f).verdict(TAG, stats))
     }
 
     @Test
-    fun `dropped reports fail the gate, since they undersample everything else`() {
-        val stats = session(droppedReports = 3)
-        assertEquals(1, JankThresholds().violations(stats).size)
-        assertTrue(JankThresholds(maxDroppedReports = 3).violations(stats).isEmpty())
+    fun `a violation tainted by a confidence issue is inconclusive, and the message still names it`() {
+        val stats = session(jankPercent = 12f, issues = listOf(ConfidenceIssue.DroppedReports(3)))
+        val verdict = JankThresholds().verdict(TAG, stats)
+        val inconclusive = assertIs<GateVerdict.Inconclusive>(verdict)
+        assertContains(inconclusive.message, "jank 12.0% over")
+        assertContains(inconclusive.message, "dropped")
+    }
+
+    @Test
+    fun `an emulator issue leaves jank percent conclusive`() {
+        val stats = session(jankPercent = 12f, issues = listOf(ConfidenceIssue.Emulator))
+        assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, stats))
+    }
+
+    @Test
+    fun `a refresh rate change leaves p95 and frozen frames conclusive`() {
+        val stats = session(frozenFrames = 1, issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120))))
+        assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, stats))
+
+        val p95Stats = session(p95FrameMs = 30f, issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120))))
+        assertIs<GateVerdict.Fail>(JankThresholds(maxP95FrameMs = 20f).verdict(TAG, p95Stats))
+    }
+
+    @Test
+    fun `a passing but tainted checked threshold is still inconclusive`() {
+        val stats = session(jankPercent = 1f, issues = listOf(ConfidenceIssue.DroppedReports(1)))
+        assertIs<GateVerdict.Inconclusive>(JankThresholds().verdict(TAG, stats))
+    }
+
+    @Test
+    fun `an untainted violation fails even in warn mode`() {
+        val verdict = JankThresholds().verdict(TAG, session(jankPercent = 12f))
+        assertFailsWith<AssertionError> { verdict.throwOrWarn(OnInconclusive.WARN) { fail("should not warn") } }
+    }
+
+    @Test
+    fun `an inconclusive verdict fails in strict mode and only logs in warn mode`() {
+        val verdict = GateVerdict.Inconclusive("boom")
+
+        assertFailsWith<AssertionError> { verdict.throwOrWarn(OnInconclusive.FAIL) { fail("should not warn") } }
+
+        var logged: String? = null
+        verdict.throwOrWarn(OnInconclusive.WARN) { logged = it }
+        assertEquals("boom", logged)
     }
 
     private fun session(
         jankPercent: Float = 0f,
         frozenFrames: Int = 0,
         p95FrameMs: Float = 0f,
-        droppedReports: Int = 0,
+        issues: List<ConfidenceIssue> = emptyList(),
     ) = SessionStats.EMPTY.copy(
         frames = 500,
         jankPercent = jankPercent,
         frozenFrames = frozenFrames,
         p95FrameMs = p95FrameMs,
-        droppedReports = droppedReports,
+        confidence = MeasurementConfidence(issues),
     )
+
+    private companion object {
+        const val TAG = "sample test"
+    }
 }

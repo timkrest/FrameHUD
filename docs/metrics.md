@@ -149,7 +149,8 @@ measured.
 Three things do distort readings, and the panel tells you about all of them: `drop` above zero means
 the system discarded reports before delivery, so averages and percentiles are undersampled; `therm`
 showing throttling means the device has clocked itself down and the timings are not comparable to a
-cold device; `EMU` in the header means an emulator.
+cold device; `EMU` in the header means an emulator. Reports carry these and more as confidence
+issues next to the stats, each naming the figures it taints.
 
 ## On an emulator
 

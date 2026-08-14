@@ -14,8 +14,8 @@ public data class SessionStats(
     val jankPercent: Float = 0f,
     val frozenFrames: Int = 0,
     val maxJankStreak: Int = 0,
-    /** Above zero, every other figure here is undersampled. */
     val droppedReports: Int = 0,
+    val confidence: MeasurementConfidence = MeasurementConfidence.CLEAN,
 ) {
     public companion object {
         /** What Play Vitals counts as a frozen frame. */

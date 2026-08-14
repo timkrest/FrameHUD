@@ -14,7 +14,6 @@ import java.util.TimeZone
 /** Everything a session report shows, captured at one moment so both formats agree. */
 internal class SessionSnapshot(
     val takenAtEpochMs: Long,
-    /** Same moment as [takenAtEpochMs] on the `System.nanoTime` clock that frame ends use. */
     val takenAtNs: Long,
     val timeZone: TimeZone,
     val frameHudVersion: String,

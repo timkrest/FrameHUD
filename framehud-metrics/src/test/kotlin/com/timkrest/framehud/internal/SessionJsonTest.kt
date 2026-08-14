@@ -1,6 +1,10 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.MeasuredMetric
+import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.SessionStats
+import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -12,9 +16,10 @@ class SessionJsonTest {
         val json = sessionSnapshotFixture().toJson()
 
         val stats = """"frames":0,"durationMs":0,"p50FrameMs":0.0,"p95FrameMs":0.0,"p99FrameMs":0.0,""" +
-            """"jankPercent":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0"""
+            """"jankPercent":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
+            """"confidence":{"suspect":false,"issues":[]}"""
         val zeroPhase = """{"averageMs":0.0,"peakMs":null}"""
-        val expected = """{"schema":1,""" +
+        val expected = """{"schema":2,""" +
             """"generatedAt":"2023-11-14T22:13:20.000Z","generatedAtMs":1700000000000,""" +
             """"frameHudVersion":"1.2.3",""" +
             """"app":{"packageName":"com.example.app","versionName":"9.9","versionCode":42},""" +
@@ -50,6 +55,24 @@ class SessionJsonTest {
         assertContains(json, """"frames":120""")
         assertContains(json, """"jankPercent":7.5""")
         assertContains(json, """"frames":[{"totalMs":10.0,"deadlineMs":16.0},{"totalMs":40.0,"deadlineMs":16.0}]""")
+    }
+
+    @Test
+    fun `confidence issues carry their type, detail fields and affected metrics`() {
+        val confidence = MeasurementConfidence(
+            issues = listOf(
+                ConfidenceIssue.ThermalThrottling(ThermalLevel.SEVERE),
+                ConfidenceIssue.LowBattery(powerSaveMode = true, levelPercent = 12),
+                ConfidenceIssue.RefreshRateChanged(setOf(60, 120)),
+            ),
+        )
+        val json = sessionSnapshotFixture(session = SessionStats.EMPTY.copy(confidence = confidence)).toJson()
+
+        assertContains(json, """"suspect":true""")
+        assertContains(json, """{"type":"thermalThrottling","worstLevel":"SEVERE","affected":[""")
+        assertContains(json, """{"type":"lowBattery","powerSaveMode":true,"levelPercent":12,"affected":[""")
+        assertContains(json, """{"type":"refreshRateChanged","ratesHz":[60,120],"affected":[""")
+        assertContains(json, MeasuredMetric.JANK_PERCENT.name)
     }
 
     @Test
