@@ -48,32 +48,20 @@ internal fun JankThresholds.verdict(tag: String, stats: SessionStats): GateVerdi
 
 private class ThresholdCheck(val metric: MeasuredMetric, val violationMessage: String?)
 
-private fun JankThresholds.thresholdChecks(stats: SessionStats): List<ThresholdCheck> = buildList {
-    if (maxJankPercent.isFinite()) {
-        add(
-            ThresholdCheck(
-                metric = MeasuredMetric.JANK_PERCENT,
-                violationMessage = format("jank %.1f%% over %.1f%%", stats.jankPercent, maxJankPercent)
-                    .takeIf { stats.jankPercent > maxJankPercent },
-            ),
-        )
-    }
-    add(
-        ThresholdCheck(
-            metric = MeasuredMetric.FROZEN_FRAMES,
-            violationMessage = "${stats.frozenFrames} frozen frame(s), allowed $maxFrozenFrames"
-                .takeIf { stats.frozenFrames > maxFrozenFrames },
-        ),
-    )
-    if (maxP95FrameMs.isFinite()) {
-        add(
-            ThresholdCheck(
-                metric = MeasuredMetric.P95,
-                violationMessage = format("p95 %.1f ms over %.1f ms", stats.p95FrameMs, maxP95FrameMs)
-                    .takeIf { stats.p95FrameMs > maxP95FrameMs },
-            ),
-        )
-    }
+private fun JankThresholds.thresholdChecks(stats: SessionStats): List<ThresholdCheck> = listOfNotNull(
+    limitCheck(MeasuredMetric.JANK_PERCENT, stats.jankPercent, maxJankPercent, "jank %.1f%% over %.1f%%"),
+    ThresholdCheck(
+        metric = MeasuredMetric.FROZEN_FRAMES,
+        violationMessage = "${stats.frozenFrames} frozen frame(s), allowed $maxFrozenFrames"
+            .takeIf { stats.frozenFrames > maxFrozenFrames },
+    ),
+    limitCheck(MeasuredMetric.P95, stats.p95FrameMs, maxP95FrameMs, "p95 %.1f ms over %.1f ms"),
+    limitCheck(MeasuredMetric.LOST_TIME, stats.lostTimeMs, maxLostTimeMs, "lost time %.1f ms over %.1f ms"),
+)
+
+private fun limitCheck(metric: MeasuredMetric, value: Float, limit: Float, violation: String): ThresholdCheck? {
+    if (!limit.isFinite()) return null
+    return ThresholdCheck(metric, format(violation, value, limit).takeIf { value > limit })
 }
 
 private fun format(template: String, vararg args: Any): String = String.format(Locale.US, template, *args)

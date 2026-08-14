@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `SessionStats.lostTimeMs` sums how far the late frames ran past their deadline. Jank percent
+  counts an 18 ms frame and a 300 ms frame as one bad frame each; lost time keeps the difference.
+  The panel adds a line for it once it is above zero, both reports carry it per session and per
+  screen, and a refresh-rate change taints it the same way it taints jank percent.
+- `JankThresholds.maxLostTimeMs` fails a test once a screen loses more than the given time. It is
+  infinite by default, so nothing changes until you set it.
+
+### Changed
+
+- The export schema is 3: `session` and `screen` stats carry `lostTimeMs`.
+- `ScreenEnded`/`MarkEnded` summaries name lost time between jank percent and p95.
+- The `SessionStats` data class gained a `lostTimeMs` constructor parameter after `jankPercent`.
+  Named construction and `copy` are unaffected; positional construction and code compiled against
+  0.8.0 need updating.
+
 ## [0.8.0] - 2026-08-15
 
 ### Added

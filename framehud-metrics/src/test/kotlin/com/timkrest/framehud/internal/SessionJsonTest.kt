@@ -16,10 +16,10 @@ class SessionJsonTest {
         val json = sessionSnapshotFixture().toJson()
 
         val stats = """"frames":0,"durationMs":0,"p50FrameMs":0.0,"p95FrameMs":0.0,"p99FrameMs":0.0,""" +
-            """"jankPercent":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
+            """"jankPercent":0.0,"lostTimeMs":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
             """"confidence":{"suspect":false,"issues":[]}"""
         val zeroPhase = """{"averageMs":0.0,"peakMs":null}"""
-        val expected = """{"schema":2,""" +
+        val expected = """{"schema":3,""" +
             """"generatedAt":"2023-11-14T22:13:20.000Z","generatedAtMs":1700000000000,""" +
             """"frameHudVersion":"1.2.3",""" +
             """"app":{"packageName":"com.example.app","versionName":"9.9","versionCode":42},""" +

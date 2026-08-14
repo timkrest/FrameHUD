@@ -44,6 +44,14 @@ class PanelFormatterTest {
     }
 
     @Test
+    fun `lost time stays in milliseconds below a second, so a small loss is still readable`() {
+        assertEquals("lost 40ms", formatLostTime(40f))
+        assertEquals("lost 999ms", formatLostTime(999f))
+        assertEquals("lost 1.0s", formatLostTime(1_000f))
+        assertEquals("lost 12.5s", formatLostTime(12_500f))
+    }
+
+    @Test
     fun `no frames reads as idle`() {
         assertEquals("idle", formatFps(0))
         assertEquals("60 FPS", formatFps(60))

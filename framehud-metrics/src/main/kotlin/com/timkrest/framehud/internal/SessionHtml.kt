@@ -92,6 +92,7 @@ private fun StringBuilder.appendStats(snapshot: SessionSnapshot) = with(snapshot
     appendStatRow("p95", session, screen) { formatMs(it.p95FrameMs) }
     appendStatRow("p99", session, screen) { formatMs(it.p99FrameMs) }
     appendStatRow("Jank", session, screen) { formatPercent(it.jankPercent) }
+    appendStatRow("Lost time", session, screen) { formatMs(it.lostTimeMs) }
     appendStatRow("Frozen frames", session, screen) { formatCount(it.frozenFrames) }
     appendStatRow("Longest jank streak", session, screen) { formatCount(it.maxJankStreak) }
     appendStatRow("Dropped reports", session, screen) { formatCount(it.droppedReports) }

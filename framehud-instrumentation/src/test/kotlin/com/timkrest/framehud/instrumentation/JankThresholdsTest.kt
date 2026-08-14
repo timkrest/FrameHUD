@@ -43,6 +43,16 @@ class JankThresholdsTest {
     }
 
     @Test
+    fun `lost time is only checked once a limit is set, and a refresh rate change taints it`() {
+        val stats = session(lostTimeMs = 800f)
+        assertIs<GateVerdict.Pass>(JankThresholds().verdict(TAG, stats))
+        assertIs<GateVerdict.Fail>(JankThresholds(maxLostTimeMs = 500f).verdict(TAG, stats))
+
+        val rateChanged = session(lostTimeMs = 800f, issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120))))
+        assertIs<GateVerdict.Inconclusive>(JankThresholds(maxLostTimeMs = 500f).verdict(TAG, rateChanged))
+    }
+
+    @Test
     fun `an emulator issue leaves jank percent conclusive`() {
         val stats = session(jankPercent = 12f, issues = listOf(ConfidenceIssue.Emulator))
         assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, stats))
@@ -84,12 +94,14 @@ class JankThresholdsTest {
         jankPercent: Float = 0f,
         frozenFrames: Int = 0,
         p95FrameMs: Float = 0f,
+        lostTimeMs: Float = 0f,
         issues: List<ConfidenceIssue> = emptyList(),
     ) = SessionStats.EMPTY.copy(
         frames = 500,
         jankPercent = jankPercent,
         frozenFrames = frozenFrames,
         p95FrameMs = p95FrameMs,
+        lostTimeMs = lostTimeMs,
         confidence = MeasurementConfidence(issues),
     )
 

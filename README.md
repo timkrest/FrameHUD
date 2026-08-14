@@ -62,6 +62,7 @@ pipe:cpu 10.4  11.0
 win  jank  4.2%  p95  12.1  max  22.3
 ses  p50   7.1  p95  12.4  p99  19.8
 ses 4312f 1m12s jank 4.2% frz0 run3
+lost 2.1s
 mem 84/256 ▲96 · nat 37 ▲41 MB
 gc x3 · 18 ms
 therm none · hr 0.68
@@ -248,13 +249,23 @@ frozen frames and heap use as `framehud.*` counters. Macrobenchmark's `TraceSect
 the named sections. FrameHUD leaves markers only; recording and analyzing the trace stays with
 Perfetto.
 
+## Lost time
+
+`SessionStats.lostTimeMs` sums how far the late frames ran past their deadline. Jank percent counts
+an 18 ms frame and a 300 ms frame as one bad frame each; lost time keeps the difference, so two
+screens sitting at the same 5% jank stop looking alike.
+
+Frames that finished with headroom add nothing. The panel adds a line for it once it is above zero,
+both reports carry it per session and per screen, and `JankThresholds(maxLostTimeMs = 500f)` fails a
+test on it.
+
 ## Measurement confidence
 
 `SessionStats.confidence` lists what got in the way while the stats collected: dropped
 `FrameMetrics` reports, an event listener that held the metrics thread, thermal throttling, power
 save or a battery at 15% or below, a refresh-rate change, an emulator, a sample too short for its
 percentiles. Each issue names the figures it taints. An emulator taints only the render-thread and
-GPU phases. A refresh-rate change taints only jank percent and streak. A short sample taints the
+GPU phases. A refresh-rate change taints jank percent, lost time and streak. A short sample taints the
 percentiles it cannot support: p99 below 300 frames, p95 and jank percent below 60, p50 below 20.
 The rest taint every figure.
 

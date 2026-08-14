@@ -7,4 +7,5 @@ public data class JankThresholds(
     val maxJankPercent: Float = JankSeverity.WARNING_JANK_PERCENT,
     val maxFrozenFrames: Int = 0,
     val maxP95FrameMs: Float = Float.POSITIVE_INFINITY,
+    val maxLostTimeMs: Float = Float.POSITIVE_INFINITY,
 )

@@ -61,7 +61,9 @@ internal class FrameAggregator(
         val isJanky = overrunMs > 0f
 
         frameWindow.add(durationsMs = durationsMs, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
-        eachAccumulator { it.addFrame(totalMs = totalMs, isJanky = isJanky, refreshRateHz = display.refreshRateHz) }
+        eachAccumulator {
+            it.addFrame(totalMs = totalMs, isJanky = isJanky, overrunMs = overrunMs, refreshRateHz = display.refreshRateHz)
+        }
         worstFrames.add(totalMs = totalMs, endNs = frameEndNs)
 
         isDrainingToIdle = true

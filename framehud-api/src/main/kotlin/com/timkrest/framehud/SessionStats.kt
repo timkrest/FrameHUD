@@ -12,6 +12,8 @@ public data class SessionStats(
     val p99FrameMs: Float = 0f,
     /** 0..100. */
     val jankPercent: Float = 0f,
+    /** Summed overrun of the frames that missed their deadline. */
+    val lostTimeMs: Float = 0f,
     val frozenFrames: Int = 0,
     val maxJankStreak: Int = 0,
     val droppedReports: Int = 0,

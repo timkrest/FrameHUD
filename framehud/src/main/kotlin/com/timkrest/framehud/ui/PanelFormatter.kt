@@ -62,6 +62,12 @@ internal fun formatSessionTotals(session: SessionStats): String = format(
     session.maxJankStreak,
 )
 
+internal fun formatLostTime(lostTimeMs: Float): String = if (lostTimeMs < MS_PER_SECOND) {
+    format("lost %.0fms", lostTimeMs)
+} else {
+    format("lost %.1fs", lostTimeMs / MS_PER_SECOND)
+}
+
 internal fun formatMemory(memory: MemoryStats): String = format(
     "mem %d/%d ▲%d · nat %d ▲%d MB",
     memory.usedHeapMb,

@@ -16,7 +16,10 @@ class FrameHudEventTest {
     @Test
     fun `a finished screen is summed up in one line`() {
         val event = FrameHudEvent.ScreenEnded(stats = stats(), screen = "MainActivity")
-        assertEquals("MainActivity: 120 frames in 2.0s, jank 7.5%, p95 18.0 ms, frozen 1", event.summary)
+        assertEquals(
+            "MainActivity: 120 frames in 2.0s, jank 7.5%, lost 240 ms, p95 18.0 ms, frozen 1",
+            event.summary,
+        )
     }
 
     @Test
@@ -75,6 +78,7 @@ class FrameHudEventTest {
         durationMs = 2_000L,
         p95FrameMs = 18f,
         jankPercent = 7.5f,
+        lostTimeMs = 240f,
         frozenFrames = 1,
     )
 

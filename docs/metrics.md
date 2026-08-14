@@ -70,6 +70,8 @@ send.
 - **ses** — since the last reset: p50/p95/p99, frame count and collection time (background time
   excluded), jank share, `frz` for frozen frames (TOTAL > 700 ms, as in Play Vitals), `run` for the
   longest streak of consecutive janky frames
+- **lost** — how far the late frames ran past the deadline, summed. Only shown above zero. Jank
+  share counts an 18 ms frame and a 300 ms frame the same; this keeps them apart
 - **drop** — `FrameMetrics` reports the system dropped before delivery. Only shown when above zero:
   averages and p95 are undersampled, so read them with suspicion
 - **mem** — Java heap used/limit and native heap, `▲` marking peaks since reset. Climbing as you

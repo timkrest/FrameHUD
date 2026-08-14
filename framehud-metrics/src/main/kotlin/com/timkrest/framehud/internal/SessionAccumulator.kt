@@ -13,15 +13,17 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
     private var collectingSinceMs: Long? = null
     private var collectedMs = 0L
     private var jankyFrames = 0
+    private var lostTimeSumMs = 0.0
     private var frozenFrames = 0
     private var droppedReports = 0
     private var currentJankStreak = 0
     private var maxJankStreak = 0
 
-    fun addFrame(totalMs: Float, isJanky: Boolean, refreshRateHz: Float) {
+    fun addFrame(totalMs: Float, isJanky: Boolean, overrunMs: Float, refreshRateHz: Float) {
         totals.add(totalMs)
         if (isJanky) {
             jankyFrames++
+            lostTimeSumMs += overrunMs
             currentJankStreak++
             maxJankStreak = max(maxJankStreak, currentJankStreak)
         } else {
@@ -60,6 +62,7 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
             p95FrameMs = totals.percentile(P95),
             p99FrameMs = totals.percentile(P99),
             jankPercent = if (frames == 0) 0f else jankyFrames * PERCENT / frames,
+            lostTimeMs = lostTimeSumMs.toFloat(),
             frozenFrames = frozenFrames,
             maxJankStreak = maxJankStreak,
             droppedReports = droppedReports,
@@ -71,6 +74,7 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
         totals.clear()
         confidence.clear()
         jankyFrames = 0
+        lostTimeSumMs = 0.0
         frozenFrames = 0
         droppedReports = 0
         currentJankStreak = 0

@@ -40,7 +40,10 @@ class MeasurementConfidenceTest {
     @Test
     fun `a refresh rate change leaves p95 and frozen frames conclusive`() {
         val affected = ConfidenceIssue.RefreshRateChanged(setOf(60, 120)).affected
-        assertEquals(setOf(MeasuredMetric.JANK_PERCENT, MeasuredMetric.MAX_JANK_STREAK), affected)
+        assertEquals(
+            setOf(MeasuredMetric.JANK_PERCENT, MeasuredMetric.LOST_TIME, MeasuredMetric.MAX_JANK_STREAK),
+            affected,
+        )
         assertFalse(MeasuredMetric.P95 in affected)
         assertFalse(MeasuredMetric.FROZEN_FRAMES in affected)
     }

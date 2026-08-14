@@ -81,6 +81,9 @@ internal fun buildPanelLines(
         addText(formatWindowSummary(window), jankColor(window.jankPercent), separatorAbove = true)
         addText(formatSessionLatency(session), TextNormal)
         addText(formatSessionTotals(session), jankColor(session.jankPercent))
+        if (session.lostTimeMs > 0f) {
+            addText(formatLostTime(session.lostTimeMs), jankColor(session.jankPercent))
+        }
         if (session.droppedReports > 0) {
             addText(formatDroppedReports(session.droppedReports), TextCaution)
         }

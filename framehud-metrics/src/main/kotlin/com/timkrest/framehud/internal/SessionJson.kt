@@ -5,7 +5,7 @@ import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.SessionStats
 
-internal const val EXPORT_SCHEMA_VERSION = 2
+internal const val EXPORT_SCHEMA_VERSION = 3
 
 internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     put("schema", EXPORT_SCHEMA_VERSION)
@@ -100,6 +100,7 @@ private fun JsonObjectScope.putStats(stats: SessionStats) {
     put("p95FrameMs", stats.p95FrameMs)
     put("p99FrameMs", stats.p99FrameMs)
     put("jankPercent", stats.jankPercent)
+    put("lostTimeMs", stats.lostTimeMs)
     put("frozenFrames", stats.frozenFrames)
     put("maxJankStreak", stats.maxJankStreak)
     put("droppedReports", stats.droppedReports)

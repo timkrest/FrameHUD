@@ -13,8 +13,6 @@ deprecated for a release first.
 
 ## Next
 
-- **Lost time** — sum positive overrun per screen and mark. The jank percentage counts 18 ms and
-  300 ms frames as one bad frame each; lost time keeps the difference.
 - **Baselines** — compare p50, p95, jank, lost time and frame phases per screen and mark with earlier
   exported runs from the same device, API and display mode. The baseline is a file: CI stores it and
   passes it to the next run, the device keeps nothing. The report shows the delta, how many runs are

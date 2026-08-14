@@ -109,11 +109,12 @@ private fun FrameHudEvent.origin(): String {
 
 private fun SessionStats.summarize(origin: String): String {
     val summary = formatInvariant(
-        "%s: %d frames in %.1fs, jank %.1f%%, p95 %.1f ms, frozen %d",
+        "%s: %d frames in %.1fs, jank %.1f%%, lost %.0f ms, p95 %.1f ms, frozen %d",
         origin,
         frames,
         durationMs / MS_PER_SECOND,
         jankPercent,
+        lostTimeMs,
         p95FrameMs,
         frozenFrames,
     )

@@ -150,8 +150,25 @@ class SessionAccumulatorTest {
         assertEquals(0, issue.frames)
     }
 
-    private fun SessionAccumulator.addFrame(totalMs: Float, isJanky: Boolean, refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ) {
-        addFrame(totalMs = totalMs, isJanky = isJanky, refreshRateHz = refreshRateHz)
+    @Test
+    fun `lost time sums the overrun of late frames only, and clear forgets it`() {
+        val session = SessionAccumulator(TestMetricsClock())
+        session.addFrame(totalMs = 20f, isJanky = true, overrunMs = 3.5f)
+        session.addFrame(totalMs = 8f, isJanky = false, overrunMs = -8.3f)
+        session.addFrame(totalMs = 30f, isJanky = true, overrunMs = 13.5f)
+        assertEquals(17f, session.stats().lostTimeMs, TOLERANCE)
+
+        session.clear()
+        assertEquals(0f, session.stats().lostTimeMs, TOLERANCE)
+    }
+
+    private fun SessionAccumulator.addFrame(
+        totalMs: Float,
+        isJanky: Boolean,
+        overrunMs: Float = if (isJanky) 1f else -1f,
+        refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ,
+    ) {
+        addFrame(totalMs = totalMs, isJanky = isJanky, overrunMs = overrunMs, refreshRateHz = refreshRateHz)
     }
 
     private companion object {

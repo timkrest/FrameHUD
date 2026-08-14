@@ -8,6 +8,7 @@ public enum class MeasuredMetric {
     P95,
     P99,
     JANK_PERCENT,
+    LOST_TIME,
     FROZEN_FRAMES,
     MAX_JANK_STREAK,
     UI_THREAD_PHASES,
@@ -94,6 +95,6 @@ public data class MeasurementConfidence(val issues: List<ConfidenceIssue>) {
 private val ALL_METRICS: Set<MeasuredMetric> = MeasuredMetric.entries.toSet()
 
 private val FRAME_BUDGET_METRICS: Set<MeasuredMetric> =
-    setOf(MeasuredMetric.JANK_PERCENT, MeasuredMetric.MAX_JANK_STREAK)
+    setOf(MeasuredMetric.JANK_PERCENT, MeasuredMetric.LOST_TIME, MeasuredMetric.MAX_JANK_STREAK)
 
 private val RENDER_METRICS: Set<MeasuredMetric> = setOf(MeasuredMetric.RENDER_PHASES)
