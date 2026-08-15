@@ -17,7 +17,7 @@ class SessionJsonTest {
 
         val averages = """"bottleneckStage":"CPU","unknownDelayMs":0.0,"inputMs":0.0,"animationMs":0.0,""" +
             """"layoutMs":0.0,"drawMs":0.0,"syncMs":0.0,"commandIssueMs":0.0,"swapBuffersMs":0.0,""" +
-            """"gpuMs":0.0,"totalMs":0.0,"isGpuAvailable":false"""
+            """"gpuMs":null,"totalMs":0.0"""
         val stats = """"frames":0,"durationMs":0,"p50FrameMs":0.0,"p95FrameMs":0.0,"p99FrameMs":0.0,""" +
             """"jankPercent":0.0,"lostTimeMs":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
             """"phases":{$averages},"confidence":{"suspect":false,"issues":[]}"""
@@ -34,8 +34,9 @@ class SessionJsonTest {
             """"window":{"fps":0,"jankPercent":0.0,"p95FrameMs":0.0,"worstFrameMs":0.0,""" +
             """"phases":{"bottleneckStage":"CPU","unknownDelay":$zeroPhase,"input":$zeroPhase,""" +
             """"animation":$zeroPhase,"layout":$zeroPhase,"draw":$zeroPhase,"sync":$zeroPhase,""" +
-            """"commandIssue":$zeroPhase,"swapBuffers":$zeroPhase,"gpu":$zeroPhase,"total":$zeroPhase,""" +
-            """"overrun":$zeroPhase,"isGpuAvailable":false},"frames":[]},""" +
+            """"commandIssue":$zeroPhase,"swapBuffers":$zeroPhase,""" +
+            """"gpu":{"averageMs":null,"peakSinceResetMs":null},"total":$zeroPhase,""" +
+            """"overrun":$zeroPhase},"frames":[]},""" +
             """"worstFrames":[],""" +
             """"memory":{"usedHeapMb":0,"maxHeapMb":0,"nativeHeapMb":0,"peakUsedHeapMb":0,""" +
             """"peakNativeHeapMb":0,"gcCount":0,"gcTimeMs":0},""" +

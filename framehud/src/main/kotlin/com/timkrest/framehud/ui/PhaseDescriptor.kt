@@ -31,11 +31,11 @@ private val RENDER_PHASES = listOf(
     PhaseDescriptor(LABEL_SWAP) { it.swapBuffers },
 )
 
-private val GPU_PHASES = listOf(PhaseDescriptor(LABEL_GPU) { it.gpu })
+private val GPU_PHASES = listOf(PhaseDescriptor(LABEL_GPU) { it.gpu ?: MetricValue.ZERO })
 
 private val UNSTAGED_PHASES = listOf(
     PhaseDescriptor(LABEL_DELAY) { it.unknownDelay },
-    PhaseDescriptor(LABEL_OTHER) { it.other },
+    PhaseDescriptor(LABEL_OTHER) { it.unattributed },
 )
 
 private val ALL_PHASES = CPU_PHASES + RENDER_PHASES + GPU_PHASES + UNSTAGED_PHASES

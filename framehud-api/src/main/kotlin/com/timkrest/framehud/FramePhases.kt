@@ -19,37 +19,33 @@ public data class FramePhases(
     val draw: MetricValue = MetricValue.ZERO,
     /** Display list sync to the render thread, plus bitmap upload to GPU textures. */
     val sync: MetricValue = MetricValue.ZERO,
-    /** Translating draw commands into GPU calls. */
     val commandIssue: MetricValue = MetricValue.ZERO,
     /** Waiting for the GPU to finish the previous frame, then presenting this one. */
     val swapBuffers: MetricValue = MetricValue.ZERO,
-    /** Requires API 31+ and a driver that reports it; see [isGpuAvailable]. */
-    val gpu: MetricValue = MetricValue.ZERO,
-    /** Full frame time, vsync to completion. */
+    /** Null until `FrameMetrics` reports GPU time: it needs API 31+ and a driver that supports it. */
+    val gpu: MetricValue? = null,
     val total: MetricValue = MetricValue.ZERO,
     /** [total] minus [DisplayInfo.frameBudgetMs]. Negative means the frame finished with headroom. */
     val overrun: MetricValue = MetricValue.ZERO,
-    /** True after `FrameMetrics` reports a positive GPU duration. */
-    val isGpuAvailable: Boolean = false,
 ) {
     public val cpu: MetricValue = input + animation + layout + draw
 
     public val render: MetricValue = sync + commandIssue + swapBuffers
 
-    /** Unattributed remainder of [total]. Normally near zero. */
-    public val other: MetricValue = total - unknownDelay - cpu - render
+    public val unattributed: MetricValue = total - unknownDelay - cpu - render
+
+    private val gpuAverage: Float = gpu?.average ?: 0f
 
     public val bottleneckStage: PipelineStage = when {
-        cpu.average >= render.average && cpu.average >= gpu.average -> PipelineStage.CPU
-        render.average >= gpu.average -> PipelineStage.RENDER
+        cpu.average >= render.average && cpu.average >= gpuAverage -> PipelineStage.CPU
+        render.average >= gpuAverage -> PipelineStage.RENDER
         else -> PipelineStage.GPU
     }
 
-    /** Timing for [bottleneckStage]. Its [MetricValue.peak] is always null. */
     public val bottleneck: MetricValue = when (bottleneckStage) {
         PipelineStage.CPU -> cpu
         PipelineStage.RENDER -> render
-        PipelineStage.GPU -> gpu.copy(peak = null)
+        PipelineStage.GPU -> gpu?.copy(peak = null) ?: MetricValue.ZERO
     }
 
     public companion object {

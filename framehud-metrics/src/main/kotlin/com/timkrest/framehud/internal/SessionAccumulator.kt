@@ -91,9 +91,8 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
             sync = average(FramePhase.SYNC),
             commandIssue = average(FramePhase.COMMAND_ISSUE),
             swapBuffers = average(FramePhase.SWAP_BUFFERS),
-            gpu = average(FramePhase.GPU),
+            gpu = if (hasReportedGpuDuration) average(FramePhase.GPU) else null,
             total = average(FramePhase.TOTAL),
-            isGpuAvailable = FramePhase.GPU.isAvailable && hasReportedGpuDuration,
         )
     }
 

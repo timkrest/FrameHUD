@@ -20,10 +20,10 @@ class PanelLinesTest {
 
     @Test
     fun `the gpu row reads n a until the phase reports data`() {
-        val withoutGpu = lines(metrics(isGpuAvailable = false, gpuMs = 4f)).gpuRow()
+        val withoutGpu = lines(metrics(gpuMs = null)).gpuRow()
         assertTrue(withoutGpu.contains("n/a"), withoutGpu)
 
-        val withGpu = lines(metrics(isGpuAvailable = true, gpuMs = 4f)).gpuRow()
+        val withGpu = lines(metrics(gpuMs = 4f)).gpuRow()
         assertTrue(withGpu.contains("4.0"), withGpu)
     }
 
@@ -139,15 +139,13 @@ class PanelLinesTest {
         jankPercent: Float = 0f,
         layoutMs: Float = 0f,
         swapMs: Float = 0f,
-        gpuMs: Float = 0f,
-        isGpuAvailable: Boolean = false,
+        gpuMs: Float? = null,
         droppedReports: Int = 0,
     ) = PerformanceMetrics(
         phases = FramePhases(
             layout = MetricValue(current = layoutMs, average = layoutMs),
             swapBuffers = MetricValue(current = swapMs, average = swapMs),
-            gpu = MetricValue(current = gpuMs, average = gpuMs),
-            isGpuAvailable = isGpuAvailable,
+            gpu = gpuMs?.let { MetricValue(current = it, average = it) },
         ),
         window = FrameWindowStats(jankPercent = jankPercent),
         session = SessionStats.EMPTY.copy(droppedReports = droppedReports),

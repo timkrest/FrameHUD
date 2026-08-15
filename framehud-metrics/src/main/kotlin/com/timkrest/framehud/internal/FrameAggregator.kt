@@ -201,10 +201,9 @@ internal class FrameAggregator(
                 sync = frameWindow.metricValue(FramePhase.SYNC),
                 commandIssue = frameWindow.metricValue(FramePhase.COMMAND_ISSUE),
                 swapBuffers = frameWindow.metricValue(FramePhase.SWAP_BUFFERS),
-                gpu = frameWindow.metricValue(FramePhase.GPU),
+                gpu = if (hasReportedGpuDuration) frameWindow.metricValue(FramePhase.GPU) else null,
                 total = frameWindow.metricValue(FramePhase.TOTAL),
                 overrun = frameWindow.overrunValue(),
-                isGpuAvailable = FramePhase.GPU.isAvailable && hasReportedGpuDuration,
             ),
             window = FrameWindowStats(
                 fps = fps,

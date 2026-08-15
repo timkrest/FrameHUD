@@ -61,7 +61,7 @@ internal fun buildPanelLines(
             addMetric(phase.label, phase.select(phases), rowContext)
         }
         addStage(LABEL_RENDER_SECTION, PipelineStage.RENDER, phases, rowContext, dimmed = isEmulator)
-        if (phases.isGpuAvailable) {
+        if (phases.gpu != null) {
             addStage(LABEL_GPU_SECTION, PipelineStage.GPU, phases, rowContext, dimmed = isEmulator)
         } else {
             addText(sectionHeader(LABEL_GPU_SECTION, isHostMeasured = isEmulator), TextHeader)
@@ -69,7 +69,7 @@ internal fun buildPanelLines(
         }
         addMetric(LABEL_DELAY, phases.unknownDelay, rowContext)
         separateFromRowsAbove()
-        addMetric(LABEL_OTHER, phases.other, rowContext)
+        addMetric(LABEL_OTHER, phases.unattributed, rowContext)
         addMetric(LABEL_TOTAL, phases.total, rowContext, MetricRowKind.TOTAL)
         addMetric(LABEL_OVERRUN, phases.overrun, rowContext, MetricRowKind.OVERRUN)
         val bottleneckStage = phases.bottleneckStage

@@ -2,7 +2,6 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.PhaseAverages
-import com.timkrest.framehud.PipelineStage
 import com.timkrest.framehud.SessionStats
 import java.util.Locale
 import kotlin.math.max
@@ -119,8 +118,8 @@ private fun HtmlScope.phases(snapshot: SessionSnapshot) = with(snapshot) {
             phaseRow(snapshot, "Command issue", phases.commandIssue.peak) { it.commandIssue }
             phaseRow(snapshot, "Swap buffers", phases.swapBuffers.peak) { it.swapBuffers }
             phaseRow(snapshot, "Render thread", peakMs = null) { it.render }
-            if (session.phases.isGpuAvailable) phaseRow(snapshot, "GPU", phases.gpu.peak) { it.gpu }
-            phaseRow(snapshot, "Unattributed", peakMs = null) { it.other }
+            if (session.phases.gpu != null) phaseRow(snapshot, "GPU", phases.gpu?.peak) { it.gpu }
+            phaseRow(snapshot, "Unattributed", peakMs = null) { it.unattributed }
             phaseRow(snapshot, "Total", phases.total.peak) { it.total }
         }
     }
@@ -130,19 +129,13 @@ private fun TableScope.phaseRow(
     snapshot: SessionSnapshot,
     label: String,
     peakMs: Float?,
-    select: (PhaseAverages) -> Float,
+    select: (PhaseAverages) -> Float?,
 ) = with(snapshot) {
-    row(label, formatMs(select(session.phases)), formatMs(select(screen.phases)), peakMs?.let(::formatMs) ?: "—")
+    row(label, formatMs(select(session.phases)), formatMs(select(screen.phases)), formatMs(peakMs))
 }
 
-private fun PhaseAverages.boundBy(): String {
-    val averageMs = when (bottleneckStage) {
-        PipelineStage.CPU -> cpu
-        PipelineStage.RENDER -> render
-        PipelineStage.GPU -> gpu
-    }
-    return "${bottleneckStage.name.lowercase(Locale.US)} bound at ${formatMs(averageMs)} per frame"
-}
+private fun PhaseAverages.boundBy(): String =
+    "${bottleneckStage.name.lowercase(Locale.US)} bound at ${formatMs(bottleneck)} per frame"
 
 private fun HtmlScope.frameWindow(snapshot: SessionSnapshot) = with(snapshot) {
     section("Frame window") {
@@ -219,7 +212,7 @@ private fun HtmlScope.environment(snapshot: SessionSnapshot) = with(snapshot) {
     }
 }
 
-private fun formatMs(value: Float): String = "${formatFloat(value)} ms"
+private fun formatMs(value: Float?): String = if (value == null) "—" else "${formatFloat(value)} ms"
 
 private fun formatPercent(value: Float): String = "${formatFloat(value)}%"
 

@@ -59,7 +59,6 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
             putPhase("gpu", phases.gpu)
             putPhase("total", phases.total)
             putPhase("overrun", phases.overrun)
-            put("isGpuAvailable", phases.isGpuAvailable)
         }
         putArray("frames") {
             val history = window.history
@@ -122,7 +121,6 @@ private fun JsonObjectScope.putPhaseAverages(phases: PhaseAverages) {
     put("swapBuffersMs", phases.swapBuffers)
     put("gpuMs", phases.gpu)
     put("totalMs", phases.total)
-    put("isGpuAvailable", phases.isGpuAvailable)
 }
 
 private fun JsonObjectScope.putConfidence(confidence: MeasurementConfidence) {
@@ -166,9 +164,9 @@ private fun JsonObjectScope.putIssue(issue: ConfidenceIssue) {
     putArray("affected") { for (metric in issue.affected) add(metric.name) }
 }
 
-private fun JsonObjectScope.putPhase(name: String, value: MetricValue) {
+private fun JsonObjectScope.putPhase(name: String, value: MetricValue?) {
     putObject(name) {
-        put("averageMs", value.average)
-        put("peakSinceResetMs", value.peak)
+        put("averageMs", value?.average)
+        put("peakSinceResetMs", value?.peak)
     }
 }

@@ -31,6 +31,11 @@ All notable changes to this project are documented here. The format follows
   block, and the window's `phases` moved into `window` — both describe the same last
   `metricsSampleWindowFrames` frames, not the session — with `bottleneckStage` alongside them. A
   phase peak spans the whole session, not that window, so `peakMs` is now `peakSinceResetMs`.
+- `FramePhases.gpu` and `PhaseAverages.gpu` are null until the driver reports GPU time, and
+  `isGpuAvailable` is gone from both. A zero read as a real measurement before; now there is nothing
+  to read. In the export, `gpuMs` and the window's `gpu` block are `null` on a device that never
+  reported GPU time, and the `isGpuAvailable` field is gone.
+- `FramePhases.other` and `PhaseAverages.other` are now `unattributed`.
 - `FrameHudEvent.MarkEnded` takes `screen` before `mark`, the order the other events already use.
   Named construction is unaffected; positional construction silently swapped the two, since both
   are strings.

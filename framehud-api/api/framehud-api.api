@@ -290,12 +290,11 @@ public abstract interface class com/timkrest/framehud/FrameHudEventListener {
 public final class com/timkrest/framehud/FramePhases {
 	public static final field Companion Lcom/timkrest/framehud/FramePhases$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Z)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;)V
+	public synthetic fun <init> (Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/MetricValue;
 	public final fun component10 ()Lcom/timkrest/framehud/MetricValue;
 	public final fun component11 ()Lcom/timkrest/framehud/MetricValue;
-	public final fun component12 ()Z
 	public final fun component2 ()Lcom/timkrest/framehud/MetricValue;
 	public final fun component3 ()Lcom/timkrest/framehud/MetricValue;
 	public final fun component4 ()Lcom/timkrest/framehud/MetricValue;
@@ -304,8 +303,8 @@ public final class com/timkrest/framehud/FramePhases {
 	public final fun component7 ()Lcom/timkrest/framehud/MetricValue;
 	public final fun component8 ()Lcom/timkrest/framehud/MetricValue;
 	public final fun component9 ()Lcom/timkrest/framehud/MetricValue;
-	public final fun copy (Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Z)Lcom/timkrest/framehud/FramePhases;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;ZILjava/lang/Object;)Lcom/timkrest/framehud/FramePhases;
+	public final fun copy (Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;)Lcom/timkrest/framehud/FramePhases;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;ILjava/lang/Object;)Lcom/timkrest/framehud/FramePhases;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAnimation ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getBottleneck ()Lcom/timkrest/framehud/MetricValue;
@@ -316,15 +315,14 @@ public final class com/timkrest/framehud/FramePhases {
 	public final fun getGpu ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getInput ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getLayout ()Lcom/timkrest/framehud/MetricValue;
-	public final fun getOther ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getOverrun ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getRender ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getSwapBuffers ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getSync ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getTotal ()Lcom/timkrest/framehud/MetricValue;
+	public final fun getUnattributed ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getUnknownDelay ()Lcom/timkrest/framehud/MetricValue;
 	public fun hashCode ()I
-	public final fun isGpuAvailable ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -605,11 +603,10 @@ public final class com/timkrest/framehud/PerformanceMetrics$Companion {
 public final class com/timkrest/framehud/PhaseAverages {
 	public static final field Companion Lcom/timkrest/framehud/PhaseAverages$Companion;
 	public fun <init> ()V
-	public fun <init> (FFFFFFFFFFZ)V
-	public synthetic fun <init> (FFFFFFFFFFZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (FFFFFFFFLjava/lang/Float;F)V
+	public synthetic fun <init> (FFFFFFFFLjava/lang/Float;FILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()F
 	public final fun component10 ()F
-	public final fun component11 ()Z
 	public final fun component2 ()F
 	public final fun component3 ()F
 	public final fun component4 ()F
@@ -617,26 +614,26 @@ public final class com/timkrest/framehud/PhaseAverages {
 	public final fun component6 ()F
 	public final fun component7 ()F
 	public final fun component8 ()F
-	public final fun component9 ()F
-	public final fun copy (FFFFFFFFFFZ)Lcom/timkrest/framehud/PhaseAverages;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/PhaseAverages;FFFFFFFFFFZILjava/lang/Object;)Lcom/timkrest/framehud/PhaseAverages;
+	public final fun component9 ()Ljava/lang/Float;
+	public final fun copy (FFFFFFFFLjava/lang/Float;F)Lcom/timkrest/framehud/PhaseAverages;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/PhaseAverages;FFFFFFFFLjava/lang/Float;FILjava/lang/Object;)Lcom/timkrest/framehud/PhaseAverages;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAnimation ()F
+	public final fun getBottleneck ()F
 	public final fun getBottleneckStage ()Lcom/timkrest/framehud/PipelineStage;
 	public final fun getCommandIssue ()F
 	public final fun getCpu ()F
 	public final fun getDraw ()F
-	public final fun getGpu ()F
+	public final fun getGpu ()Ljava/lang/Float;
 	public final fun getInput ()F
 	public final fun getLayout ()F
-	public final fun getOther ()F
 	public final fun getRender ()F
 	public final fun getSwapBuffers ()F
 	public final fun getSync ()F
 	public final fun getTotal ()F
+	public final fun getUnattributed ()F
 	public final fun getUnknownDelay ()F
 	public fun hashCode ()I
-	public final fun isGpuAvailable ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
