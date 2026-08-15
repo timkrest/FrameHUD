@@ -12,16 +12,16 @@ you down.
 
 <img src="docs/panel.png" alt="The panel over the sample app while scrolling a list at 120 Hz" width="420">
 
-- **A row per stage** — `input`, `anim`, `layout`, `draw` on the main thread, then `sync`, `command`,
+- **A row per stage.** `input`, `anim`, `layout`, `draw` on the main thread, then `sync`, `command`,
   `swap` on the render thread, and `gpu`
-- **Says why frames drop** — thermal throttling, GC pauses, too few Choreographer ticks, or a late start
-- **Measures your app, not itself** — the panel draws in its own window
-- **Fails tests on jank** — a JUnit rule with thresholds
-- **Works without the panel** — `framehud-metrics` collects and reports with no window and no
+- **Says why frames drop.** Thermal throttling, GC pauses, too few Choreographer ticks, or a late start
+- **Measures your app, not itself.** The panel draws in its own window
+- **Fails tests on jank.** A JUnit rule with thresholds
+- **Works without the panel.** `framehud-metrics` collects and reports with no window and no
   permission
-- **Made for QA runs** — adb commands, JSON and HTML session exports, sections and counters in a
+- **Made for QA runs.** adb commands, JSON and HTML session exports, sections and counters in a
   system trace
-- **Nothing in release builds** — `debugImplementation` leaves out the panel, its provider and the
+- **Nothing in release builds.** `debugImplementation` leaves out the panel, its provider and the
   `SYSTEM_ALERT_WINDOW` it declares
 
 ## Quick start
@@ -82,7 +82,7 @@ last reset. Rows summed from other rows stop after `avg`.
 ## Release builds
 
 `debugImplementation` already keeps everything out of a release build. Add `framehud-noop` only if
-you call `FrameHud` outside `src/debug` — a release build still has to compile those lines:
+you call `FrameHud` outside `src/debug`, because a release build still has to compile those lines:
 
 ```kotlin
 releaseImplementation("com.timkrest:framehud-noop:0.8.0")
@@ -161,8 +161,8 @@ Events arrive on the metrics thread. Don't block it and don't touch views from i
 
 ## Naming screens
 
-Stats split by screen, and a screen is its activity class by default — which makes a
-single-activity app one screen for the whole session. Name the screen with a route instead:
+Stats split by screen, and a screen is its activity class by default. In a single-activity app that
+leaves one screen for the whole session. Name the screen with a route instead:
 
 ```kotlin
 navController.addOnDestinationChangedListener { _, destination, _ ->
@@ -170,7 +170,7 @@ navController.addOnDestinationChangedListener { _, destination, _ ->
 }
 ```
 
-Use the pattern — `product/{id}`, not `product/12345` — so every product page counts as one screen.
+Use the pattern `product/{id}`, not `product/12345`, so every product page counts as one screen.
 A new name closes the stats of the previous screen and starts the next; the window stays bound. The
 name holds until the next assignment, so an app that names screens must name every screen it shows.
 `null` returns to activity class names.
@@ -187,17 +187,17 @@ FrameHud.mark = null
 
 Frames drawn while the mark is set belong to it. The header reads `▸ scroll` instead of the timing
 and every event fired meanwhile carries the name; clearing the mark reports a `MarkEnded` whose
-stats cover that stretch alone. The panel's own rows keep covering the usual window and session —
-the header labels them, it does not narrow them.
+stats cover that stretch alone. The panel's own rows keep covering the usual window and session.
+The header labels them, it does not narrow them.
 
 Leaving or renaming the screen clears the mark for you, so a gesture never spills into the next
 screen.
 
 ## Measurement context
 
-`FrameHud.context` keeps a few `key=value` pairs next to the screen and the mark — a UI variant, an
+`FrameHud.context` keeps a few `key=value` pairs next to the screen and the mark: a UI variant, an
 action, a test scenario. Every event carries the pairs set at the moment it fired, and exports
-retain them, so a report says not just where jank happened but under which conditions.
+retain them, so a report says where jank happened and under which conditions.
 
 ```kotlin
 FrameHud.context = mapOf("variant" to "new_checkout")
@@ -207,11 +207,12 @@ Changing the context closes nothing; it only annotates what follows.
 
 ## Exporting a session
 
-`exportSession` writes the session since the last reset — stats, the frame window with its phase
-breakdown, the worst frames with wall-clock timestamps, context, device, app version, measurement
-state and confidence issues — as JSON and a self-contained HTML report, and returns both files. They land in `framehud/` under
-the app's external files directory, so CI pulls them without root; `shareSession` opens the system
-share sheet with them. Nothing is ever uploaded.
+`exportSession` writes the session since the last reset as JSON and a self-contained HTML report,
+and returns both files. Each carries the stats and the phase breakdown for the session and for the
+current screen, the frame window, the worst frames with wall-clock timestamps, context, device, app
+version, measurement state and confidence issues. They land in `framehud/` under the app's external
+files directory, so CI pulls them without root; `shareSession` opens the system share sheet with
+them. Nothing is ever uploaded.
 
 ```kotlin
 val export = FrameHud.exportSession(timeoutMs = 5_000) ?: return
@@ -258,6 +259,19 @@ screens sitting at the same 5% jank stop looking alike.
 Frames that finished with headroom add nothing. The panel adds a line for it once it is above zero,
 both reports carry it per session and per screen, and `JankThresholds(maxLostTimeMs = 500f)` fails a
 test on it.
+
+## Where the time went
+
+`SessionStats.phases` breaks a session, a screen or a mark down by pipeline phase, as
+`PhaseAverages`: the milliseconds an average frame spent in layout, draw, swap buffers and the rest,
+and the stage it was bound by.
+
+The panel's phase rows cover the last `metricsSampleWindowFrames` frames, so a screen that stuttered
+for two seconds can look fine again by the time you read them. These cover every frame the interval
+collected. Both reports carry the breakdown per session and per screen, and the HTML report puts the
+two side by side.
+
+`PhaseAverages.gpu` is null until the driver reports GPU time, which needs API 31+.
 
 ## Measurement confidence
 
@@ -340,15 +354,15 @@ layouts, churning garbage. Each one moves a different metric.
 
 ## Documentation
 
-- [Reading the panel](docs/metrics.md) — what every row means, how to measure a screen, and what to
+- [Reading the panel](docs/metrics.md): what every row means, how to measure a screen, and what to
   do when something turns red
-- [Comparing the tools](docs/comparison.md) — how FrameHUD differs from JankStats, Macrobenchmark,
+- [Comparing the tools](docs/comparison.md): how FrameHUD differs from JankStats, Macrobenchmark,
   Perfetto and Play Vitals
-- [API reference](https://javadoc.io/doc/com.timkrest/framehud-metrics) — generated from the sources
+- [API reference](https://javadoc.io/doc/com.timkrest/framehud-metrics): generated from the sources
   of each release
-- [Roadmap](ROADMAP.md) — what is planned next, and what is deliberately not
-- [Changelog](CHANGELOG.md) — what changed in each release
-- [Contributing](CONTRIBUTING.md) — how to build, and what to check before opening a pull request.
+- [Roadmap](ROADMAP.md): what is planned next, and what is deliberately not
+- [Changelog](CHANGELOG.md): what changed in each release
+- [Contributing](CONTRIBUTING.md): how to build, and what to check before opening a pull request.
   Contributions are covered by a [CLA](CLA.md), which a bot will ask you to sign.
 
 ## License

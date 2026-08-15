@@ -46,6 +46,6 @@ in the same metric, captured by the same tool under the same conditions.
 
 JankStats sits outside this sequence: use it when the app needs custom performance telemetry.
 
-FrameHUD does not invent new timings—Android supplies most of them through `FrameMetrics`. It makes
+FrameHUD does not invent new timings. Android supplies most of them through `FrameMetrics`. It makes
 them convenient during everyday development. Precise benchmarks, system-level investigation and
 production statistics remain separate jobs.

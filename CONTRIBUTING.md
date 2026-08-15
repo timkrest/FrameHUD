@@ -18,7 +18,7 @@ Thread and window behaviour is covered by instrumentation tests, which need a de
 ./gradlew :framehud-metrics:connectedDebugAndroidTest :sample:connectedDebugAndroidTest
 ```
 
-CI runs both on API 24, 31 and 36 — the levels where `FrameMetrics` changes what it reports.
+CI runs both on API 24, 31 and 36, the levels where `FrameMetrics` changes what it reports.
 
 To try a change on a device:
 
@@ -30,7 +30,8 @@ To try a change on a device:
 
 - Run `./gradlew build`.
 - If you changed a public declaration, run `./gradlew apiDump` and commit the updated `.api` files.
-  It has to be a separate invocation — Gradle refuses to write and verify the same dumps in one run.
+  It has to be a separate invocation, because Gradle refuses to write and verify the same dumps in
+  one run.
   Declarations marked `@InternalFrameHudApi` stay out of the dumps, so nothing checks their
   signatures for you.
 - Keep `framehud-noop` in step with `framehud-metrics`: it mirrors the public API with empty bodies,
@@ -45,8 +46,9 @@ For maintainers:
 
 1. Move the `Unreleased` entries under a `## [x.y.z] - yyyy-mm-dd` heading and add the matching link
    at the bottom of the changelog. The publish workflow refuses a tag with no changelog section.
+   Point the dependency snippets in both READMEs at the new version in the same commit.
 2. Commit, then tag: `git tag -a vx.y.z -m "FrameHUD x.y.z" && git push origin vx.y.z`. The tag is the
-   only source of a released version — `VERSION_NAME` in `gradle.properties` stays a snapshot.
+   only source of a released version; `VERSION_NAME` in `gradle.properties` stays a snapshot.
 3. The workflow builds, signs, uploads a deployment to the Central Portal and opens the GitHub release
    with the notes from the changelog.
 4. Release the deployment by hand in the

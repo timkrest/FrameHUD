@@ -28,8 +28,8 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - The export schema is 4: `session` and `screen` stats carry `lostTimeMs` and their own `phases`
-  block, and the window's `phases` moved into `window` — both describe the same last
-  `metricsSampleWindowFrames` frames, not the session — with `bottleneckStage` alongside them. A
+  block, and the window's `phases` moved into `window`, since both describe the same last
+  `metricsSampleWindowFrames` frames and not the session. `bottleneckStage` sits alongside them. A
   phase peak spans the whole session, not that window, so `peakMs` is now `peakSinceResetMs`.
 - `FramePhases.gpu` and `PhaseAverages.gpu` are null until the driver reports GPU time, and
   `isGpuAvailable` is gone from both. A zero read as a real measurement before; now there is nothing

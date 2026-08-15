@@ -13,30 +13,30 @@ deprecated for a release first.
 
 ## Next
 
-- **Baselines** — compare p50, p95, jank, lost time and frame phases per screen and mark with earlier
+- **Baselines**: compare p50, p95, jank, lost time and frame phases per screen and mark with earlier
   exported runs from the same device, API and display mode. The baseline is a file: CI stores it and
   passes it to the next run, the device keeps nothing. The report shows the delta, how many runs are
   affected and which phase regressed most. A fixed threshold that fits one device is flaky on the
-  next — the usual reason a jank gate ends up switched off.
+  next, which is the usual reason a jank gate ends up switched off.
 
 ## Later
 
-- **First usable frame** — the app says when its data is ready and measurement ends on the next
+- **First usable frame**: the app says when its data is ready and measurement ends on the next
   displayed frame, so a quickly drawn skeleton no longer counts as a ready screen. On startup the
   signal comes from `FullyDrawnReporter`: the `ReportDrawnWhen` an app already has for
-  Macrobenchmark is enough. Screens after that need their own call — `reportFullyDrawn` only covers
-  the launch.
-- **Incident snapshot** — on a jank burst or frozen frame, keep a short window of frames around the
+  Macrobenchmark is enough. Screens after that need their own call, since `reportFullyDrawn` only
+  covers the launch.
+- **Incident snapshot**: on a jank burst or frozen frame, keep a short window of frames around the
   event, together with context, memory, GC, thermal state and dropped reports. QA saves the actual
   case instead of trying to reproduce it from memory.
-- **Incident grouping** — combine matching snapshots by screen, mark, diagnosis and environment. A
+- **Incident grouping**: combine matching snapshots by screen, mark, diagnosis and environment. A
   report says “layout jank happened 7 times” and keeps the worst case instead of seven duplicates.
-- **Screen history** — the last reports kept in memory, ranked by frozen frames, jank, p95 and sample
+- **Screen history**: the last reports kept in memory, ranked by frozen frames, jank, p95 and sample
   size, and opened from the panel. Walk through the app first, then inspect the worst screens instead
   of reading each one live.
-- **Process health** — occasional samples of app CPU, PSS, thread count and open files, with peaks.
+- **Process health**: occasional samples of app CPU, PSS, thread count and open files, with peaks.
   Steady growth shows up in the incident snapshot; the panel does not turn into a system monitor.
-- **More than one window** — dialogs and secondary displays measured on their own, not just the
+- **More than one window**: dialogs and secondary displays measured on their own, not just the
   resumed activity.
 
 ## Considering
@@ -55,8 +55,8 @@ Nothing designed yet. Whether these happen depends on feedback.
 - A blocked-main-thread stack: a watchdog starts occasional samples only after a delay and attaches
   recurring stack frames to the incident snapshot
 - Recomposition counts next to the frame phases: with `FrameMetrics` alone a screen that recomposes
-  everything just looks slow; needs a stable Compose API — `ObservableComposition` is still
-  experimental — and would be an opt-in `framehud-compose` module
+  everything just looks slow. Needs a stable Compose API, and `ObservableComposition` is still
+  experimental. Would be an opt-in `framehud-compose` module
 - Wear OS and TV
 
 ## Not planned
