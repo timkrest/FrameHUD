@@ -1,7 +1,9 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.MeasurementConfidence
+import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.SessionStats
 import org.junit.Test
 import kotlin.test.assertContains
@@ -60,6 +62,31 @@ class SessionHtmlTest {
         assertContains(html, "cart/&lt;script&gt;alert(1)&lt;/script&gt;")
         assertContains(html, "a&quot;b")
         assertContains(html, "variant=a&amp;b")
+    }
+
+    @Test
+    fun `the frame window names the phase the frames spent their time in`() {
+        val html = sessionSnapshotFixture(
+            phases = FramePhases(
+                layout = MetricValue(average = 9f, peak = 21f),
+                total = MetricValue(average = 12f, peak = 30f),
+            ),
+            window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
+        ).toHtml()
+
+        assertContains(html, "cpu bound at 9.0 ms per frame")
+        assertContains(html, "<tr><th>Layout</th><td>9.0 ms</td><td>21.0 ms</td></tr>")
+        assertContains(html, "<tr><th>UI thread</th><td>9.0 ms</td><td>—</td></tr>")
+    }
+
+    @Test
+    fun `a screen issue the whole session does not share is called out`() {
+        val screen = SessionStats.EMPTY.copy(
+            confidence = MeasurementConfidence(issues = listOf(ConfidenceIssue.ShortSample(12))),
+        )
+        val html = sessionSnapshotFixture(screen = screen).toHtml()
+
+        assertContains(html, "only 12 frame(s) collected — this screen only")
     }
 
     @Test

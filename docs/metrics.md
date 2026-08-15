@@ -76,10 +76,10 @@ send.
   averages and p95 are undersampled, so read them with suspicion
 - **mem** — Java heap used/limit and native heap, `▲` marking peaks since reset. Climbing as you
   navigate back and forth means a leak
-- **gc** — collections and total GC time since collection started. Rising in step with jank means
-  memory pressure is costing you frames
-- **therm** — `PowerManager` throttling status and headroom (closer to 1.0 is harder throttling).
-  Hidden until the platform reports it
+- **gc** — collections and total GC time since the last reset, counting only while a screen was on
+  top. Rising in step with jank means memory pressure is costing you frames
+- **therm** — `PowerManager` throttling status and headroom, where 1.0 is the throttling threshold
+  and higher means already throttled. Hidden until the platform reports it
 
 ## Marks
 

@@ -2,9 +2,11 @@ package com.timkrest.framehud.internal
 
 import android.content.Context
 import android.os.SystemClock
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.timkrest.framehud.BlankActivity
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
@@ -95,6 +97,40 @@ class MetricsEngineTest {
     }
 
     @Test
+    fun onceTheScreenIsGoneItNamesTheNumbersItLeftBehindAndNothingElse() {
+        onMainThread { engine.start(context) }
+        ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
+            scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, creation = null) }
+            onMainThread { engine.unbindWindow() }
+        }
+        onMainThread { engine.setMark(MARK) }
+        onMainThread { engine.setMark(null) }
+        awaitMetricsThread()
+
+        val export = assertNotNull(engine.awaitExportStats(TIMEOUT_MS), "the metrics thread never answered")
+        assertEquals(SCREEN, export.screenName, "the export lost the name of the screen its numbers came from")
+        val ended = events.filterIsInstance<FrameHudEvent.MarkEnded>().single()
+        assertNull(ended.screen, "the mark was named after a screen that was already gone")
+    }
+
+    @Test
+    fun aScreenTheAppNamedItselfIsNoLongerActiveOnceItsWindowIsGone() {
+        onMainThread { engine.start(context) }
+        ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
+            onMainThread { engine.setScreen(SCREEN) }
+            scenario.onActivity { engine.bindWindow(it.window, screen = "BlankActivity", creation = null) }
+            onMainThread { engine.unbindWindow() }
+        }
+        onMainThread { engine.setMark(MARK) }
+        onMainThread { engine.setMark(null) }
+        awaitMetricsThread()
+
+        val ended = events.filterIsInstance<FrameHudEvent.MarkEnded>().single()
+        assertNull(ended.screen, "a screen the app named outlived the window it was named for")
+        assertEquals(SCREEN, engine.screenOverride, "the name the app set has to hold until it sets another")
+    }
+
+    @Test
     fun anEngineConfiguredBeforeTheStartRunsNoMetricsThread() {
         engine.reset()
         onMainThread { engine.applyConfig(config) }
@@ -142,6 +178,7 @@ class MetricsEngineTest {
         val NEXT_ID = AtomicInteger()
 
         const val MARK = "scroll"
+        const val SCREEN = "checkout"
         const val TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 10L
     }

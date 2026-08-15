@@ -66,7 +66,10 @@ public sealed interface FrameHudEvent {
             get() = "${origin()}: thermal status is now ${level.name.lowercase(Locale.US)}"
     }
 
-    /** Collection ended because the screen paused, was replaced, renamed, or FrameHud was disabled. */
+    /**
+     * Collection ended because the screen paused, was replaced, renamed, or FrameHud was disabled.
+     * [stats] cover only the frames drawn on that screen.
+     */
     public data class ScreenEnded(
         val stats: SessionStats,
         override val screen: String?,

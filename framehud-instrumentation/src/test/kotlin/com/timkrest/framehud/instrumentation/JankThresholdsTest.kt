@@ -68,6 +68,14 @@ class JankThresholdsTest {
     }
 
     @Test
+    fun `a check turned off neither fails nor taints the run`() {
+        val stats = session(frozenFrames = 3, issues = listOf(ConfidenceIssue.DroppedReports(1)))
+        val thresholds = JankThresholds(maxJankPercent = Float.POSITIVE_INFINITY, maxFrozenFrames = Int.MAX_VALUE)
+
+        assertIs<GateVerdict.Pass>(thresholds.verdict(TAG, stats))
+    }
+
+    @Test
     fun `a passing but tainted checked threshold is still inconclusive`() {
         val stats = session(jankPercent = 1f, issues = listOf(ConfidenceIssue.DroppedReports(1)))
         assertIs<GateVerdict.Inconclusive>(JankThresholds().verdict(TAG, stats))

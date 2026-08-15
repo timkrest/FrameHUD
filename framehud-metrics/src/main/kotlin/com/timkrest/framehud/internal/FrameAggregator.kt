@@ -18,11 +18,14 @@ internal class FrameAggregator(
     private val isEmulator: Boolean,
 ) {
 
-    private var frameWindow = FrameWindow(config.metricsSampleWindowFrames)
+    private val frameWindow = FrameWindow(config.metricsSampleWindowFrames)
 
     private val session = SessionAccumulator(clock, isEmulator)
 
     private val screen = SessionAccumulator(clock, isEmulator)
+
+    var screenName: String? = null
+        private set
 
     private var mark: SessionAccumulator? = null
 
@@ -91,8 +94,11 @@ internal class FrameAggregator(
     }
 
     fun onTick() {
-        if (!isDrainingToIdle) return
-        maybeEmit()
+        if (isDrainingToIdle) maybeEmit() else refreshLiveSession()
+    }
+
+    private fun refreshLiveSession() {
+        readings.updateLive(readings.live.copy(session = session.stats()))
     }
 
     @AnyThread
@@ -100,11 +106,9 @@ internal class FrameAggregator(
         readings.setFrozen(frozen)
     }
 
-    fun startCollecting() {
+    fun startCollecting(label: String? = null) {
         session.startCollecting()
-        screen.clear()
-        screen.startCollecting()
-        seedEnvironment(screen)
+        beginScreen(label)
     }
 
     fun stopCollecting() {
@@ -118,13 +122,18 @@ internal class FrameAggregator(
         latestBattery = null
     }
 
-    fun restartScreen(): SessionStats {
+    fun restartScreen(label: String? = null): SessionStats {
         screen.stopCollecting()
         val ended = screen.stats()
+        beginScreen(label)
+        return ended
+    }
+
+    private fun beginScreen(label: String?) {
+        screenName = label
         screen.clear()
         screen.startCollecting()
         seedEnvironment(screen)
-        return ended
     }
 
     fun beginMark() {
@@ -170,7 +179,7 @@ internal class FrameAggregator(
         val previousWindowFrames = config.metricsSampleWindowFrames
         config = newConfig
         if (newConfig.metricsSampleWindowFrames == previousWindowFrames) return
-        frameWindow = FrameWindow(newConfig.metricsSampleWindowFrames)
+        frameWindow.resizeTo(newConfig.metricsSampleWindowFrames)
         emitMetrics(clock.elapsedRealtimeMs())
     }
 

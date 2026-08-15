@@ -7,7 +7,6 @@ import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import kotlin.math.roundToInt
 
-/** Emits trace markers for Perfetto to record; FrameHUD never reads them back. */
 internal class FrameHudTracer {
 
     private var openScreen: String? = null

@@ -4,6 +4,7 @@ import androidx.core.content.FileProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.timkrest.framehud.internal.exportAuthority
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,7 +26,7 @@ class ExportSessionTest {
             val export = assertNotNull(FrameHud.exportSession(TIMEOUT_MS), "nothing was collecting")
 
             val context = InstrumentationRegistry.getInstrumentation().targetContext
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.framehud.exports", export.html)
+            val uri = FileProvider.getUriForFile(context, exportAuthority(context), export.html)
             val served = assertNotNull(context.contentResolver.openInputStream(uri)).use { it.readBytes() }
             assertTrue(served.isNotEmpty(), "the provider served an empty report")
         }

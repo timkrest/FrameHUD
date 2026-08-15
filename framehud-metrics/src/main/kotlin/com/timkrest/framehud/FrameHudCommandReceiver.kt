@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.os.Bundle
 import android.util.Log
 import com.timkrest.framehud.internal.LOG_TAG
 
@@ -51,10 +52,21 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         }
     }
 
-    private val Intent.name: String? get() = getStringExtra(EXTRA_NAME)?.takeIf { it.isNotBlank() }
+    private val Intent.name: String? get() = readExtras()?.getString(EXTRA_NAME)?.takeIf { it.isNotBlank() }
+
+    /**
+     * Reading an extra unpacks the whole bundle, and a bundle from another app can name a class
+     * this process cannot load. That throws where the sender chose, on the main thread.
+     */
+    private fun Intent.readExtras(): Bundle? = try {
+        extras?.apply { keySet() }
+    } catch (e: Exception) {
+        Log.w(LOG_TAG, "Ignoring the extras of $action", e)
+        null
+    }
 
     private fun Intent.contextPairs(): Map<String, String> {
-        val bundle = extras ?: return emptyMap()
+        val bundle = readExtras() ?: return emptyMap()
         return buildMap {
             for (key in bundle.keySet()) {
                 if (key.isBlank()) continue

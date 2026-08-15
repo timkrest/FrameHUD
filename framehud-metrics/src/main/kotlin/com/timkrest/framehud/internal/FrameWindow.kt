@@ -43,6 +43,13 @@ internal class FrameWindow(size: Int) {
         )
     }
 
+    fun resizeTo(size: Int) {
+        phaseRings.resizeTo(size)
+        jank.resizeTo(size)
+        overruns.resizeTo(size)
+        timestamps.clear()
+    }
+
     fun clear() {
         phaseRings.clear()
         jank.clear()

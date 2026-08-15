@@ -87,6 +87,7 @@ internal class MetricsSampler(
         )
     }
 
+    /** Two metrics threads alive at once would both write to the same aggregates. */
     private fun waitForTermination(thread: Thread) {
         var interrupted = false
         while (thread.isAlive) {

@@ -29,16 +29,16 @@ class PanelLinesTest {
 
     @Test
     fun `dropped reports are called out only when the system dropped some`() {
-        assertFalse(lines(metrics()).any { it.startsWith("drop") })
-        assertTrue(lines(metrics(droppedReports = 3)).any { it == "drop x3" })
+        assertFalse(lines(metrics()).any { it.startsWith(LABEL_DROPPED) })
+        assertTrue(lines(metrics(droppedReports = 3)).any { it == "$LABEL_DROPPED x3" })
     }
 
     @Test
     fun `the thermal row waits for a level the platform knows`() {
-        assertFalse(lines(metrics(), thermal = ThermalStats.EMPTY).any { it.startsWith("therm") })
+        assertFalse(lines(metrics(), thermal = ThermalStats.EMPTY).any { it.startsWith(LABEL_THERMAL) })
 
         val throttled = ThermalStats(level = ThermalLevel.LIGHT, headroom = null)
-        assertTrue(lines(metrics(), thermal = throttled).any { it == "therm light" })
+        assertTrue(lines(metrics(), thermal = throttled).any { it == "$LABEL_THERMAL light" })
     }
 
     @Test
@@ -74,6 +74,15 @@ class PanelLinesTest {
             thermal = ThermalStats(level = ThermalLevel.MODERATE, headroom = 0.5f),
         )
         assertEquals(panelLines.values.size, panelLines.toAnnotatedString().text.lines().size)
+    }
+
+    @Test
+    fun `a divider opens the unstaged rows and the summaries, and nothing else`() {
+        val divided = panelLines(isEmulator = false).values.filter { it.hasSeparatorAbove }.map { it.text }
+
+        assertEquals(2, divided.size, divided.toString())
+        assertTrue(divided.first().startsWith(LABEL_DELAY), divided.first())
+        assertTrue(divided.last().startsWith(LABEL_WINDOW), divided.last())
     }
 
     @Test

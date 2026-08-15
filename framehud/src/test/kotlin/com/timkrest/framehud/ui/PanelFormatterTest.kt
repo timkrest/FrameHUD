@@ -1,6 +1,7 @@
 package com.timkrest.framehud.ui
 
 import com.timkrest.framehud.MetricValue
+import com.timkrest.framehud.PipelineStage
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
@@ -20,6 +21,27 @@ class PanelFormatterTest {
 
         val avgColumnEnd = CPU_COLUMNS_HEADER_LINE.indexOf("avg") + "avg".length
         assertEquals(avgColumnEnd, row.indexOf("3.4") + "3.4".length)
+    }
+
+    @Test
+    fun `every label a metric row can carry leaves the columns where the header put them`() {
+        val labels = PipelineStage.entries.flatMap { stage ->
+            stagePhases(stage).map { it.label } + pipeLabel(stage)
+        } + listOf(LABEL_DELAY, LABEL_OTHER, LABEL_TOTAL, LABEL_OVERRUN)
+
+        labels.forEach { label ->
+            val row = formatMetricLine(label, MetricValue(current = 1.2f, average = 3.4f, peak = 15.6f))
+            assertEquals(CPU_COLUMNS_HEADER_LINE.length, row.length, row)
+        }
+    }
+
+    @Test
+    fun `a frame that ran for seconds drops its decimal rather than push the columns right`() {
+        val row = formatMetricLine(LABEL_TOTAL, MetricValue(current = 1200.4f, average = 987.6f, peak = 60_000f))
+
+        assertEquals(CPU_COLUMNS_HEADER_LINE.length, row.length, row)
+        assertTrue(row.contains(" 1200 "), row)
+        assertTrue(row.contains("987.6"), row)
     }
 
     @Test

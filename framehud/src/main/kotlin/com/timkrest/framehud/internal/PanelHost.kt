@@ -70,7 +70,7 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
         if (window != null) return
         val mode = resolveWindowMode()
         val windowContext = when (mode) {
-            PanelWindowMode.SYSTEM -> systemOverlayContext(application)
+            PanelWindowMode.SYSTEM -> systemOverlayContext(application, FrameHud.focusedActivity)
             PanelWindowMode.APP -> FrameHud.focusedActivity ?: return
         }
         if (mode == PanelWindowMode.APP && canRequestOverlayPermission) logAppWindowFallbackOnce()

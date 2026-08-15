@@ -15,6 +15,7 @@ internal fun sessionSnapshotFixture(
     context: Map<String, String> = emptyMap(),
     session: SessionStats = SessionStats.EMPTY,
     screen: SessionStats = SessionStats.EMPTY,
+    phases: FramePhases = FramePhases.EMPTY,
     window: FrameWindowStats = FrameWindowStats.EMPTY,
     worstFrames: List<WorstFrames.Frame> = emptyList(),
 ) = SessionSnapshot(
@@ -35,7 +36,7 @@ internal fun sessionSnapshotFixture(
     context = context,
     session = session,
     screen = screen,
-    phases = FramePhases.EMPTY,
+    phases = phases,
     window = window,
     display = DisplayInfo(refreshRateHz = 60f, frameBudgetMs = 16.6f),
     memory = MemoryStats.EMPTY,

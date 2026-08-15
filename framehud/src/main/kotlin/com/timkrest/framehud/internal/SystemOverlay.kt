@@ -14,10 +14,10 @@ internal fun canDrawOverlays(context: Context): Boolean =
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Settings.canDrawOverlays(context)
 
 /** API 30+ rejects an application context for overlay windows. */
-internal fun systemOverlayContext(context: Context): Context {
+internal fun systemOverlayContext(context: Context, shownOver: Activity?): Context {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return context
-    val display = context.getSystemService(DisplayManager::class.java)
-        ?.getDisplay(Display.DEFAULT_DISPLAY)
+    val display = shownOver?.display
+        ?: context.getSystemService(DisplayManager::class.java)?.getDisplay(Display.DEFAULT_DISPLAY)
         ?: return context
     return context.createDisplayContext(display)
         .createWindowContext(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null)

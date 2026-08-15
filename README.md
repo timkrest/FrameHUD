@@ -207,9 +207,9 @@ Changing the context closes nothing; it only annotates what follows.
 
 ## Exporting a session
 
-`exportSession` writes the session since the last reset — stats, the frame window, the worst frames
-with wall-clock timestamps, context, device, app version, measurement state and confidence issues —
-as JSON and a self-contained HTML report, and returns both files. They land in `framehud/` under
+`exportSession` writes the session since the last reset — stats, the frame window with its phase
+breakdown, the worst frames with wall-clock timestamps, context, device, app version, measurement
+state and confidence issues — as JSON and a self-contained HTML report, and returns both files. They land in `framehud/` under
 the app's external files directory, so CI pulls them without root; `shareSession` opens the system
 share sheet with them. Nothing is ever uploaded.
 

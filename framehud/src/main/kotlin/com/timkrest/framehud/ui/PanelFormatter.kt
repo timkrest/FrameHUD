@@ -9,13 +9,11 @@ import com.timkrest.framehud.ThermalStats
 import com.timkrest.framehud.internal.MS_PER_SECOND
 import java.util.Locale
 
-private const val LABEL_WIDTH = 7
+private const val LABEL_WIDTH = 8
 private const val VALUE_WIDTH = 5
 private const val MARK_WIDTH = 14
 
 private val HEADER_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s"
-private val METRIC_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f"
-private val METRIC_LAYOUT_WITHOUT_PEAK = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}.1f %${VALUE_WIDTH}.1f"
 
 internal val CPU_COLUMNS_HEADER_LINE: String =
     format(HEADER_LAYOUT, LABEL_CPU_SECTION, LABEL_COLUMN_NOW, LABEL_COLUMN_AVG, LABEL_COLUMN_PEAK)
@@ -23,8 +21,14 @@ internal val CPU_COLUMNS_HEADER_LINE: String =
 internal val GPU_UNAVAILABLE_LINE: String = format(HEADER_LAYOUT, LABEL_GPU, LABEL_GPU_NA, LABEL_GPU_NA, "")
 
 internal fun formatMetricLine(label: String, value: MetricValue): String {
-    val peak = value.peak ?: return format(METRIC_LAYOUT_WITHOUT_PEAK, label, value.current, value.average)
-    return format(METRIC_LAYOUT, label, value.current, value.average, peak)
+    val row = format("%-${LABEL_WIDTH}s %s %s", label, formatColumn(value.current), formatColumn(value.average))
+    val peak = value.peak ?: return row
+    return "$row ${formatColumn(peak)}"
+}
+
+private fun formatColumn(valueMs: Float): String {
+    val withDecimal = format("%${VALUE_WIDTH}.1f", valueMs)
+    return if (withDecimal.length <= VALUE_WIDTH) withDecimal else format("%${VALUE_WIDTH}.0f", valueMs)
 }
 
 internal fun formatFps(fps: Int): String = if (fps == 0) LABEL_IDLE else format("%d FPS", fps)
@@ -40,21 +44,21 @@ internal fun formatTiming(choreographerTicksPerSecond: Int, frameBudgetMs: Float
 internal fun formatJankShort(jankPercent: Float): String = format("jank %.1f%%", jankPercent)
 
 internal fun formatWindowSummary(window: FrameWindowStats): String = format(
-    "win  jank %4.1f%%  p95 %5.1f  max %5.1f",
+    "$LABEL_WINDOW  jank %4.1f%%  p95 %5.1f  max %5.1f",
     window.jankPercent,
     window.p95FrameMs,
     window.worstFrameMs,
 )
 
 internal fun formatSessionLatency(session: SessionStats): String = format(
-    "ses  p50 %5.1f  p95 %5.1f  p99 %5.1f",
+    "$LABEL_SESSION  p50 %5.1f  p95 %5.1f  p99 %5.1f",
     session.p50FrameMs,
     session.p95FrameMs,
     session.p99FrameMs,
 )
 
 internal fun formatSessionTotals(session: SessionStats): String = format(
-    "ses %df %s jank %.1f%% frz%d run%d",
+    "$LABEL_SESSION %df %s jank %.1f%% frz%d run%d",
     session.frames,
     formatDuration(session.durationMs),
     session.jankPercent,
@@ -63,13 +67,13 @@ internal fun formatSessionTotals(session: SessionStats): String = format(
 )
 
 internal fun formatLostTime(lostTimeMs: Float): String = if (lostTimeMs < MS_PER_SECOND) {
-    format("lost %.0fms", lostTimeMs)
+    format("$LABEL_LOST_TIME %.0fms", lostTimeMs)
 } else {
-    format("lost %.1fs", lostTimeMs / MS_PER_SECOND)
+    format("$LABEL_LOST_TIME %.1fs", lostTimeMs / MS_PER_SECOND)
 }
 
 internal fun formatMemory(memory: MemoryStats): String = format(
-    "mem %d/%d ▲%d · nat %d ▲%d MB",
+    "$LABEL_MEMORY %d/%d ▲%d · nat %d ▲%d MB",
     memory.usedHeapMb,
     memory.maxHeapMb,
     memory.peakUsedHeapMb,
@@ -77,14 +81,15 @@ internal fun formatMemory(memory: MemoryStats): String = format(
     memory.peakNativeHeapMb,
 )
 
-internal fun formatGc(memory: MemoryStats): String = format("gc x%d · %d ms", memory.gcCount, memory.gcTimeMs)
+internal fun formatGc(memory: MemoryStats): String =
+    format("$LABEL_GC x%d · %d ms", memory.gcCount, memory.gcTimeMs)
 
-internal fun formatDroppedReports(droppedReports: Int): String = format("drop x%d", droppedReports)
+internal fun formatDroppedReports(droppedReports: Int): String = format("$LABEL_DROPPED x%d", droppedReports)
 
 internal fun formatThermal(thermal: ThermalStats): String {
     val level = thermal.level.name.lowercase(Locale.US)
-    val headroom = thermal.headroom ?: return format("therm %s", level)
-    return format("therm %s · hr %.2f", level, headroom)
+    val headroom = thermal.headroom ?: return format("$LABEL_THERMAL %s", level)
+    return format("$LABEL_THERMAL %s · hr %.2f", level, headroom)
 }
 
 internal fun formatVerdict(verdict: PanelVerdict): String = when (verdict) {

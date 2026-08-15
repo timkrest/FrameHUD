@@ -45,6 +45,21 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
         put("jankPercent", window.jankPercent)
         put("p95FrameMs", window.p95FrameMs)
         put("worstFrameMs", window.worstFrameMs)
+        putObject("phases") {
+            put("bottleneckStage", phases.bottleneckStage.name)
+            putPhase("unknownDelay", phases.unknownDelay)
+            putPhase("input", phases.input)
+            putPhase("animation", phases.animation)
+            putPhase("layout", phases.layout)
+            putPhase("draw", phases.draw)
+            putPhase("sync", phases.sync)
+            putPhase("commandIssue", phases.commandIssue)
+            putPhase("swapBuffers", phases.swapBuffers)
+            putPhase("gpu", phases.gpu)
+            putPhase("total", phases.total)
+            putPhase("overrun", phases.overrun)
+            put("isGpuAvailable", phases.isGpuAvailable)
+        }
         putArray("frames") {
             val history = window.history
             for (index in 0 until history.size) {
@@ -54,20 +69,6 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
                 }
             }
         }
-    }
-    putObject("phases") {
-        putPhase("unknownDelay", phases.unknownDelay)
-        putPhase("input", phases.input)
-        putPhase("animation", phases.animation)
-        putPhase("layout", phases.layout)
-        putPhase("draw", phases.draw)
-        putPhase("sync", phases.sync)
-        putPhase("commandIssue", phases.commandIssue)
-        putPhase("swapBuffers", phases.swapBuffers)
-        putPhase("gpu", phases.gpu)
-        putPhase("total", phases.total)
-        putPhase("overrun", phases.overrun)
-        put("isGpuAvailable", phases.isGpuAvailable)
     }
     putArray("worstFrames") {
         for (frame in worstFrames) {
@@ -151,6 +152,6 @@ private fun JsonObjectScope.putIssue(issue: ConfidenceIssue) {
 private fun JsonObjectScope.putPhase(name: String, value: MetricValue) {
     putObject(name) {
         put("averageMs", value.average)
-        put("peakMs", value.peak)
+        put("peakSinceResetMs", value.peak)
     }
 }

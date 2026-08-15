@@ -14,6 +14,10 @@ internal class PhaseRings(capacity: Int) {
         }
     }
 
+    fun resizeTo(capacity: Int) {
+        rings.forEach { it.resizeTo(capacity) }
+    }
+
     fun clear() {
         rings.forEach(RingBuffer::clear)
     }

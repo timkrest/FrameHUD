@@ -6,7 +6,10 @@ import androidx.compose.runtime.Immutable
 @Immutable
 public data class ThermalStats(
     val level: ThermalLevel,
-    /** Closer to `1.0` means harder throttling. Null when the platform reports nothing. */
+    /**
+     * How close the device is to severe throttling: `1.0` is that point and higher is past it.
+     * Lighter throttling starts below `1.0`. Null when the platform reports nothing.
+     */
     val headroom: Float?,
 ) {
     public companion object {

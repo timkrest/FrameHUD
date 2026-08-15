@@ -17,12 +17,23 @@ internal class MemoryStatsMonitor {
 
     val liveStats: MemoryStats get() = readings.live
 
-    private var gcBaseline: GcBaseline? = null
+    private var collectingSince: GcCounters? = null
+    private var collected = GcCounters.NONE
     private var peakUsedHeapMb = 0
     private var peakNativeHeapMb = 0
 
+    fun startCollecting() {
+        if (collectingSince == null) collectingSince = readGcCounters()
+    }
+
+    fun stopCollecting() {
+        val started = collectingSince ?: return
+        collected += readGcCounters() - started
+        collectingSince = null
+    }
+
     fun sample() {
-        val baseline = gcBaseline ?: readGcBaseline().also { gcBaseline = it }
+        val gc = collectedGc()
         val runtime = Runtime.getRuntime()
         val usedHeapMb = ((runtime.totalMemory() - runtime.freeMemory()) / BYTES_PER_MB).toInt()
         val nativeHeapMb = (Debug.getNativeHeapAllocatedSize() / BYTES_PER_MB).toInt()
@@ -36,8 +47,8 @@ internal class MemoryStatsMonitor {
                 nativeHeapMb = nativeHeapMb,
                 peakUsedHeapMb = peakUsedHeapMb,
                 peakNativeHeapMb = peakNativeHeapMb,
-                gcCount = readGcCount() - baseline.count,
-                gcTimeMs = readGcTimeMs() - baseline.timeMs,
+                gcCount = gc.count,
+                gcTimeMs = gc.timeMs,
             ),
         )
     }
@@ -48,19 +59,31 @@ internal class MemoryStatsMonitor {
     }
 
     fun reset() {
-        gcBaseline = readGcBaseline()
+        collected = GcCounters.NONE
+        if (collectingSince != null) collectingSince = readGcCounters()
         peakUsedHeapMb = 0
         peakNativeHeapMb = 0
         readings.reset(MemoryStats.EMPTY)
     }
 
-    private fun readGcBaseline(): GcBaseline = GcBaseline(count = readGcCount(), timeMs = readGcTimeMs())
+    private fun collectedGc(): GcCounters =
+        collected + (collectingSince?.let { readGcCounters() - it } ?: GcCounters.NONE)
 
-    private fun readGcCount(): Int = Debug.getRuntimeStat(STAT_GC_COUNT)?.toIntOrNull() ?: 0
+    private fun readGcCounters() = GcCounters(
+        count = Debug.getRuntimeStat(STAT_GC_COUNT)?.toIntOrNull() ?: 0,
+        timeMs = Debug.getRuntimeStat(STAT_GC_TIME)?.toLongOrNull() ?: 0L,
+    )
 
-    private fun readGcTimeMs(): Long = Debug.getRuntimeStat(STAT_GC_TIME)?.toLongOrNull() ?: 0L
+    private data class GcCounters(val count: Int, val timeMs: Long) {
 
-    private data class GcBaseline(val count: Int, val timeMs: Long)
+        operator fun plus(other: GcCounters) = GcCounters(count + other.count, timeMs + other.timeMs)
+
+        operator fun minus(other: GcCounters) = GcCounters(count - other.count, timeMs - other.timeMs)
+
+        companion object {
+            val NONE = GcCounters(count = 0, timeMs = 0L)
+        }
+    }
 
     private companion object {
         const val BYTES_PER_MB = 1024L * 1024L

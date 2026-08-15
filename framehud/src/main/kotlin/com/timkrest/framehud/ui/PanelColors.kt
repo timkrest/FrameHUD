@@ -37,7 +37,7 @@ internal fun metricRowColor(
 
 internal fun sparklineBarColor(totalMs: Float, deadlineMs: Float): Color = when {
     totalMs <= deadlineMs -> TextGood
-    totalMs > deadlineMs * 2f -> TextWarning
+    totalMs > deadlineMs * SPARKLINE_SEVERE_OVERRUN_RATIO -> TextWarning
     else -> TextCaution
 }
 

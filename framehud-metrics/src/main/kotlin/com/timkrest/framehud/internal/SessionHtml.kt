@@ -1,5 +1,8 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.FrameHistory
+import com.timkrest.framehud.FramePhases
+import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.SessionStats
 import java.util.Locale
 import kotlin.math.max
@@ -52,14 +55,20 @@ private fun StringBuilder.appendTile(value: String, label: String) {
 
 private fun StringBuilder.appendConfidence(snapshot: SessionSnapshot) {
     append("<section>\n<h2>Measurement confidence</h2>\n")
-    val issues = snapshot.session.confidence.issues
-    if (issues.isEmpty()) {
+    val sessionIssues = snapshot.session.confidence.issues
+    val screenOnlyIssues = snapshot.screen.confidence.issues - sessionIssues.toSet()
+    if (sessionIssues.isEmpty() && screenOnlyIssues.isEmpty()) {
         append("<p class=\"meta\">No issues.</p>\n</section>\n")
         return
     }
     append("<ul>\n")
-    for (issue in issues) append("<li>").append(escapeHtml(issue.summary)).append("</li>\n")
+    for (issue in sessionIssues) appendIssue(issue.summary)
+    for (issue in screenOnlyIssues) appendIssue("${issue.summary} — this screen only")
     append("</ul>\n</section>\n")
+}
+
+private fun StringBuilder.appendIssue(summary: String) {
+    append("<li>").append(escapeHtml(summary)).append("</li>\n")
 }
 
 private fun StringBuilder.appendMeasurement(snapshot: SessionSnapshot) = with(snapshot) {
@@ -116,20 +125,25 @@ private fun StringBuilder.appendStatRow(
 private fun StringBuilder.appendWindow(snapshot: SessionSnapshot) {
     append("<section>\n<h2>Frame window</h2>\n")
     val window = snapshot.window
-    val history = window.history
-    if (history.size == 0) {
+    if (window.history.size == 0) {
         append("<p class=\"meta\">No frames in the window.</p>\n</section>\n")
         return
     }
-    append("<p class=\"meta\">Last ").append(history.size).append(" frames · ")
-    append(window.fps).append(" fps · p95 ").append(formatMs(window.p95FrameMs))
-    append(" · worst ").append(formatMs(window.worstFrameMs))
-    append(" · red bars ran past their deadline</p>\n")
+    append("<p class=\"meta\">Last ").append(window.history.size).append(" frames: p95 ")
+    append(formatMs(window.p95FrameMs)).append(" · worst ").append(formatMs(window.worstFrameMs))
+    append(" · red bars ran past their deadline. ")
+    append(window.fps).append(" frames in the last second.</p>\n")
+    appendFrameChart(window.history)
+    appendPhases(snapshot.phases)
+    append("</section>\n")
+}
 
+private fun StringBuilder.appendFrameChart(history: FrameHistory) {
     var scaleMs = 0f
     for (index in 0 until history.size) {
         scaleMs = max(scaleMs, max(history.totalMsAt(index), history.deadlineMsAt(index)))
     }
+    if (scaleMs <= 0f) return
     scaleMs *= CHART_HEADROOM
 
     append("<svg viewBox=\"0 0 $CHART_WIDTH $CHART_HEIGHT\" preserveAspectRatio=\"none\" role=\"img\" ")
@@ -152,7 +166,34 @@ private fun StringBuilder.appendWindow(snapshot: SessionSnapshot) {
         append("\" y1=\"").append(formatFloat(deadlineY))
         append("\" y2=\"").append(formatFloat(deadlineY)).append("\"/>\n")
     }
-    append("</svg>\n</section>\n")
+    append("</svg>\n")
+}
+
+private fun StringBuilder.appendPhases(phases: FramePhases) {
+    append("<p class=\"meta\">")
+    append(phases.bottleneckStage.name.lowercase(Locale.US))
+    append(" bound at ").append(formatMs(phases.bottleneck.average)).append(" per frame</p>\n")
+    append("<table>\n<tr><th></th><th>Average</th><th>Peak since reset</th></tr>\n")
+    appendPhaseRow("Delay before start", phases.unknownDelay)
+    appendPhaseRow("Input", phases.input)
+    appendPhaseRow("Animation", phases.animation)
+    appendPhaseRow("Layout", phases.layout)
+    appendPhaseRow("Draw", phases.draw)
+    appendPhaseRow("UI thread", phases.cpu)
+    appendPhaseRow("Sync", phases.sync)
+    appendPhaseRow("Command issue", phases.commandIssue)
+    appendPhaseRow("Swap buffers", phases.swapBuffers)
+    appendPhaseRow("Render thread", phases.render)
+    if (phases.isGpuAvailable) appendPhaseRow("GPU", phases.gpu)
+    appendPhaseRow("Unattributed", phases.other)
+    appendPhaseRow("Total", phases.total)
+    appendPhaseRow("Overrun", phases.overrun)
+    append("</table>\n")
+}
+
+private fun StringBuilder.appendPhaseRow(label: String, value: MetricValue) {
+    append("<tr><th>").append(label).append("</th><td>").append(formatMs(value.average))
+    append("</td><td>").append(value.peak?.let(::formatMs) ?: "—").append("</td></tr>\n")
 }
 
 private fun StringBuilder.appendWorstFrames(snapshot: SessionSnapshot) {

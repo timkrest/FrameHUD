@@ -287,6 +287,30 @@ class FrameAggregatorTest {
     }
 
     @Test
+    fun `a still screen stops publishing but keeps the live session clock the diagnosis divides by`() {
+        aggregator.startCollecting()
+        aggregator.addFrame(totalMs = 10f)
+        advance(PAST_FPS_WINDOW_MS)
+        aggregator.onTick()
+        val drained = aggregator.liveMetrics.session.durationMs
+
+        advance(PAST_FPS_WINDOW_MS)
+        aggregator.onTick()
+
+        assertEquals(drained + PAST_FPS_WINDOW_MS, aggregator.liveMetrics.session.durationMs)
+        assertEquals(drained, aggregator.metrics.value.session.durationMs, "a still screen published again")
+    }
+
+    @Test
+    fun `resizing the window keeps the peaks, which count since the reset and not since the window`() {
+        aggregator.addFrame(totalMs = 40f)
+
+        aggregator.updateConfig(FrameHudConfig(metricsSampleWindowFrames = 4))
+
+        assertEquals(40f, aggregator.metrics.value.phases.total.peak ?: 0f, TOLERANCE)
+    }
+
+    @Test
     fun `resizing the window publishes the empty one instead of the readings it dropped`() {
         aggregator.addFrame(totalMs = 10f)
 

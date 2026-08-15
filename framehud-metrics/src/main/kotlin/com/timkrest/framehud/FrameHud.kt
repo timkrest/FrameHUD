@@ -12,6 +12,7 @@ import androidx.core.content.FileProvider
 import com.timkrest.framehud.internal.ActivityTracker
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
+import com.timkrest.framehud.internal.exportAuthority
 import com.timkrest.framehud.internal.exportDirectory
 import com.timkrest.framehud.internal.sessionSnapshot
 import com.timkrest.framehud.internal.writeTo
@@ -98,13 +99,14 @@ public object FrameHud {
             engine.setContext(value)
         }
 
-    /** Attributes frames to an interaction rather than to the activity in focus. */
+    /** Attributes frames to an interaction rather than to the activity in focus. Must not be blank. */
     @get:AnyThread
     @set:MainThread
     public var mark: String?
         get() = engine.activeMark.value
         set(value) {
             checkMainThread()
+            require(value == null || value.isNotBlank()) { "A mark name must not be blank" }
             engine.setMark(value)
         }
 
@@ -203,7 +205,7 @@ public object FrameHud {
      */
     public fun shareSession(activity: Activity, export: SessionExport) {
         checkMainThread()
-        val authority = "${activity.packageName}.framehud.exports"
+        val authority = exportAuthority(activity)
         val uris = arrayListOf(
             FileProvider.getUriForFile(activity, authority, export.json),
             FileProvider.getUriForFile(activity, authority, export.html),

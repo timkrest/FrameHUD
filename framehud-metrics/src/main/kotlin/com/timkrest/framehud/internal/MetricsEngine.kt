@@ -86,7 +86,6 @@ internal class MetricsEngine(
         requireSampler().post {
             thermalMonitor.bind(context)
             batteryMonitor.bind(context)
-            sampleMonitors()
         }
     }
 
@@ -110,8 +109,9 @@ internal class MetricsEngine(
         collector.expectFirstFrame(window = window, creation = creation)
         sampler.bind(window)
         sampler.post {
+            memoryMonitor.startCollecting()
             sampleMonitors()
-            aggregator.startCollecting()
+            aggregator.startCollecting(label)
         }
         choreographerTickMonitor.start()
     }
@@ -123,15 +123,15 @@ internal class MetricsEngine(
         val current = name ?: boundScreen
         if (current == previous) return
         endMark()
+        val sampler = sampler?.takeIf { it.isBound } ?: return
         activeScreen = current
         tracer.screenChanged(current)
-        val sampler = sampler?.takeIf { it.isBound } ?: return
         val listeners = config().eventListeners
         val endedContext = context
         sampler.post {
             eventDispatcher.onScreenEnded(
                 listeners = listeners,
-                stats = aggregator.restartScreen(),
+                stats = aggregator.restartScreen(current),
                 screen = previous,
                 context = endedContext,
             )
@@ -154,12 +154,13 @@ internal class MetricsEngine(
         endMark()
         val endedScreen = activeScreen
         boundScreen = null
-        activeScreen = screenOverride
+        activeScreen = null
         tracer.screenChanged(null)
         val listeners = config().eventListeners
         val endedContext = context
         sampler.post {
             aggregator.stopCollecting()
+            memoryMonitor.stopCollecting()
             eventDispatcher.onScreenEnded(
                 listeners = listeners,
                 stats = aggregator.screenStats(),
@@ -208,7 +209,7 @@ internal class MetricsEngine(
             memory = memoryMonitor.liveStats,
             thermal = thermalMonitor.liveStats,
             worstFrames = aggregator.worstFrames(),
-            screenName = activeScreen,
+            screenName = aggregator.screenName,
             mark = _activeMark.value,
             context = context,
         )

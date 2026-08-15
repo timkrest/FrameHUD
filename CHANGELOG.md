@@ -14,14 +14,60 @@ All notable changes to this project are documented here. The format follows
   screen, and a refresh-rate change taints it the same way it taints jank percent.
 - `JankThresholds.maxLostTimeMs` fails a test once a screen loses more than the given time. It is
   infinite by default, so nothing changes until you set it.
+- The HTML report shows the phase breakdown the panel shows, inside the frame window and next to its
+  chart, and names the stage the frames were bound by. Until now the phases reached the JSON only,
+  so a shared report said a screen was slow without saying where the time went.
+- The HTML report lists a confidence issue the current screen has and the session does not, so a
+  short screen no longer looks as trustworthy as the session around it.
 
 ### Changed
 
-- The export schema is 3: `session` and `screen` stats carry `lostTimeMs`.
+- The export schema is 3: `session` and `screen` stats carry `lostTimeMs`, and `phases` moved into
+  `window` — both describe the same last `metricsSampleWindowFrames` frames, not the session — with
+  `bottleneckStage` alongside them. A phase peak spans the whole session, not that window, so
+  `peakMs` is now `peakSinceResetMs`.
 - `ScreenEnded`/`MarkEnded` summaries name lost time between jank percent and p95.
+- `MemoryStats.gcCount` and `gcTimeMs` now count only while a screen is on top, matching the
+  interval `SessionStats.durationMs` already measured.
 - The `SessionStats` data class gained a `lostTimeMs` constructor parameter after `jankPercent`.
   Named construction and `copy` are unaffected; positional construction and code compiled against
   0.8.0 need updating.
+
+### Fixed
+
+- An export taken after the app left the foreground named no screen while still reporting that
+  screen's numbers. The last screen measured keeps its name until the next one binds.
+- A screen named through `FrameHud.screen` stayed the active screen after its window was gone, so an
+  event raised from the background carried it while a screen named after its activity carried
+  nothing. Neither does now; `FrameHud.screen` still holds the name for the next window, as
+  documented.
+- Changing `metricsSampleWindowFrames` reset every peak, though a peak counts since the last
+  `reset()` and not since the window it outlives. The window resizes now instead of being replaced.
+- `MemoryStats.gcCount` and `gcTimeMs` counted collections the app ran in the background, while
+  `SessionStats.durationMs` skips that time. `JankCause.Gc.timeShare` divides one by the other, so
+  after a long background spell any jank was blamed on GC and the share could read above the 0..1 it
+  documents. Both now cover the same interval.
+- Enabling FrameHUD while the app sat in the background recorded a heap peak with no screen to
+  attribute it to, because starting sampled the monitors before any window was bound. Monitors are
+  now read only while a screen is on top, so `adb shell am broadcast … ENABLE` from the background
+  no longer plants a peak.
+- `ThermalStats.headroom` said values closer to `1.0` mean harder throttling. `1.0` is where severe
+  throttling begins and anything above it is past that point; lighter throttling starts below it.
+- `SessionStats` said its aggregates run since the last reset, which holds for a session and not for
+  the screen and mark stats carried by `ScreenEnded` and `MarkEnded`.
+- The panel put the pipeline row (`pipe:cpu`, `pipe:gpu`) one character past the label column, and
+  any timing of a second or more past the value column, so the row a stall produced was the one that
+  stopped lining up. Labels have room now, and a timing that does not fit drops its decimal.
+- A broadcast from another app could crash a debuggable build: reading the extras of `SCREEN`,
+  `MARK` or `CONTEXT` unpacks the whole bundle, and a bundle naming a class the app cannot load
+  throws on the main thread. Extras that cannot be read are now logged and ignored.
+- Two exports taken in the same millisecond wrote to the same two files, so the first caller was
+  handed a path holding the second caller's report. Each export claims its own name.
+- `JankThresholds.maxFrozenFrames` set to `Int.MAX_VALUE` still let a confidence issue on frozen
+  frames make a run inconclusive, though the class documents a threshold no run can reach as off.
+- `FrameHud.mark` accepted a blank name where `screen` and `context` reject one.
+- A system overlay opened on the default display even when the app was running on another one, so
+  the panel could sit on a screen nobody was looking at.
 
 ## [0.8.0] - 2026-08-15
 

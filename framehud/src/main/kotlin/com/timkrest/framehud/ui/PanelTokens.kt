@@ -29,6 +29,7 @@ internal const val FPS_WARN_THRESHOLD = 0.75f
 internal const val SPARKLINE_MIN_SCALE_BUDGETS = 2f
 internal const val SPARKLINE_MAX_SCALE_BUDGETS = 16f
 internal const val SPARKLINE_MIN_BAR_FRACTION = 0.6f
+internal const val SPARKLINE_SEVERE_OVERRUN_RATIO = 2f
 internal const val LOAD_BAR_ALPHA = 0.16f
 
 private const val BACKGROUND_ALPHA = 0.97f

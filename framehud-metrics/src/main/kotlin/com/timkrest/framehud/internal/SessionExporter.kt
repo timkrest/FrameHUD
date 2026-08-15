@@ -55,9 +55,20 @@ internal fun sessionSnapshot(
 internal fun SessionSnapshot.writeTo(directory: File): SessionExport {
     directory.mkdirs()
     val stamp = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US).format(Date(takenAtEpochMs))
-    val json = File(directory, "framehud-$stamp.json").apply { writeText(toJson()) }
-    val html = File(directory, "framehud-$stamp.html").apply { writeText(toHtml()) }
+    val name = unusedName(directory, stamp)
+    val json = File(directory, "$name.json").apply { writeText(toJson()) }
+    val html = File(directory, "$name.html").apply { writeText(toHtml()) }
     return SessionExport(json = json, html = html)
+}
+
+/** Claims the name by creating the file: two exports taken in the same millisecond both keep theirs. */
+private fun unusedName(directory: File, stamp: String): String {
+    var attempt = 0
+    while (true) {
+        val name = if (attempt == 0) "framehud-$stamp" else "framehud-$stamp-$attempt"
+        if (File(directory, "$name.json").createNewFile()) return name
+        attempt++
+    }
 }
 
 internal fun exportDirectory(application: Application): File =

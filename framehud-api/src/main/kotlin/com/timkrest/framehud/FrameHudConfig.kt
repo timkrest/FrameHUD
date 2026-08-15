@@ -1,6 +1,6 @@
 package com.timkrest.framehud
 
-/** Runtime configuration. Changes take effect when assigned to `FrameHud.config`. */
+/** A copy takes effect only once assigned to `FrameHud.config`. */
 public data class FrameHudConfig(
     /** While disabled, no frames are collected and no window is added. */
     val enabled: Boolean = true,

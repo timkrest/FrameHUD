@@ -67,7 +67,8 @@ internal fun buildPanelLines(
             addText(sectionHeader(LABEL_GPU_SECTION, isHostMeasured = isEmulator), TextHeader)
             addText(GPU_UNAVAILABLE_LINE, TextHeader)
         }
-        addMetric(LABEL_DELAY, phases.unknownDelay, rowContext, separatorAbove = true)
+        addMetric(LABEL_DELAY, phases.unknownDelay, rowContext)
+        separateFromRowsAbove()
         addMetric(LABEL_OTHER, phases.other, rowContext)
         addMetric(LABEL_TOTAL, phases.total, rowContext, MetricRowKind.TOTAL)
         addMetric(LABEL_OVERRUN, phases.overrun, rowContext, MetricRowKind.OVERRUN)
@@ -78,7 +79,8 @@ internal fun buildPanelLines(
             rowContext = rowContext,
             dimmed = isEmulator && bottleneckStage != PipelineStage.CPU,
         )
-        addText(formatWindowSummary(window), jankColor(window.jankPercent), separatorAbove = true)
+        addText(formatWindowSummary(window), jankColor(window.jankPercent))
+        separateFromRowsAbove()
         addText(formatSessionLatency(session), TextNormal)
         addText(formatSessionTotals(session), jankColor(session.jankPercent))
         if (session.lostTimeMs > 0f) {
@@ -145,7 +147,6 @@ private fun MutableList<PanelLine>.addMetric(
     value: MetricValue,
     rowContext: MetricRowContext,
     kind: MetricRowKind = MetricRowKind.PHASE,
-    separatorAbove: Boolean = false,
     dimmed: Boolean = false,
 ) {
     val isAttention = label == rowContext.attentionLabel && !dimmed
@@ -164,11 +165,15 @@ private fun MutableList<PanelLine>.addMetric(
                 )
             },
             loadFraction = rowContext.loadFractionOf(value),
-            hasSeparatorAbove = separatorAbove,
+            hasSeparatorAbove = false,
         ),
     )
 }
 
-private fun MutableList<PanelLine>.addText(text: String, color: Color, separatorAbove: Boolean = false) {
-    add(PanelLine(text = text, color = color, loadFraction = 0f, hasSeparatorAbove = separatorAbove))
+private fun MutableList<PanelLine>.addText(text: String, color: Color) {
+    add(PanelLine(text = text, color = color, loadFraction = 0f, hasSeparatorAbove = false))
+}
+
+private fun MutableList<PanelLine>.separateFromRowsAbove() {
+    this[lastIndex] = last().copy(hasSeparatorAbove = true)
 }

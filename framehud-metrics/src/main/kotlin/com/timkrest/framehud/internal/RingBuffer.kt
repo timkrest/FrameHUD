@@ -3,9 +3,9 @@ package com.timkrest.framehud.internal
 import kotlin.math.max
 import kotlin.math.min
 
-internal class RingBuffer(private val capacity: Int) {
+internal class RingBuffer(capacity: Int) {
 
-    private val buffer = FloatArray(capacity)
+    private var buffer = FloatArray(capacity)
     private var writePos = 0
     private var runningSum = 0f
 
@@ -13,6 +13,8 @@ internal class RingBuffer(private val capacity: Int) {
 
     private var peakValue = 0f
     private var hasPeak = false
+
+    private val capacity: Int get() = buffer.size
 
     var size = 0
         private set
@@ -60,12 +62,23 @@ internal class RingBuffer(private val capacity: Int) {
         return FloatArray(size).also(::copySamplesInto)
     }
 
+    fun resizeTo(capacity: Int) {
+        if (capacity == buffer.size) return
+        buffer = FloatArray(capacity)
+        sortScratch = null
+        forgetSamples()
+    }
+
     fun clear() {
+        forgetSamples()
+        peakValue = 0f
+        hasPeak = false
+    }
+
+    private fun forgetSamples() {
         writePos = 0
         size = 0
         runningSum = 0f
-        peakValue = 0f
-        hasPeak = false
     }
 
     private fun windowMin(): Float = reduceWindow { best, sample -> min(best, sample) }

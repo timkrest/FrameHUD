@@ -30,6 +30,11 @@ internal class FreezableReading<T : Any>(initial: T) {
     }
 
     @AnyThread
+    fun updateLive(value: T) {
+        synchronized(lock) { live = value }
+    }
+
+    @AnyThread
     fun setFrozen(frozen: Boolean) {
         synchronized(lock) {
             isFrozen = frozen

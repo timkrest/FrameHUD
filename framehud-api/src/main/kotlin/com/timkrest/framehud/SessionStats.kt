@@ -2,7 +2,10 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 
-/** Aggregates since the last reset. Time spent in the background is not counted. */
+/**
+ * Numbers for one interval: a session, a screen or a mark. Whatever gives you these says which one.
+ * Time in the background does not count.
+ */
 @Immutable
 public data class SessionStats(
     val frames: Int = 0,

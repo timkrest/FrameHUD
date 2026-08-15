@@ -50,14 +50,19 @@ private class ThresholdCheck(val metric: MeasuredMetric, val violationMessage: S
 
 private fun JankThresholds.thresholdChecks(stats: SessionStats): List<ThresholdCheck> = listOfNotNull(
     limitCheck(MeasuredMetric.JANK_PERCENT, stats.jankPercent, maxJankPercent, "jank %.1f%% over %.1f%%"),
-    ThresholdCheck(
-        metric = MeasuredMetric.FROZEN_FRAMES,
-        violationMessage = "${stats.frozenFrames} frozen frame(s), allowed $maxFrozenFrames"
-            .takeIf { stats.frozenFrames > maxFrozenFrames },
-    ),
+    frozenFramesCheck(stats.frozenFrames),
     limitCheck(MeasuredMetric.P95, stats.p95FrameMs, maxP95FrameMs, "p95 %.1f ms over %.1f ms"),
     limitCheck(MeasuredMetric.LOST_TIME, stats.lostTimeMs, maxLostTimeMs, "lost time %.1f ms over %.1f ms"),
 )
+
+private fun JankThresholds.frozenFramesCheck(frozenFrames: Int): ThresholdCheck? {
+    if (maxFrozenFrames == Int.MAX_VALUE) return null
+    return ThresholdCheck(
+        metric = MeasuredMetric.FROZEN_FRAMES,
+        violationMessage = "$frozenFrames frozen frame(s), allowed $maxFrozenFrames"
+            .takeIf { frozenFrames > maxFrozenFrames },
+    )
+}
 
 private fun limitCheck(metric: MeasuredMetric, value: Float, limit: Float, violation: String): ThresholdCheck? {
     if (!limit.isFinite()) return null
