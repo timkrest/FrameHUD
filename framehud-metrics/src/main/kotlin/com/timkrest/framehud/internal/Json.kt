@@ -36,6 +36,11 @@ internal class JsonObjectScope(private val out: StringBuilder) {
         writeFloat(out, value)
     }
 
+    fun putNull(name: String) {
+        writeName(name)
+        out.append("null")
+    }
+
     fun putObject(name: String, build: JsonObjectScope.() -> Unit) {
         writeName(name)
         JsonObjectScope(out).writeObject(build)

@@ -33,7 +33,7 @@ All notable changes to this project are documented here. The format follows
   phase peak spans the whole session, not that window, so `peakMs` is now `peakSinceResetMs`.
 - `FramePhases.gpu` and `PhaseAverages.gpu` are null until the driver reports GPU time, and
   `isGpuAvailable` is gone from both. A zero read as a real measurement before; now there is nothing
-  to read. In the export, `gpuMs` and the window's `gpu` block are `null` on a device that never
+  to read. In the export, both `gpuMs` and the window's `gpu` are `null` on a device that never
   reported GPU time, and the `isGpuAvailable` field is gone.
 - `FramePhases.other` and `PhaseAverages.other` are now `unattributed`.
 - `FrameHudEvent.MarkEnded` takes `screen` before `mark`, the order the other events already use.

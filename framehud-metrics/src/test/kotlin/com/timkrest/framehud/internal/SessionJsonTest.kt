@@ -34,8 +34,7 @@ class SessionJsonTest {
             """"window":{"fps":0,"jankPercent":0.0,"p95FrameMs":0.0,"worstFrameMs":0.0,""" +
             """"phases":{"bottleneckStage":"CPU","unknownDelay":$zeroPhase,"input":$zeroPhase,""" +
             """"animation":$zeroPhase,"layout":$zeroPhase,"draw":$zeroPhase,"sync":$zeroPhase,""" +
-            """"commandIssue":$zeroPhase,"swapBuffers":$zeroPhase,""" +
-            """"gpu":{"averageMs":null,"peakSinceResetMs":null},"total":$zeroPhase,""" +
+            """"commandIssue":$zeroPhase,"swapBuffers":$zeroPhase,"gpu":null,"total":$zeroPhase,""" +
             """"overrun":$zeroPhase},"frames":[]},""" +
             """"worstFrames":[],""" +
             """"memory":{"usedHeapMb":0,"maxHeapMb":0,"nativeHeapMb":0,"peakUsedHeapMb":0,""" +

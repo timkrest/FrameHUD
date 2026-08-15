@@ -165,8 +165,12 @@ private fun JsonObjectScope.putIssue(issue: ConfidenceIssue) {
 }
 
 private fun JsonObjectScope.putPhase(name: String, value: MetricValue?) {
+    if (value == null) {
+        putNull(name)
+        return
+    }
     putObject(name) {
-        put("averageMs", value?.average)
-        put("peakSinceResetMs", value?.peak)
+        put("averageMs", value.average)
+        put("peakSinceResetMs", value.peak)
     }
 }
