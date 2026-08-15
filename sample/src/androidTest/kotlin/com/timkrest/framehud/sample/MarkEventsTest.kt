@@ -37,9 +37,9 @@ class MarkEventsTest {
     @Test
     fun aMarkLeftOpenEndsWithTheScreenItRanOn() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
             runOnMain { FrameHud.mark = MARK }
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
         }
 
         val ended = awaitMarkEnded()
@@ -65,7 +65,6 @@ class MarkEventsTest {
 
     private companion object {
         const val MARK = "checkout"
-        const val RENDER_MS = 700L
         const val EVENT_TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 50L
     }

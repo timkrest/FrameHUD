@@ -18,11 +18,11 @@ class MetricsThreadTest {
     @Test
     fun renamingTheMetricsThreadKeepsCollecting() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
             runOnMain { FrameHud.config = FrameHud.config.copy(metricsThreadName = RENAMED_THREAD) }
             FrameHud.reset()
 
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
 
             val stats = assertNotNull(FrameHud.awaitSessionStats(STATS_TIMEOUT_MS), "nothing was collecting")
             assertTrue(stats.frames > 0, "no frames reached the renamed thread")
@@ -31,7 +31,6 @@ class MetricsThreadTest {
 
     private companion object {
         const val RENAMED_THREAD = "framehud-renamed"
-        const val RENDER_MS = 700L
         const val STATS_TIMEOUT_MS = 2_000L
     }
 }

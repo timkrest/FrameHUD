@@ -47,7 +47,7 @@ class ScreenEventsTest {
     @Test
     fun framesAreCollectedWhileAnActivityIsResumed() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
 
             val stats = assertNotNull(FrameHud.awaitSessionStats(STATS_TIMEOUT_MS), "nothing was collecting")
             assertTrue(stats.frames > 0, "no frames reached the collector")
@@ -68,12 +68,12 @@ class ScreenEventsTest {
     fun returningToAScreenDoesNotMeasureItAgain() {
         assumeFirstFramesAreReported()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
             awaitEvents<FrameHudEvent.FirstFrame>(count = 1)
 
             scenario.moveToState(Lifecycle.State.CREATED)
             scenario.moveToState(Lifecycle.State.RESUMED)
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
         }
 
         awaitEvents<FrameHudEvent.ScreenEnded>(count = 2)
@@ -83,10 +83,10 @@ class ScreenEventsTest {
     @Test
     fun eachScreenSummaryCarriesTheScreenThatEnded() {
         ActivityScenario.launch(MainActivity::class.java).use { main ->
-            main.renderFrames(RENDER_MS)
+            main.renderFrames()
 
             ActivityScenario.launch(DetailsActivity::class.java).use { details ->
-                details.renderFrames(RENDER_MS)
+                details.renderFrames()
             }
         }
 
@@ -99,11 +99,11 @@ class ScreenEventsTest {
     fun namingScreensSplitsStatsWithoutTouchingTheWindow() {
         runOnMain { FrameHud.screen = "cart" }
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
             runOnMain { FrameHud.screen = "checkout" }
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
             runOnMain { FrameHud.screen = null }
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
         }
 
         val ended = awaitEvents<FrameHudEvent.ScreenEnded>(count = 3)
@@ -125,7 +125,7 @@ class ScreenEventsTest {
     fun aScreenSummaryCarriesTheMeasurementContext() {
         runOnMain { FrameHud.context = mapOf("variant" to "b") }
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
         }
 
         val ended = awaitEvents<FrameHudEvent.ScreenEnded>(count = 1).single()
@@ -135,9 +135,9 @@ class ScreenEventsTest {
     @Test
     fun renamingTheScreenEndsTheActiveMark() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
             runOnMain { FrameHud.mark = "scroll" }
-            scenario.renderFrames(RENDER_MS)
+            scenario.renderFrames()
             runOnMain { FrameHud.screen = "cart" }
 
             val ended = awaitEvents<FrameHudEvent.MarkEnded>(count = 1).single()
@@ -169,7 +169,6 @@ class ScreenEventsTest {
             MainActivity::class.java.simpleName,
             DetailsActivity::class.java.simpleName,
         )
-        const val RENDER_MS = 700L
         const val STATS_TIMEOUT_MS = 2_000L
         const val EVENT_TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 50L
