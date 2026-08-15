@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.timkrest.framehud.PerformanceMetrics
 
-/** What the left of the header says. Frozen readings and a running mark both replace the timing. */
 @Immutable
 internal class HeaderStatus private constructor(val text: String, val color: Color) {
 

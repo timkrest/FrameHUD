@@ -65,7 +65,6 @@ class SessionHtmlTest {
         assertContains(styles, "svg {", message = "the chart has no size of its own and collapses without a rule")
     }
 
-    /** A snapshot that renders every class the report can put on the page. */
     private fun everyStyledElement() = sessionSnapshotFixture(
         context = mapOf("variant" to "b"),
         session = SessionStats.EMPTY.copy(droppedReports = 2),
