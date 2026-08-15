@@ -28,7 +28,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.8.0")
+    debugImplementation("com.timkrest:framehud:0.9.0")
 }
 ```
 
@@ -85,7 +85,7 @@ last reset. Rows summed from other rows stop after `avg`.
 you call `FrameHud` outside `src/debug`, because a release build still has to compile those lines:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.8.0")
+releaseImplementation("com.timkrest:framehud-noop:0.9.0")
 ```
 
 It mirrors the API with empty bodies. The calls compile, nothing is measured, no window is added.
@@ -97,7 +97,7 @@ collects the same numbers and sends the same events, but adds no window and no `
 to the merged manifest.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.8.0")
+qaImplementation("com.timkrest:framehud-metrics:0.9.0")
 ```
 
 `FrameHud` is the same object, so the code around it stays as it is. `enabled` now switches
@@ -289,7 +289,7 @@ The JSON export carries the issues for the session and the screen, the HTML repo
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.8.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.9.0")
 ```
 
 ```kotlin
