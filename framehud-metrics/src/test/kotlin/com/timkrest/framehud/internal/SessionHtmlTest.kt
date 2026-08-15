@@ -8,6 +8,7 @@ import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 import org.junit.Test
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -52,20 +53,25 @@ class SessionHtmlTest {
     }
 
     @Test
-    fun `every element the report styles is one the stylesheet still carries a rule for`() {
-        val html = sessionSnapshotFixture(
-            context = mapOf("variant" to "b"),
-            window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
-            worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS)),
-        ).toHtml()
+    fun `the stylesheet and the markup name the same classes`() {
+        val html = everyStyledElement().toHtml()
         val styles = html.substringAfter("<style>").substringBefore("</style>")
         val body = html.substringAfter("</head>")
 
-        Regex("""class="([^"]+)"""").findAll(body).map { ".${it.groupValues[1]}" }.toSet().forEach { selector ->
-            assertContains(styles, selector, message = "$selector is in the markup for styling that is not there")
-        }
+        val inMarkup = Regex("""class="([^"]+)"""").findAll(body).map { it.groupValues[1] }.toSet()
+        val inStylesheet = Regex("""\.([a-z-]+)\s*\{""").findAll(styles).map { it.groupValues[1] }.toSet()
+
+        assertEquals(inStylesheet, inMarkup, "a class is styled but never rendered, or rendered but never styled")
         assertContains(styles, "svg {", message = "the chart has no size of its own and collapses without a rule")
     }
+
+    /** A snapshot that renders every class the report can put on the page. */
+    private fun everyStyledElement() = sessionSnapshotFixture(
+        context = mapOf("variant" to "b"),
+        session = SessionStats.EMPTY.copy(droppedReports = 2),
+        window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
+        worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS)),
+    )
 
     @Test
     fun `screen names, marks and context are escaped`() {
