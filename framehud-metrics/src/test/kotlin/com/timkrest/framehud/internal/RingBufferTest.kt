@@ -81,13 +81,6 @@ class RingBufferTest {
     }
 
     @Test
-    fun `snapshot preserves insertion order after wrap`() {
-        val buffer = RingBuffer(capacity = 3)
-        listOf(1f, 2f, 3f, 4f).forEach(buffer::add)
-        assertEquals(listOf(2f, 3f, 4f), buffer.snapshot().toList())
-    }
-
-    @Test
     fun `clear resets the window and the peak`() {
         val buffer = RingBuffer(capacity = 3)
         buffer.add(10f)

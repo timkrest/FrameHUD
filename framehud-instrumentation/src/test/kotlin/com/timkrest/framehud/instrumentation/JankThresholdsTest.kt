@@ -27,10 +27,13 @@ class JankThresholdsTest {
     }
 
     @Test
-    fun `p95 is only checked once a limit is set`() {
+    fun `p95 is only checked once a limit is set, and a short sample taints it`() {
         val stats = session(p95FrameMs = 30f)
         assertIs<GateVerdict.Pass>(JankThresholds().verdict(TAG, stats))
         assertIs<GateVerdict.Fail>(JankThresholds(maxP95FrameMs = 20f).verdict(TAG, stats))
+
+        val short = session(p95FrameMs = 30f, issues = listOf(ConfidenceIssue.ShortSample(30)))
+        assertIs<GateVerdict.Inconclusive>(JankThresholds(maxP95FrameMs = 20f).verdict(TAG, short))
     }
 
     @Test
@@ -53,18 +56,18 @@ class JankThresholdsTest {
     }
 
     @Test
-    fun `an emulator issue leaves jank percent conclusive`() {
-        val stats = session(jankPercent = 12f, issues = listOf(ConfidenceIssue.Emulator))
-        assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, stats))
-    }
+    fun `an issue taints the checks over the metrics it names, and leaves the rest conclusive`() {
+        val emulator = listOf(ConfidenceIssue.Emulator)
+        assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, session(jankPercent = 12f, issues = emulator)))
 
-    @Test
-    fun `a refresh rate change leaves p95 and frozen frames conclusive`() {
-        val stats = session(frozenFrames = 1, issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120))))
-        assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, stats))
-
-        val p95Stats = session(p95FrameMs = 30f, issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120))))
-        assertIs<GateVerdict.Fail>(JankThresholds(maxP95FrameMs = 20f).verdict(TAG, p95Stats))
+        val rateChanged = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120)))
+        assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, session(frozenFrames = 1, issues = rateChanged)))
+        assertIs<GateVerdict.Fail>(
+            JankThresholds(maxP95FrameMs = 20f).verdict(TAG, session(p95FrameMs = 30f, issues = rateChanged)),
+        )
+        assertIs<GateVerdict.Inconclusive>(
+            JankThresholds().verdict(TAG, session(jankPercent = 12f, issues = rateChanged)),
+        )
     }
 
     @Test

@@ -3,6 +3,8 @@ package com.timkrest.framehud.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -37,18 +39,29 @@ internal fun Panel(state: PanelState, actions: PanelActions, modifier: Modifier 
         if (isCollapsed) {
             PanelCollapsedContent(metrics = metrics, isEmulator = state.isEmulator, actions = actions)
         } else {
-            PanelExpandedContent(
-                metrics = metrics,
-                choreographerTicksPerSecond = choreographerTicksPerSecond,
-                memory = memory,
-                thermal = thermal,
-                activeMark = activeMark,
-                isFrozen = isFrozen,
-                canRequestOverlayPermission = state.canRequestOverlayPermission,
-                isEmulator = state.isEmulator,
-                actions = actions,
-                modifier = Modifier.width(PanelWidth),
-            )
+            Column(modifier = Modifier.width(PanelWidth)) {
+                PanelHeader(
+                    metrics = metrics,
+                    status = remember(isFrozen, activeMark, choreographerTicksPerSecond, metrics.display) {
+                        HeaderStatus.of(
+                            isFrozen = isFrozen,
+                            activeMark = activeMark,
+                            choreographerTicksPerSecond = choreographerTicksPerSecond,
+                            frameBudgetMs = metrics.display.frameBudgetMs,
+                        )
+                    },
+                    canRequestOverlayPermission = state.canRequestOverlayPermission,
+                    isEmulator = state.isEmulator,
+                    actions = actions,
+                )
+                PanelExpandedContent(
+                    metrics = metrics,
+                    memory = memory,
+                    thermal = thermal,
+                    isEmulator = state.isEmulator,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

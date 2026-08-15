@@ -46,8 +46,8 @@ internal class PanelWindow(
         val minVisiblePx = (MIN_VISIBLE_DP * displayMetrics.density).roundToInt()
         val start = startPosition ?: defaultPosition(displayMetrics.density)
         gravity = Gravity.TOP or Gravity.END
-        x = clampToHost(start.x, displayMetrics.widthPixels, minVisiblePx)
-        y = clampToHost(start.y, displayMetrics.heightPixels, minVisiblePx)
+        x = start.x.clampedIntoHost(displayMetrics.widthPixels, minVisiblePx)
+        y = start.y.clampedIntoHost(displayMetrics.heightPixels, minVisiblePx)
         title = LOG_TAG
     }
 
@@ -113,8 +113,8 @@ internal class PanelWindow(
             y = (DEFAULT_TOP_MARGIN_DP * density).roundToInt(),
         )
 
-        fun clampToHost(value: Int, hostSize: Int, minVisiblePx: Int): Int =
-            if (hostSize > 0) value.coerceIn(0, (hostSize - minVisiblePx).coerceAtLeast(0)) else value
+        fun Int.clampedIntoHost(hostSize: Int, minVisiblePx: Int): Int =
+            if (hostSize > 0) coerceIn(0, (hostSize - minVisiblePx).coerceAtLeast(0)) else this
 
         fun travelRange(hostSize: Int, panelSize: Int): Float = (hostSize - panelSize).coerceAtLeast(0).toFloat()
     }

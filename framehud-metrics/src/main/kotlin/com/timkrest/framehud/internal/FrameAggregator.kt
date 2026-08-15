@@ -61,11 +61,10 @@ internal class FrameAggregator(
         }
         val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
         val overrunMs = frameOverrunMs(totalDurationNs, deadlineNs, totalMs)
-        val isJanky = overrunMs > 0f
 
-        frameWindow.add(durationsMs = durationsMs, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
+        frameWindow.add(durationsMs = durationsMs, overrunMs = overrunMs, frameEndNs = frameEndNs)
         eachAccumulator {
-            it.addFrame(totalMs = totalMs, isJanky = isJanky, overrunMs = overrunMs, refreshRateHz = display.refreshRateHz)
+            it.addFrame(durationsMs = durationsMs, overrunMs = overrunMs, refreshRateHz = display.refreshRateHz)
         }
         worstFrames.add(totalMs = totalMs, endNs = frameEndNs)
 

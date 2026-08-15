@@ -70,7 +70,7 @@ class FrameAggregatorTest {
     }
 
     @Test
-    fun `a frozen panel holds its readings while the live ones keep moving`() {
+    fun `a frozen panel holds its published reading, tracks the live one, and releases it on thaw`() {
         aggregator.addFrame(totalMs = 10f)
         aggregator.setFrozen(true)
 
@@ -79,14 +79,6 @@ class FrameAggregatorTest {
 
         assertEquals(10f, aggregator.metrics.value.phases.total.current, TOLERANCE)
         assertEquals(40f, aggregator.liveMetrics.phases.total.current, TOLERANCE)
-    }
-
-    @Test
-    fun `thawing publishes what was measured while frozen`() {
-        aggregator.addFrame(totalMs = 10f)
-        aggregator.setFrozen(true)
-        advancePastThrottle()
-        aggregator.addFrame(totalMs = 40f)
 
         aggregator.setFrozen(false)
 
@@ -108,12 +100,21 @@ class FrameAggregatorTest {
 
         advance(PAST_FPS_WINDOW_MS)
         aggregator.onTick()
+
         assertEquals(0, aggregator.metrics.value.window.fps)
+    }
+
+    @Test
+    fun `dropped reports alone do not restart publishing once the tick has drained`() {
+        aggregator.addFrame(totalMs = 10f)
+        advance(PAST_FPS_WINDOW_MS)
+        aggregator.onTick()
 
         aggregator.addDroppedReports(3)
         advance(PAST_FPS_WINDOW_MS)
         aggregator.onTick()
-        assertEquals(0, aggregator.metrics.value.session.droppedReports)
+
+        assertEquals(0, aggregator.metrics.value.session.droppedReports, "a drained tick published without a frame")
     }
 
     @Test

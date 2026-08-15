@@ -53,7 +53,9 @@ class CommandReceiverTest {
         val result = broadcast(
             Intent(FrameHudCommandReceiver.ACTION_CONTEXT)
                 .putExtra("variant", "b")
-                .putExtra("scenario", "smoke"),
+                .putExtra("scenario", "smoke")
+                .putExtra("blank", " ")
+                .putExtra("dropped", 7),
         )
 
         assertNotNull(result)

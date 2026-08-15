@@ -16,13 +16,6 @@ class CollectionWithoutPanelTest {
     }
 
     @Test
-    fun aResumedScreenStartsCollecting() {
-        ActivityScenario.launch(BlankActivity::class.java).use {
-            assertNotNull(FrameHud.awaitSessionStats(TIMEOUT_MS), "no panel, so nothing started collecting")
-        }
-    }
-
-    @Test
     fun theSessionOutlivesTheScreen() {
         ActivityScenario.launch(BlankActivity::class.java).use {
             assertNotNull(FrameHud.awaitSessionStats(TIMEOUT_MS), "no panel, so nothing started collecting")

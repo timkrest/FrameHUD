@@ -19,19 +19,27 @@ All notable changes to this project are documented here. The format follows
   so a shared report said a screen was slow without saying where the time went.
 - The HTML report lists a confidence issue the current screen has and the session does not, so a
   short screen no longer looks as trustworthy as the session around it.
+- `SessionStats.phases` breaks a session, a screen or a mark down by pipeline phase, as
+  `PhaseAverages`. Until now phases were only ever measured over the last
+  `metricsSampleWindowFrames` frames, so a report could say a screen was slow without saying where
+  its time went. Events carry them, both reports carry them, and the HTML report has a section
+  comparing the session against the screen.
 
 ### Changed
 
-- The export schema is 3: `session` and `screen` stats carry `lostTimeMs`, and `phases` moved into
-  `window` — both describe the same last `metricsSampleWindowFrames` frames, not the session — with
-  `bottleneckStage` alongside them. A phase peak spans the whole session, not that window, so
-  `peakMs` is now `peakSinceResetMs`.
+- The export schema is 4: `session` and `screen` stats carry `lostTimeMs` and their own `phases`
+  block, and the window's `phases` moved into `window` — both describe the same last
+  `metricsSampleWindowFrames` frames, not the session — with `bottleneckStage` alongside them. A
+  phase peak spans the whole session, not that window, so `peakMs` is now `peakSinceResetMs`.
+- `FrameHudEvent.MarkEnded` takes `screen` before `mark`, the order the other events already use.
+  Named construction is unaffected; positional construction silently swapped the two, since both
+  are strings.
 - `ScreenEnded`/`MarkEnded` summaries name lost time between jank percent and p95.
 - `MemoryStats.gcCount` and `gcTimeMs` now count only while a screen is on top, matching the
   interval `SessionStats.durationMs` already measured.
-- The `SessionStats` data class gained a `lostTimeMs` constructor parameter after `jankPercent`.
-  Named construction and `copy` are unaffected; positional construction and code compiled against
-  0.8.0 need updating.
+- The `SessionStats` data class gained `lostTimeMs` after `jankPercent` and `phases` before
+  `confidence`. Named construction and `copy` are unaffected; positional construction and code
+  compiled against 0.8.0 need updating.
 
 ### Fixed
 

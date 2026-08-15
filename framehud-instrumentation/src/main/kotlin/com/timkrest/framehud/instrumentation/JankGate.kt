@@ -2,7 +2,7 @@ package com.timkrest.framehud.instrumentation
 
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.SessionStats
-import java.util.Locale
+import com.timkrest.framehud.internal.formatInvariant
 
 public enum class OnInconclusive {
     FAIL,
@@ -66,7 +66,5 @@ private fun JankThresholds.frozenFramesCheck(frozenFrames: Int): ThresholdCheck?
 
 private fun limitCheck(metric: MeasuredMetric, value: Float, limit: Float, violation: String): ThresholdCheck? {
     if (!limit.isFinite()) return null
-    return ThresholdCheck(metric, format(violation, value, limit).takeIf { value > limit })
+    return ThresholdCheck(metric, formatInvariant(violation, value, limit).takeIf { value > limit })
 }
-
-private fun format(template: String, vararg args: Any): String = String.format(Locale.US, template, *args)

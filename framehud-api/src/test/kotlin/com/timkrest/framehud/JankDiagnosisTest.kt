@@ -13,12 +13,6 @@ class JankDiagnosisTest {
     }
 
     @Test
-    fun `severity follows the jank share`() {
-        assertEquals(JankSeverity.WARNING, diagnose(metrics = metrics(jankPercent = 6f)).severity)
-        assertEquals(JankSeverity.SEVERE, diagnose(metrics = metrics(jankPercent = 25f)).severity)
-    }
-
-    @Test
     fun `the thresholds themselves already count`() {
         assertEquals(JankSeverity.NONE, JankSeverity.of(JankSeverity.WARNING_JANK_PERCENT - 0.1f))
         assertEquals(JankSeverity.WARNING, JankSeverity.of(JankSeverity.WARNING_JANK_PERCENT))
@@ -48,12 +42,14 @@ class JankDiagnosisTest {
     }
 
     @Test
-    fun `brief gc is not blamed`() {
-        val diagnosis = diagnose(
+    fun `gc is blamed once it takes the share that counts, and not a millisecond before`() {
+        fun causeFor(gcTimeMs: Long) = diagnose(
             metrics = metrics(jankPercent = 30f, sessionDurationMs = 10_000L, busiestStageMs = 12f),
-            memory = MemoryStats.EMPTY.copy(gcTimeMs = 100L),
-        )
-        assertIs<JankCause.Stage>(diagnosis.cause)
+            memory = MemoryStats.EMPTY.copy(gcTimeMs = gcTimeMs),
+        ).cause
+
+        assertIs<JankCause.Stage>(causeFor(gcTimeMs = 199L))
+        assertIs<JankCause.Gc>(causeFor(gcTimeMs = 200L))
     }
 
     @Test

@@ -10,14 +10,9 @@ internal class FrameWindow(size: Int) {
     private val overruns = RingBuffer(size)
     private val timestamps = FrameTimestamps(capacity = MAX_TRACKED_REFRESH_RATE_HZ)
 
-    fun add(
-        durationsMs: FloatArray,
-        isJanky: Boolean,
-        overrunMs: Float,
-        frameEndNs: Long,
-    ) {
+    fun add(durationsMs: FloatArray, overrunMs: Float, frameEndNs: Long) {
         phaseRings.add(durationsMs)
-        jank.add(isJanky)
+        jank.add(isJanky = overrunMs > 0f)
         overruns.add(overrunMs)
         timestamps.add(frameEndNs)
     }

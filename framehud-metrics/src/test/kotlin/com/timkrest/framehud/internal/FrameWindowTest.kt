@@ -7,15 +7,10 @@ class FrameWindowTest {
 
     private val window = FrameWindow(size = 8)
 
-    private fun addFrame(
-        totalMs: Float,
-        isJanky: Boolean = false,
-        overrunMs: Float = 0f,
-        frameEndNs: Long = 0L,
-    ) {
+    private fun addFrame(totalMs: Float, overrunMs: Float = -1f, frameEndNs: Long = 0L) {
         val durations = FloatArray(FramePhase.entries.size)
         durations[FramePhase.TOTAL.ordinal] = totalMs
-        window.add(durationsMs = durations, isJanky = isJanky, overrunMs = overrunMs, frameEndNs = frameEndNs)
+        window.add(durationsMs = durations, overrunMs = overrunMs, frameEndNs = frameEndNs)
     }
 
     @Test
@@ -27,15 +22,6 @@ class FrameWindowTest {
         assertEquals(2, window.fps(nowNs = second * 2))
         assertEquals(1, window.fps(nowNs = second * 3))
         assertEquals(0, window.fps(nowNs = second * 4))
-    }
-
-    @Test
-    fun `jank percent reflects the window share`() {
-        addFrame(totalMs = 10f, isJanky = true)
-        addFrame(totalMs = 10f)
-        addFrame(totalMs = 10f)
-        addFrame(totalMs = 10f, isJanky = true)
-        assertEquals(50f, window.jankPercent(), TOLERANCE)
     }
 
     @Test
@@ -57,7 +43,7 @@ class FrameWindowTest {
 
     @Test
     fun `clear drops accumulated frames`() {
-        addFrame(totalMs = 10f, isJanky = true, frameEndNs = 1L)
+        addFrame(totalMs = 10f, overrunMs = 1f, frameEndNs = 1L)
         window.clear()
         assertEquals(0f, window.jankPercent(), TOLERANCE)
         assertEquals(0, window.fps(nowNs = 1L))

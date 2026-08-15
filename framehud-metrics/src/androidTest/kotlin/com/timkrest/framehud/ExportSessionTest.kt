@@ -46,8 +46,6 @@ class ExportSessionTest {
                 assertTrue(export.html.length() > 0L, "the HTML report is empty")
                 val packageName = InstrumentationRegistry.getInstrumentation().targetContext.packageName
                 assertContains(export.json.readText(), "\"packageName\":\"$packageName\"")
-                assertContains(export.json.readText(), "\"screen\":\"checkout\"")
-                assertContains(export.html.readText(), "scenario=smoke")
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {

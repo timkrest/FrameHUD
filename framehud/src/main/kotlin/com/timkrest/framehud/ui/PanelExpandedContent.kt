@@ -13,30 +13,15 @@ import com.timkrest.framehud.ThermalStats
 @Composable
 internal fun PanelExpandedContent(
     metrics: PerformanceMetrics,
-    choreographerTicksPerSecond: Int,
     memory: MemoryStats,
     thermal: ThermalStats,
-    activeMark: String?,
-    isFrozen: Boolean,
-    canRequestOverlayPermission: Boolean,
     isEmulator: Boolean,
-    actions: PanelActions,
     modifier: Modifier = Modifier,
 ) {
     val lines = remember(metrics, memory, thermal, isEmulator) {
         buildPanelLines(metrics = metrics, memory = memory, thermal = thermal, isEmulator = isEmulator)
     }
     Column(modifier = modifier) {
-        PanelHeader(
-            metrics = metrics,
-            choreographerTicksPerSecond = choreographerTicksPerSecond,
-            activeMark = activeMark,
-            isFrozen = isFrozen,
-            canRequestOverlayPermission = canRequestOverlayPermission,
-            isEmulator = isEmulator,
-            actions = actions,
-        )
-
         FrameSparkline(
             history = metrics.window.history,
             display = metrics.display,

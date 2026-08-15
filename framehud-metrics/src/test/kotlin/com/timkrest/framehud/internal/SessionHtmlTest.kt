@@ -4,6 +4,7 @@ import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
+import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 import org.junit.Test
 import kotlin.test.assertContains
@@ -65,18 +66,16 @@ class SessionHtmlTest {
     }
 
     @Test
-    fun `the frame window names the phase the frames spent their time in`() {
+    fun `a phase is reported per interval, with the peak the whole session reached`() {
         val html = sessionSnapshotFixture(
-            phases = FramePhases(
-                layout = MetricValue(average = 9f, peak = 21f),
-                total = MetricValue(average = 12f, peak = 30f),
-            ),
-            window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
+            session = SessionStats.EMPTY.copy(phases = PhaseAverages(layout = 9f, total = 12f)),
+            screen = SessionStats.EMPTY.copy(phases = PhaseAverages(layout = 4f, total = 6f)),
+            phases = FramePhases(layout = MetricValue(average = 9f, peak = 21f)),
         ).toHtml()
 
-        assertContains(html, "cpu bound at 9.0 ms per frame")
-        assertContains(html, "<tr><th>Layout</th><td>9.0 ms</td><td>21.0 ms</td></tr>")
-        assertContains(html, "<tr><th>UI thread</th><td>9.0 ms</td><td>—</td></tr>")
+        assertContains(html, "Session cpu bound at 9.0 ms per frame, screen cpu bound at 4.0 ms per frame.")
+        assertContains(html, "<tr><th>Layout</th><td>9.0 ms</td><td>4.0 ms</td><td>21.0 ms</td></tr>")
+        assertContains(html, "<tr><th>UI thread</th><td>9.0 ms</td><td>4.0 ms</td><td>—</td></tr>")
     }
 
     @Test

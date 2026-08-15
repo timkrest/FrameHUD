@@ -1,6 +1,7 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -20,10 +21,12 @@ class SessionAccumulatorTest {
     }
 
     @Test
-    fun `frozen frames are counted above 700 ms`() {
+    fun `a frame at the frozen threshold is not frozen, a millisecond past it is`() {
         val session = SessionAccumulator(TestMetricsClock())
-        session.addFrame(totalMs = 699f, isJanky = true)
-        session.addFrame(totalMs = 701f, isJanky = true)
+        session.addFrame(totalMs = SessionStats.FROZEN_FRAME_MS, isJanky = true)
+        assertEquals(0, session.stats().frozenFrames)
+
+        session.addFrame(totalMs = SessionStats.FROZEN_FRAME_MS + 1f, isJanky = true)
         assertEquals(1, session.stats().frozenFrames)
     }
 
@@ -162,13 +165,29 @@ class SessionAccumulatorTest {
         assertEquals(0f, session.stats().lostTimeMs, TOLERANCE)
     }
 
+    @Test
+    fun `a phase average covers the frames of the interval, not the frames since`() {
+        val session = SessionAccumulator(TestMetricsClock())
+        session.addFrame(totalMs = 10f, isJanky = false, layoutMs = 2f)
+        session.addFrame(totalMs = 10f, isJanky = false, layoutMs = 4f)
+        assertEquals(3f, session.stats().phases.layout, TOLERANCE)
+
+        session.clear()
+        session.addFrame(totalMs = 10f, isJanky = false, layoutMs = 8f)
+        assertEquals(8f, session.stats().phases.layout, TOLERANCE)
+    }
+
     private fun SessionAccumulator.addFrame(
         totalMs: Float,
         isJanky: Boolean,
         overrunMs: Float = if (isJanky) 1f else -1f,
         refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ,
+        layoutMs: Float = 0f,
     ) {
-        addFrame(totalMs = totalMs, isJanky = isJanky, overrunMs = overrunMs, refreshRateHz = refreshRateHz)
+        val durationsMs = FloatArray(FramePhase.entries.size)
+        durationsMs[FramePhase.TOTAL.ordinal] = totalMs
+        durationsMs[FramePhase.LAYOUT.ordinal] = layoutMs
+        addFrame(durationsMs = durationsMs, overrunMs = overrunMs, refreshRateHz = refreshRateHz)
     }
 
     private companion object {

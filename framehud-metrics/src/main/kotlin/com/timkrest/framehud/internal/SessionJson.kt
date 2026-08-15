@@ -3,9 +3,10 @@ package com.timkrest.framehud.internal
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
+import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 
-internal const val EXPORT_SCHEMA_VERSION = 3
+internal const val EXPORT_SCHEMA_VERSION = 4
 
 internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     put("schema", EXPORT_SCHEMA_VERSION)
@@ -105,7 +106,23 @@ private fun JsonObjectScope.putStats(stats: SessionStats) {
     put("frozenFrames", stats.frozenFrames)
     put("maxJankStreak", stats.maxJankStreak)
     put("droppedReports", stats.droppedReports)
+    putObject("phases") { putPhaseAverages(stats.phases) }
     putObject("confidence") { putConfidence(stats.confidence) }
+}
+
+private fun JsonObjectScope.putPhaseAverages(phases: PhaseAverages) {
+    put("bottleneckStage", phases.bottleneckStage.name)
+    put("unknownDelayMs", phases.unknownDelay)
+    put("inputMs", phases.input)
+    put("animationMs", phases.animation)
+    put("layoutMs", phases.layout)
+    put("drawMs", phases.draw)
+    put("syncMs", phases.sync)
+    put("commandIssueMs", phases.commandIssue)
+    put("swapBuffersMs", phases.swapBuffers)
+    put("gpuMs", phases.gpu)
+    put("totalMs", phases.total)
+    put("isGpuAvailable", phases.isGpuAvailable)
 }
 
 private fun JsonObjectScope.putConfidence(confidence: MeasurementConfidence) {

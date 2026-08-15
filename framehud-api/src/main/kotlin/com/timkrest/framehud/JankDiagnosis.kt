@@ -2,6 +2,7 @@ package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
 import com.timkrest.framehud.internal.PERCENT
+import com.timkrest.framehud.internal.formatInvariant
 import java.util.Locale
 
 public sealed interface JankCause {

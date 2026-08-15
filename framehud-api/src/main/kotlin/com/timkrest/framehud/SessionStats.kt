@@ -20,6 +20,7 @@ public data class SessionStats(
     val frozenFrames: Int = 0,
     val maxJankStreak: Int = 0,
     val droppedReports: Int = 0,
+    val phases: PhaseAverages = PhaseAverages.EMPTY,
     val confidence: MeasurementConfidence = MeasurementConfidence.CLEAN,
 ) {
     public companion object {

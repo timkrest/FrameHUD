@@ -18,14 +18,11 @@ class FrameHudConfigTest {
     }
 
     @Test
-    fun `a fallback refresh rate of zero is rejected, since the frame budget divides by it`() {
-        assertFailsWith<IllegalArgumentException> { FrameHudConfig(fallbackRefreshRateHz = 0f) }
-        assertFailsWith<IllegalArgumentException> { FrameHudConfig(fallbackRefreshRateHz = -60f) }
-    }
-
-    @Test
-    fun `an infinite fallback refresh rate is rejected, since it divides down to a zero budget`() {
-        assertFailsWith<IllegalArgumentException> { FrameHudConfig(fallbackRefreshRateHz = Float.POSITIVE_INFINITY) }
-        assertFailsWith<IllegalArgumentException> { FrameHudConfig(fallbackRefreshRateHz = Float.NaN) }
+    fun `a fallback refresh rate the frame budget cannot divide by is rejected`() {
+        listOf(0f, -60f, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NaN).forEach { rate ->
+            assertFailsWith<IllegalArgumentException>("accepted $rate Hz") {
+                FrameHudConfig(fallbackRefreshRateHz = rate)
+            }
+        }
     }
 }

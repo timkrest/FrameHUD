@@ -1,6 +1,7 @@
 package com.timkrest.framehud.internal
 
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import kotlin.math.max
@@ -10,6 +11,8 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
 
     private val totals = LatencyHistogram()
     private val confidence = ConfidenceTracker(isEmulator)
+    private val phaseSumsMs = DoubleArray(FramePhase.entries.size)
+    private var hasReportedGpuDuration = false
     private var collectingSinceMs: Long? = null
     private var collectedMs = 0L
     private var jankyFrames = 0
@@ -19,9 +22,14 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
     private var currentJankStreak = 0
     private var maxJankStreak = 0
 
-    fun addFrame(totalMs: Float, isJanky: Boolean, overrunMs: Float, refreshRateHz: Float) {
+    fun addFrame(durationsMs: FloatArray, overrunMs: Float, refreshRateHz: Float) {
+        val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
         totals.add(totalMs)
-        if (isJanky) {
+        for (phase in FramePhase.entries) {
+            phaseSumsMs[phase.ordinal] += durationsMs[phase.ordinal]
+        }
+        if (durationsMs[FramePhase.GPU.ordinal] > 0f) hasReportedGpuDuration = true
+        if (overrunMs > 0f) {
             jankyFrames++
             lostTimeSumMs += overrunMs
             currentJankStreak++
@@ -66,13 +74,34 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
             frozenFrames = frozenFrames,
             maxJankStreak = maxJankStreak,
             droppedReports = droppedReports,
+            phases = phaseAverages(frames),
             confidence = confidence.confidence(frames = frames, droppedReports = droppedReports),
+        )
+    }
+
+    private fun phaseAverages(frames: Int): PhaseAverages {
+        if (frames == 0) return PhaseAverages.EMPTY
+        fun average(phase: FramePhase) = (phaseSumsMs[phase.ordinal] / frames).toFloat()
+        return PhaseAverages(
+            unknownDelay = average(FramePhase.UNKNOWN_DELAY),
+            input = average(FramePhase.INPUT),
+            animation = average(FramePhase.ANIMATION),
+            layout = average(FramePhase.LAYOUT),
+            draw = average(FramePhase.DRAW),
+            sync = average(FramePhase.SYNC),
+            commandIssue = average(FramePhase.COMMAND_ISSUE),
+            swapBuffers = average(FramePhase.SWAP_BUFFERS),
+            gpu = average(FramePhase.GPU),
+            total = average(FramePhase.TOTAL),
+            isGpuAvailable = FramePhase.GPU.isAvailable && hasReportedGpuDuration,
         )
     }
 
     fun clear() {
         totals.clear()
         confidence.clear()
+        phaseSumsMs.fill(0.0)
+        hasReportedGpuDuration = false
         jankyFrames = 0
         lostTimeSumMs = 0.0
         frozenFrames = 0

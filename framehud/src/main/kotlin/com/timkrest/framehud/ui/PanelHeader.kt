@@ -5,27 +5,33 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.timkrest.framehud.PerformanceMetrics
+
+/** What the left of the header says. Frozen readings and a running mark both replace the timing. */
+@Immutable
+internal class HeaderStatus private constructor(val text: String, val color: Color) {
+
+    companion object {
+        fun of(isFrozen: Boolean, activeMark: String?, choreographerTicksPerSecond: Int, frameBudgetMs: Float) = when {
+            isFrozen -> HeaderStatus(LABEL_HEADER_FROZEN, TextFrozen)
+            activeMark != null -> HeaderStatus(formatMark(activeMark), TextNormal)
+            else -> HeaderStatus(formatTiming(choreographerTicksPerSecond, frameBudgetMs), TextHeader)
+        }
+    }
+}
 
 @Composable
 internal fun PanelHeader(
     metrics: PerformanceMetrics,
-    choreographerTicksPerSecond: Int,
-    activeMark: String?,
-    isFrozen: Boolean,
+    status: HeaderStatus,
     canRequestOverlayPermission: Boolean,
     isEmulator: Boolean,
     actions: PanelActions,
 ) {
-    val timing = remember(choreographerTicksPerSecond, metrics.display.frameBudgetMs) {
-        formatTiming(
-            choreographerTicksPerSecond = choreographerTicksPerSecond,
-            frameBudgetMs = metrics.display.frameBudgetMs,
-        )
-    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -36,18 +42,7 @@ internal fun PanelHeader(
             MetricText(text = LABEL_EMULATOR, color = TextCaution)
             Spacer(Modifier.width(ItemSpacing))
         }
-        MetricText(
-            text = when {
-                isFrozen -> LABEL_HEADER_FROZEN
-                activeMark != null -> formatMark(activeMark)
-                else -> timing
-            },
-            color = when {
-                isFrozen -> TextFrozen
-                activeMark != null -> TextNormal
-                else -> TextHeader
-            },
-        )
+        MetricText(text = status.text, color = status.color)
         Spacer(Modifier.weight(1f))
         FpsText(fps = metrics.window.fps, refreshRateHz = metrics.display.refreshRateHz)
         Spacer(Modifier.width(ItemSpacing))

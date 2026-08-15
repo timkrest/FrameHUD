@@ -1,6 +1,7 @@
 package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
+import com.timkrest.framehud.internal.formatInvariant
 import java.util.Locale
 
 public enum class MeasuredMetric {

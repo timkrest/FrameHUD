@@ -36,29 +36,22 @@ class FrameHudEventTest {
     }
 
     @Test
-    fun `events fired without a bound screen say so`() {
-        val event = FrameHudEvent.FrozenFrames(count = 2, screen = null, mark = null)
-        assertTrue(event.summary.startsWith("no screen: "))
+    fun `a summary opens with the screen, the mark and the context, in that order`() {
+        fun originOf(screen: String?, mark: String?, context: Map<String, String> = emptyMap()) =
+            FrameHudEvent.FrozenFrames(count = 2, screen = screen, mark = mark, context = context).summary
+
+        assertEquals("no screen: 2 frozen frame(s)", originOf(screen = null, mark = null))
+        assertEquals("Feed: 2 frozen frame(s)", originOf(screen = "Feed", mark = null))
+        assertEquals("scroll: 2 frozen frame(s)", originOf(screen = null, mark = "scroll"))
+        assertEquals("Feed/scroll: 2 frozen frame(s)", originOf(screen = "Feed", mark = "scroll"))
         assertEquals(
-            "Feed: 2 frozen frame(s)",
-            FrameHudEvent.FrozenFrames(count = 2, screen = "Feed", mark = null).summary,
+            "Feed/scroll [variant=new_checkout, scenario=smoke]: 2 frozen frame(s)",
+            originOf(
+                screen = "Feed",
+                mark = "scroll",
+                context = mapOf("variant" to "new_checkout", "scenario" to "smoke"),
+            ),
         )
-    }
-
-    @Test
-    fun `an open mark narrows the summary down from the screen to the interaction`() {
-        val event = FrameHudEvent.FrozenFrames(count = 2, screen = "Feed", mark = "scroll")
-        assertEquals("Feed/scroll: 2 frozen frame(s)", event.summary)
-
-        val unbound = FrameHudEvent.FrozenFrames(count = 2, screen = null, mark = "scroll")
-        assertEquals("scroll: 2 frozen frame(s)", unbound.summary)
-    }
-
-    @Test
-    fun `the measurement context follows the origin in brackets`() {
-        val context = mapOf("variant" to "new_checkout", "scenario" to "smoke")
-        val event = FrameHudEvent.FrozenFrames(count = 2, screen = "Feed", mark = "scroll", context = context)
-        assertEquals("Feed/scroll [variant=new_checkout, scenario=smoke]: 2 frozen frame(s)", event.summary)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.timkrest.framehud
 
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.internal.MS_PER_SECOND
+import com.timkrest.framehud.internal.formatInvariant
 import java.util.Locale
 
 public sealed interface FrameHudEvent {
@@ -88,8 +89,8 @@ public sealed interface FrameHudEvent {
      */
     public data class MarkEnded(
         val stats: SessionStats,
-        override val mark: String,
         override val screen: String?,
+        override val mark: String,
         override val context: Map<String, String> = emptyMap(),
     ) : FrameHudEvent {
         override val summary: String get() = stats.summarize(origin())
