@@ -265,4 +265,13 @@ private val REPORT_CSS = """
       border-bottom: 1px solid var(--line); font-weight: normal; }
     tr:last-child th, tr:last-child td { border-bottom: none; }
     th { color: var(--muted); width: 200px; }
+    tr > th:not(:first-child) { width: auto; }
+    code { background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
+      padding: 1px 6px; font-size: 13px; }
+    svg { display: block; width: 100%; height: 120px; margin-top: 8px; }
+    svg .ok { fill: var(--ok); }
+    svg .janky { fill: var(--janky); }
+    svg .deadline { stroke: var(--deadline); stroke-width: 1; opacity: 0.55; }
+    .caution { color: var(--caution); margin: 10px 0 0; }
+    footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; }
 """.trimIndent()

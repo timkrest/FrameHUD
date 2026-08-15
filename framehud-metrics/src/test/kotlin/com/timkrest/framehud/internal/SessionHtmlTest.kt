@@ -52,6 +52,22 @@ class SessionHtmlTest {
     }
 
     @Test
+    fun `every element the report styles is one the stylesheet still carries a rule for`() {
+        val html = sessionSnapshotFixture(
+            context = mapOf("variant" to "b"),
+            window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
+            worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS)),
+        ).toHtml()
+        val styles = html.substringAfter("<style>").substringBefore("</style>")
+        val body = html.substringAfter("</head>")
+
+        Regex("""class="([^"]+)"""").findAll(body).map { ".${it.groupValues[1]}" }.toSet().forEach { selector ->
+            assertContains(styles, selector, message = "$selector is in the markup for styling that is not there")
+        }
+        assertContains(styles, "svg {", message = "the chart has no size of its own and collapses without a rule")
+    }
+
+    @Test
     fun `screen names, marks and context are escaped`() {
         val html = sessionSnapshotFixture(
             screenName = "cart/<script>alert(1)</script>",
