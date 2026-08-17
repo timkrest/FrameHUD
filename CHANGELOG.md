@@ -6,6 +6,51 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Baselines. A run compares itself with what earlier runs measured on the same device and Android
+  version, and does it per session, per screen and per mark. The baseline is a
+  file: `adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>` averages the session
+  into `framehud/baseline.json` next to the exports, and pushing that file back before the next run
+  makes both reports carry the delta and name the phase that grew the most. A baseline recorded on
+  another device is not compared, and the report says where it came from. A figure a confidence
+  issue taints neither enters the baseline nor compares against it, and every delta says how many
+  runs stand behind it. Jank percent and lost time follow the frame budget that judged them: on a
+  display that switches refresh rates they move and compare only between runs under the same budget,
+  and three runs in a row under a new one restart them from the latest. Saving twice without a reset
+  in between leaves the file alone, so a repeated command cannot weigh one run twice. In code the
+  same runs through `FrameHud.baselineOverride`, `FrameHud.saveBaseline` and
+  `FrameHud.awaitBaselineComparison`. A baseline of your own is built from `BaselineEntry.of` and
+  `BaselineEnvironment.current()`.
+- `BaselineMetric` names what a baseline compares: `P95_MS`, `LOST_TIME_MS_PER_FRAME`,
+  `FROZEN_PERCENT` and the rest. Each is per frame or a share of frames, unlike `MeasuredMetric`,
+  which keeps naming what a confidence issue taints and holds lost time as a total and frozen frames
+  as a count. `BaselineThresholds.metrics` takes the new type, so a metric no baseline can hold no
+  longer compiles.
+- `JankThresholds.baseline` fails a test on growth over the baseline instead of over a fixed
+  number, and `JankThresholds.baselineOnly()` leaves nothing but that comparison.
+  `BaselineThresholds` checks p95, jank percent and lost time by default and allows 10%. Growth
+  under half a millisecond or half a percentage point is noise, and for lost time, which counts per
+  frame, the line is a tenth of a millisecond. With no baseline yet the check logs and passes, and a
+  baseline from another device is inconclusive. A chosen metric the comparison had to leave out is
+  inconclusive as well, and the message says whether this run measured it with a confidence issue or
+  the two runs were judged under different frame budgets.
+- The JSON export carries an `intervals` array with the stats of every screen and mark the session
+  collected, and a `baseline` object with the deltas and with the metrics it could not compare. The
+  session keeps its own object and now names the frame budget it was judged against. Schema 5.
+- `FramePhase` names one pipeline phase, and `PhaseAverages` reads by it.
+
+### Changed
+
+- `JankThresholds` takes a fifth parameter. Kotlin code keeps compiling, but the four-argument
+  constructor is gone from the binary, so test code compiled against 0.9 needs a rebuild. It also
+  refuses NaN and negative limits at construction; before, they silently turned the check off.
+
+### Fixed
+
+- Stopping collection left the metrics engine frozen while the panel showed it running, and two
+  threads toggling the freeze could disagree about which state won.
+
 ## [0.9.0] - 2026-08-15
 
 ### Added

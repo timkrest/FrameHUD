@@ -1,7 +1,9 @@
 public final class com/timkrest/framehud/FrameHud {
 	public static final field INSTANCE Lcom/timkrest/framehud/FrameHud;
+	public final fun awaitBaselineComparison (J)Lcom/timkrest/framehud/BaselineComparison;
 	public final fun awaitSessionStats (J)Lcom/timkrest/framehud/SessionStats;
 	public final fun exportSession (J)Lcom/timkrest/framehud/SessionExport;
+	public final fun getBaselineOverride ()Lcom/timkrest/framehud/Baseline;
 	public final fun getChoreographerTicksPerSecond ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getConfig ()Lcom/timkrest/framehud/FrameHudConfig;
 	public final fun getContext ()Ljava/util/Map;
@@ -14,6 +16,8 @@ public final class com/timkrest/framehud/FrameHud {
 	public final fun install (Landroid/app/Application;)V
 	public final fun isFrozen ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun reset ()V
+	public final fun saveBaseline (J)Lcom/timkrest/framehud/Baseline;
+	public final fun setBaselineOverride (Lcom/timkrest/framehud/Baseline;)V
 	public final fun setConfig (Lcom/timkrest/framehud/FrameHudConfig;)V
 	public final fun setContext (Ljava/util/Map;)V
 	public final fun setMark (Ljava/lang/String;)V

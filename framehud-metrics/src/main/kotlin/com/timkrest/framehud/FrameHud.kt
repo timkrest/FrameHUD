@@ -12,9 +12,12 @@ import androidx.core.content.FileProvider
 import com.timkrest.framehud.internal.ActivityTracker
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
+import com.timkrest.framehud.internal.baselineFile
 import com.timkrest.framehud.internal.exportAuthority
 import com.timkrest.framehud.internal.exportDirectory
+import com.timkrest.framehud.internal.readBaseline
 import com.timkrest.framehud.internal.sessionSnapshot
+import com.timkrest.framehud.internal.writeBaseline
 import com.timkrest.framehud.internal.writeTo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +38,12 @@ public object FrameHud {
     private val activityTracker = ActivityTracker(onFocused = ::onActivityFocused, onLost = ::onActivityLost)
 
     private val _isFrozen = MutableStateFlow(false)
+
+    private val freezeLock = Any()
+
+    private val baselineLock = Any()
+
+    private var savedSessionId: Int? = null
 
     @Volatile
     private var application: Application? = null
@@ -110,6 +119,12 @@ public object FrameHud {
             engine.setMark(value)
         }
 
+    /** What reports and the jank gate compare this run against. Null reads `framehud/baseline.json`. */
+    @Volatile
+    @get:AnyThread
+    @set:AnyThread
+    public var baselineOverride: Baseline? = null
+
     @InternalFrameHudApi
     @get:AnyThread
     public val activeMark: StateFlow<String?> get() = engine.activeMark
@@ -162,7 +177,7 @@ public object FrameHud {
 
     @AnyThread
     public fun toggleFreeze() {
-        setFrozen(!_isFrozen.value)
+        synchronized(freezeLock) { setFrozen(!_isFrozen.value) }
     }
 
     /**
@@ -195,9 +210,74 @@ public object FrameHud {
             stats = stats,
             isEnabled = currentConfig.enabled,
             isFrozen = _isFrozen.value,
+            baseline = loadedBaseline(application),
         )
         return snapshot.writeTo(exportDirectory(application))
     }
+
+    /**
+     * Averages the session since [reset] into `framehud/baseline.json` as one run and returns what
+     * the file now holds. Null when nothing was collected or the read timed out. Blocks, and throws
+     * when the write fails. A second call before the next [reset] changes nothing. Reads and writes
+     * the file even when [baselineOverride] is set.
+     */
+    @WorkerThread
+    public fun saveBaseline(timeoutMs: Long): Baseline? {
+        checkBlockingAllowed("saveBaseline")
+        val application = application ?: run {
+            Log.w(LOG_TAG, "Not installed, no baseline to save")
+            return null
+        }
+        val stats = engine.awaitBaselineStats(timeoutMs) ?: return null
+        if (stats.session.frames == 0) return null
+        val file = baselineFile(application)
+        return synchronized(baselineLock) {
+            val stored = readBaseline(file)
+            if (stats.sessionId == savedSessionId) {
+                Log.w(LOG_TAG, "This session is already in the baseline; reset before measuring the next run")
+                return@synchronized stored
+            }
+            val updated = (stored ?: Baseline(stats.environment, emptyMap()))
+                .updatedWith(stats.environment, stats.intervals)
+            writeBaseline(file, updated)
+            savedSessionId = stats.sessionId
+            updated
+        }
+    }
+
+    /**
+     * Compares the session since [reset] with [baselineOverride], or with `framehud/baseline.json`
+     * when none is set. Null when the device has no baseline yet, when nothing was collected, or
+     * when the read timed out. Blocks.
+     */
+    @WorkerThread
+    public fun awaitBaselineComparison(timeoutMs: Long): BaselineComparison? {
+        checkBlockingAllowed("awaitBaselineComparison")
+        return gateStats(timeoutMs)?.comparison
+    }
+
+    @InternalFrameHudApi
+    @WorkerThread
+    public fun awaitGateStats(timeoutMs: Long): GateStats? {
+        checkBlockingAllowed("awaitGateStats")
+        return gateStats(timeoutMs)
+    }
+
+    @WorkerThread
+    private fun gateStats(timeoutMs: Long): GateStats? {
+        val stats = engine.awaitBaselineStats(timeoutMs) ?: return null
+        val baseline = application?.let(::loadedBaseline)
+        return GateStats(
+            session = stats.session,
+            comparison = baseline?.compare(stats.environment, stats.intervals),
+        )
+    }
+
+    @InternalFrameHudApi
+    public class GateStats(
+        public val session: SessionStats,
+        public val comparison: BaselineComparison?,
+    )
 
     /**
      * Opens the system share sheet with both report files. Only exports under the app's own
@@ -216,6 +296,10 @@ public object FrameHud {
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         activity.startActivity(Intent.createChooser(send, "FrameHUD session"))
     }
+
+    @WorkerThread
+    private fun loadedBaseline(application: Application): Baseline? =
+        baselineOverride ?: readBaseline(baselineFile(application))
 
     private fun applyConfig(newConfig: FrameHudConfig) {
         checkMainThread()
@@ -241,7 +325,7 @@ public object FrameHud {
 
     private fun stopCollecting() {
         engine.stop()
-        _isFrozen.value = false
+        setFrozen(false)
     }
 
     private fun onActivityFocused(activity: Activity, previous: Activity?) {
@@ -257,8 +341,10 @@ public object FrameHud {
 
     @AnyThread
     private fun setFrozen(frozen: Boolean) {
-        _isFrozen.value = frozen
-        engine.setFrozen(frozen)
+        synchronized(freezeLock) {
+            _isFrozen.value = frozen
+            engine.setFrozen(frozen)
+        }
     }
 
     private fun checkMainThread() {

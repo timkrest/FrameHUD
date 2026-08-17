@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.WorkerThread
 import androidx.core.content.pm.PackageInfoCompat
+import com.timkrest.framehud.Baseline
+import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.SessionExport
 import com.timkrest.framehud.metrics.BuildConfig
 import java.io.File
@@ -22,8 +24,10 @@ internal fun sessionSnapshot(
     stats: MetricsEngine.ExportStats,
     isEnabled: Boolean,
     isFrozen: Boolean,
+    baseline: Baseline?,
 ): SessionSnapshot {
     val packageInfo = packageInfo(application)
+    val environment = BaselineEnvironment.current()
     return SessionSnapshot(
         takenAtEpochMs = System.currentTimeMillis(),
         takenAtNs = System.nanoTime(),
@@ -32,9 +36,7 @@ internal fun sessionSnapshot(
         packageName = application.packageName,
         appVersionName = packageInfo.versionName,
         appVersionCode = PackageInfoCompat.getLongVersionCode(packageInfo),
-        apiLevel = Build.VERSION.SDK_INT,
-        manufacturer = Build.MANUFACTURER,
-        model = Build.MODEL,
+        environment = environment,
         isEnabled = isEnabled,
         isFrozen = isFrozen,
         screenName = stats.screenName,
@@ -42,6 +44,8 @@ internal fun sessionSnapshot(
         context = stats.context,
         session = stats.session,
         screen = stats.screen,
+        intervals = stats.intervals,
+        baseline = baseline?.compare(environment, stats.intervals),
         phases = stats.metrics.phases,
         window = stats.metrics.window,
         display = stats.metrics.display,
@@ -61,7 +65,6 @@ internal fun SessionSnapshot.writeTo(directory: File): SessionExport {
     return SessionExport(json = json, html = html)
 }
 
-/** Claims the name by creating the file: two exports taken in the same millisecond both keep theirs. */
 private fun unusedName(directory: File, stamp: String): String {
     var attempt = 0
     while (true) {

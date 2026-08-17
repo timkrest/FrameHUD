@@ -1,6 +1,10 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.FrameHistory
+import com.timkrest.framehud.FramePhase
+import com.timkrest.framehud.IntervalComparison
+import com.timkrest.framehud.MetricDelta
 import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 import java.util.Locale
@@ -28,6 +32,7 @@ private fun SessionSnapshot.reportBody(): String = buildHtmlBody {
     measurement(this@reportBody)
     stats(this@reportBody)
     phases(this@reportBody)
+    baseline(this@reportBody)
     frameWindow(this@reportBody)
     worstFrames(this@reportBody)
     environment(this@reportBody)
@@ -38,8 +43,7 @@ private fun SessionSnapshot.subtitle(): String = buildString {
     append(packageName)
     appVersionName?.let { append(' ').append(it) }
     append(" (").append(appVersionCode).append(")")
-    append(" · ").append(manufacturer).append(' ').append(model)
-    append(", API ").append(apiLevel)
+    append(" · ").append(environment.label)
     append(" · ").append(formatTimestamp(takenAtEpochMs))
 }
 
@@ -108,19 +112,19 @@ private fun HtmlScope.phases(snapshot: SessionSnapshot) = with(snapshot) {
         meta("Session ${session.phases.boundBy()}, screen ${screen.phases.boundBy()}.")
         table {
             headings("", "Session", "Screen", "Peak since reset")
-            phaseRow(snapshot, "Delay before start", phases.unknownDelay.peak) { it.unknownDelay }
-            phaseRow(snapshot, "Input", phases.input.peak) { it.input }
-            phaseRow(snapshot, "Animation", phases.animation.peak) { it.animation }
-            phaseRow(snapshot, "Layout", phases.layout.peak) { it.layout }
-            phaseRow(snapshot, "Draw", phases.draw.peak) { it.draw }
+            phaseRow(snapshot, FramePhase.UNKNOWN_DELAY.label(), phases.unknownDelay.peak) { it.unknownDelay }
+            phaseRow(snapshot, FramePhase.INPUT.label(), phases.input.peak) { it.input }
+            phaseRow(snapshot, FramePhase.ANIMATION.label(), phases.animation.peak) { it.animation }
+            phaseRow(snapshot, FramePhase.LAYOUT.label(), phases.layout.peak) { it.layout }
+            phaseRow(snapshot, FramePhase.DRAW.label(), phases.draw.peak) { it.draw }
             phaseRow(snapshot, "UI thread", peakMs = null) { it.cpu }
-            phaseRow(snapshot, "Sync", phases.sync.peak) { it.sync }
-            phaseRow(snapshot, "Command issue", phases.commandIssue.peak) { it.commandIssue }
-            phaseRow(snapshot, "Swap buffers", phases.swapBuffers.peak) { it.swapBuffers }
+            phaseRow(snapshot, FramePhase.SYNC.label(), phases.sync.peak) { it.sync }
+            phaseRow(snapshot, FramePhase.COMMAND_ISSUE.label(), phases.commandIssue.peak) { it.commandIssue }
+            phaseRow(snapshot, FramePhase.SWAP_BUFFERS.label(), phases.swapBuffers.peak) { it.swapBuffers }
             phaseRow(snapshot, "Render thread", peakMs = null) { it.render }
-            if (session.phases.gpu != null) phaseRow(snapshot, "GPU", phases.gpu?.peak) { it.gpu }
+            if (session.phases.gpu != null) phaseRow(snapshot, FramePhase.GPU.label(), phases.gpu?.peak) { it.gpu }
             phaseRow(snapshot, "Unattributed", peakMs = null) { it.unattributed }
-            phaseRow(snapshot, "Total", phases.total.peak) { it.total }
+            phaseRow(snapshot, FramePhase.TOTAL.label(), phases.total.peak) { it.total }
         }
     }
 }
@@ -132,6 +136,57 @@ private fun TableScope.phaseRow(
     select: (PhaseAverages) -> Float?,
 ) = with(snapshot) {
     row(label, formatMs(select(session.phases)), formatMs(select(screen.phases)), formatMs(peakMs))
+}
+
+private fun HtmlScope.baseline(snapshot: SessionSnapshot) {
+    val comparison = snapshot.baseline ?: return
+    section("Baseline") {
+        when (comparison) {
+            is BaselineComparison.OtherEnvironment -> caution(
+                "Recorded on ${comparison.recorded.label}, this run is ${comparison.current.label}. " +
+                    "Nothing here compares across the two.",
+            )
+            is BaselineComparison.Compared -> {
+                if (comparison.intervals.isEmpty()) {
+                    meta("Nothing this run measured has a baseline yet.")
+                } else {
+                    for (interval in comparison.intervals) intervalComparison(interval)
+                }
+            }
+        }
+    }
+}
+
+private fun HtmlScope.intervalComparison(comparison: IntervalComparison) {
+    meta(
+        "${comparison.interval.label} · baseline of ${comparison.recordedRuns} run(s) · " +
+            "${comparison.currentFrames} frames this run",
+    )
+    if (comparison.metrics.isNotEmpty()) {
+        table {
+            headings("", "Baseline", "Runs", "This run", "Change")
+            for (delta in comparison.metrics) {
+                row(
+                    delta.metric.label(),
+                    delta.metric.format(delta.baseline),
+                    delta.baselineRuns.toString(),
+                    delta.metric.format(delta.current),
+                    formatChange(delta),
+                )
+            }
+        }
+    }
+    if (comparison.uncompared.isNotEmpty()) {
+        meta("Not compared: ${comparison.uncompared.joinToString { it.summary }}.")
+    }
+    val grown = comparison.grownPhases.firstOrNull() ?: return
+    meta("${grown.grewTheMost()}.")
+}
+
+private fun formatChange(delta: MetricDelta): String {
+    val change = delta.metric.format(delta.change).let { if (delta.change > 0f) "+$it" else it }
+    val percent = delta.changePercent?.let { " ${formatChangePercent(it)}" }.orEmpty()
+    return change + percent
 }
 
 private fun PhaseAverages.boundBy(): String =
@@ -186,7 +241,7 @@ private fun frameChart(history: FrameHistory): String {
 }
 
 private fun HtmlScope.worstFrames(snapshot: SessionSnapshot) = with(snapshot) {
-    if (worstFrames.isEmpty()) return
+    if (worstFrames.isEmpty()) return@with
     section("Worst frames") {
         table {
             headings("Time", "Duration")

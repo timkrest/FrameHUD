@@ -17,6 +17,8 @@ you down.
 - **Says why frames drop.** Thermal throttling, GC pauses, too few Choreographer ticks, or a late start
 - **Measures your app, not itself.** The panel draws in its own window
 - **Fails tests on jank.** A JUnit rule with thresholds
+- **Compares with earlier runs.** A baseline per device, so a gate checks the delta instead of a
+  fixed number
 - **Works without the panel.** `framehud-metrics` collects and reports with no window and no
   permission
 - **Made for QA runs.** adb commands, JSON and HTML session exports, sections and counters in a
@@ -68,7 +70,7 @@ gc x3 · 18 ms
 therm none · hr 0.68
 ```
 
-The header carries the main thread's Choreographer tick rate, the frame budget and FPS. The verdict
+The header shows the main thread's Choreographer tick rate, the frame budget and FPS. The verdict
 under it names the row to look at, and `◀` marks that row.
 
 Columns read `now avg peak`: the current frame, the average over the window, and the peak since the
@@ -88,7 +90,7 @@ you call `FrameHud` outside `src/debug`, because a release build still has to co
 releaseImplementation("com.timkrest:framehud-noop:0.9.0")
 ```
 
-It mirrors the API with empty bodies. The calls compile, nothing is measured, no window is added.
+It mirrors the API with empty bodies: the calls compile, nothing is measured, no window is added.
 
 ## Collect without the panel
 
@@ -100,9 +102,9 @@ to the merged manifest.
 qaImplementation("com.timkrest:framehud-metrics:0.9.0")
 ```
 
-`FrameHud` is the same object, so the code around it stays as it is. `enabled` now switches
-collection alone, `show()`, `hide()` and `toggle()` still mean `enabled`, and `overlayMode` is
-ignored. `framehud` is this artifact plus the panel, so a debug build needs nothing else.
+`FrameHud` is the same object, so the code around it stays as it is. `enabled` switches collection
+alone and `overlayMode` is ignored. `framehud` is this artifact plus the panel, so a debug build
+needs nothing else.
 
 ## Configure
 
@@ -124,10 +126,10 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
-The panel is not the only way to read the numbers. `FrameHud.metrics`, `memoryStats`, `thermalStats`
-and `choreographerTicksPerSecond` are plain `StateFlow`s. A reading groups into `phases` (per-stage
-timings), `window` (fps, jank and p95 over the sampling window), `session` (since the last reset) and
-`display` (refresh rate and frame budget).
+`FrameHud.metrics`, `memoryStats`, `thermalStats` and `choreographerTicksPerSecond` are plain
+`StateFlow`s, so the numbers are readable without the panel. A reading groups into `phases`
+(per-stage timings), `window` (fps, jank and p95 over the sampling window), `session` (since the
+last reset) and `display` (refresh rate and frame budget).
 
 ## First frame
 
@@ -139,9 +141,8 @@ Android marks first draws as expectedly slow, so FrameHUD reports them separatel
 of the rolling and session jank statistics. An Activity recreation is a new measurement; returning
 to an existing Activity is not.
 
-This event needs API 29 or newer because its start timestamp comes from `onActivityPreCreated`,
-which was added in API 29. On older versions first draws remain excluded from jank statistics, but
-no `FirstFrame` event is sent.
+The start timestamp comes from `onActivityPreCreated`, so the event needs API 29. On older versions
+first draws stay out of jank statistics, but no `FirstFrame` event is sent.
 
 ## Jank events
 
@@ -171,13 +172,13 @@ navController.addOnDestinationChangedListener { _, destination, _ ->
 ```
 
 Use the pattern `product/{id}`, not `product/12345`, so every product page counts as one screen.
-A new name closes the stats of the previous screen and starts the next; the window stays bound. The
-name holds until the next assignment, so an app that names screens must name every screen it shows.
-`null` returns to activity class names.
+A new name closes the stats of the previous screen and starts the next. The name holds until the
+next assignment, so an app that names screens must name every screen it shows. `null` returns to
+activity class names.
 
 ## Marking an interaction
 
-A screen summary tells you which screen is slow. A mark tells you which interaction is.
+A screen summary tells you which screen is slow; a mark narrows that down to one interaction.
 
 ```kotlin
 FrameHud.mark = "scroll"
@@ -187,11 +188,10 @@ FrameHud.mark = null
 
 Frames drawn while the mark is set belong to it. The header reads `▸ scroll` instead of the timing
 and every event fired meanwhile carries the name; clearing the mark reports a `MarkEnded` whose
-stats cover that stretch alone. The panel's own rows keep covering the usual window and session.
-The header labels them, it does not narrow them.
+stats cover that stretch alone. The panel's own rows keep covering the usual window and session, and
+the header only labels them.
 
-Leaving or renaming the screen clears the mark for you, so a gesture never spills into the next
-screen.
+Leaving or renaming the screen clears the mark, so a gesture never spills into the next screen.
 
 ## Measurement context
 
@@ -208,7 +208,7 @@ Changing the context closes nothing; it only annotates what follows.
 ## Exporting a session
 
 `exportSession` writes the session since the last reset as JSON and a self-contained HTML report,
-and returns both files. Each carries the stats and the phase breakdown for the session and for the
+and returns both files. Each holds the stats and the phase breakdown for the session and for the
 current screen, the frame window, the worst frames with wall-clock timestamps, context, device, app
 version, measurement state and confidence issues. They land in `framehud/` under the app's external
 files directory, so CI pulls them without root; `shareSession` opens the system share sheet with
@@ -223,8 +223,6 @@ FrameHud.shareSession(activity, export)
 adb pull /sdcard/Android/data/<package>/files/framehud/
 ```
 
-The app may put its own diagnostic files next to the returned ones.
-
 ## Driving over adb
 
 A debuggable build with `framehud-metrics` answers broadcasts, so a QA build starts reporting,
@@ -236,29 +234,29 @@ adb shell am broadcast -a com.timkrest.framehud.SCREEN --es name "product/{id}" 
 adb shell am broadcast -a com.timkrest.framehud.MARK --es name checkout <package>
 adb shell am broadcast -a com.timkrest.framehud.CONTEXT --es scenario smoke <package>
 adb shell am broadcast -a com.timkrest.framehud.EXPORT <package>
+adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>
 ```
 
 `DISABLE` and `RESET` complete the set. Omitting `--es name` clears the screen or the mark, and
 `CONTEXT` without extras clears the context. `EXPORT` answers with the report's path in the
-broadcast result, ready for `adb pull`. A build that is not debuggable ignores every command.
+broadcast result, ready for `adb pull`, and `BASELINE` with the path of the baseline it updated. A
+build that is not debuggable ignores every command.
 
 ## In a system trace
 
 While a system trace records, screens and marks show up as `framehud:screen:<name>` and
 `framehud:mark:<name>` sections, a jank burst as `framehud:jank_burst`, and jank percent, p95,
 frozen frames and heap use as `framehud.*` counters. Macrobenchmark's `TraceSectionMetric` measures
-the named sections. FrameHUD leaves markers only; recording and analyzing the trace stays with
-Perfetto.
+the named sections.
 
 ## Lost time
 
 `SessionStats.lostTimeMs` sums how far the late frames ran past their deadline. Jank percent counts
-an 18 ms frame and a 300 ms frame as one bad frame each; lost time keeps the difference, so two
-screens sitting at the same 5% jank stop looking alike.
+an 18 ms frame and a 300 ms frame as one bad frame each; lost time keeps the difference between
+them, so two screens at the same 5% jank stop looking alike.
 
-Frames that finished with headroom add nothing. The panel adds a line for it once it is above zero,
-both reports carry it per session and per screen, and `JankThresholds(maxLostTimeMs = 500f)` fails a
-test on it.
+The panel adds a line for it once it is above zero, both reports have it per session and per screen,
+and `JankThresholds(maxLostTimeMs = 500f)` fails a test on it.
 
 ## Where the time went
 
@@ -267,9 +265,9 @@ test on it.
 and the stage it was bound by.
 
 The panel's phase rows cover the last `metricsSampleWindowFrames` frames, so a screen that stuttered
-for two seconds can look fine again by the time you read them. These cover every frame the interval
-collected. Both reports carry the breakdown per session and per screen, and the HTML report puts the
-two side by side.
+for two seconds can look fine again by the time you read them; `SessionStats.phases` covers every
+frame of the interval. Both reports carry the breakdown per session and per screen, and the HTML
+report puts the two side by side.
 
 `PhaseAverages.gpu` is null until the driver reports GPU time, which needs API 31+.
 
@@ -278,13 +276,54 @@ two side by side.
 `SessionStats.confidence` lists what got in the way while the stats collected: dropped
 `FrameMetrics` reports, an event listener that held the metrics thread, thermal throttling, power
 save or a battery at 15% or below, a refresh-rate change, an emulator, a sample too short for its
-percentiles. Each issue names the figures it taints. An emulator taints only the render-thread and
-GPU phases. A refresh-rate change taints jank percent, lost time and streak. A short sample taints the
-percentiles it cannot support: p99 below 300 frames, p95 and jank percent below 60, p50 below 20.
-The rest taint every figure.
+percentiles. Each issue names the figures it taints: an emulator only the render-thread and GPU
+phases, a refresh-rate change jank percent, lost time and streak, a short sample the percentiles it
+cannot support (p99 below 300 frames, p95 and jank percent below 60, p50 below 20). The rest taint
+every figure.
 
 The JSON export carries the issues for the session and the screen, the HTML report lists them, and
 `ScreenEnded`/`MarkEnded` summaries end with `(suspect measurement)`.
+
+## Comparing with earlier runs
+
+A fixed threshold that fits one device is flaky on the next, which is the usual reason a jank gate
+ends up switched off. A baseline replaces it: a run compares itself with what earlier runs measured
+on the same device and Android version.
+
+The baseline is a file, next to the exports. CI pulls it after a run and pushes it back before the
+next one, so a device that gets wiped between runs still has one.
+
+```
+adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>
+adb pull /sdcard/Android/data/<package>/files/framehud/baseline.json
+adb push baseline.json /sdcard/Android/data/<package>/files/framehud/baseline.json
+```
+
+The command averages the session into `framehud/baseline.json` and answers with its path. Calling it
+twice without a `RESET` in between changes nothing, so a repeated command cannot weigh one run twice.
+With the file in place, both reports carry the delta per session, per screen and per mark, and name
+the phase that grew the most.
+
+A baseline holds only figures per frame or per share of frames: percentiles, jank percent, lost time
+per frame, frozen frames as a percent, and the phase averages, so a run twice as long does not read
+as a run twice as bad. A baseline recorded somewhere else is not compared at all, and the report
+says where it came from.
+
+Jank percent and lost time follow the frame budget that judged them. On a display that switches
+refresh rates they move and compare only between runs under the same budget, and three runs in a
+row under a new one restart them from the latest. Percentiles and phases are milliseconds and
+compare under any rate.
+
+Every new run counts for at least a tenth of the baseline, so the baseline keeps up with the app
+instead of freezing on the runs it started with.
+
+A figure a confidence issue taints stays out of the baseline and out of the comparison. Thermal
+throttling taints every figure of a run. A sample too short taints only the percentiles it cannot
+support, so the rest of that run still counts. The report says how many runs each figure averages.
+
+In code, `saveBaseline` writes the file, `awaitBaselineComparison` returns the deltas, and
+`FrameHud.baselineOverride` compares against a baseline of your own instead of the file. Build one
+from `BaselineEntry.of` and `BaselineEnvironment.current()`.
 
 ## Fail tests on jank
 
@@ -297,13 +336,31 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.9.0")
 ```
 
 The rule resets the collector before each test and checks the thresholds after the test passes, so a
-failing test keeps its own error. Session totals outlive the panel, so there are still numbers after
-`ActivityScenario` closes the activity.
+failing test keeps its own error. Session totals outlive the panel, so the numbers survive
+`ActivityScenario` closing the activity.
 
 A threshold whose figure a confidence issue taints cannot pass or fail honestly, so the gate calls
 the run inconclusive and reports both the figure and the issue. The default `OnInconclusive.FAIL`
 fails the test, `OnInconclusive.WARN` logs the message and lets it pass. A violated threshold with
 a clean figure fails in both modes.
+
+A threshold can be relative instead of fixed. `BaselineThresholds` fails a test once a figure grows
+past a share of the baseline for that device:
+
+```kotlin
+@get:Rule val noJank = DetectJankAfterTestSuccess(JankThresholds.baselineOnly())
+```
+
+`baselineOnly` turns the fixed limits off and leaves the comparison. Passing `baseline` to
+`JankThresholds` yourself keeps both, and a test then has to clear the fixed limits as well.
+
+Growth under half a millisecond, or half a percentage point, is noise and never fails; lost time
+counts per frame, and its line is a tenth of a millisecond. With no baseline yet the check logs and
+passes, and a baseline from another device is inconclusive, the same way a tainted figure is.
+
+A chosen metric the comparison could not make is inconclusive too, never a pass on the metrics that
+were left. The message says why: this run measured it with a confidence issue, or the two runs were
+judged under different frame budgets.
 
 To opt out, annotate a test or class with `@SkipJankDetection`, or call
 `JankAssertions.assertNoJank("scroll")` at a point you choose.
@@ -323,7 +380,7 @@ hide that button.
 The render thread and the GPU belong to the host machine, so those rows describe your desktop, not a
 device. The panel marks the header `EMU`, labels those sections `· host` and greys them out.
 
-Main-thread phases, jank and the session totals stay meaningful. That is what a jank gate on CI
+Main-thread phases, jank and the session totals stay meaningful, and that is what a jank gate on CI
 reads.
 
 </details>

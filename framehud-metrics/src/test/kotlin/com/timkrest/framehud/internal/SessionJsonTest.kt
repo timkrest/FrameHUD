@@ -1,6 +1,9 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.SessionStats
@@ -8,6 +11,7 @@ import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class SessionJsonTest {
 
@@ -22,7 +26,7 @@ class SessionJsonTest {
             """"jankPercent":0.0,"lostTimeMs":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
             """"phases":{$averages},"confidence":{"suspect":false,"issues":[]}"""
         val zeroPhase = """{"averageMs":0.0,"peakSinceResetMs":null}"""
-        val expected = """{"schema":4,""" +
+        val expected = """{"schema":5,""" +
             """"generatedAt":"2023-11-14T22:13:20.000Z","generatedAtMs":1700000000000,""" +
             """"frameHudVersion":"1.2.3",""" +
             """"app":{"packageName":"com.example.app","versionName":"9.9","versionCode":42},""" +
@@ -31,6 +35,7 @@ class SessionJsonTest {
             """"measurement":{"enabled":true,"frozen":false,"screen":null,"mark":null,"context":{}},""" +
             """"session":{$stats},""" +
             """"screen":{"name":null,$stats},""" +
+            """"intervals":[],"baseline":null,""" +
             """"window":{"fps":0,"jankPercent":0.0,"p95FrameMs":0.0,"worstFrameMs":0.0,""" +
             """"phases":{"bottleneckStage":"CPU","unknownDelay":$zeroPhase,"input":$zeroPhase,""" +
             """"animation":$zeroPhase,"layout":$zeroPhase,"draw":$zeroPhase,"sync":$zeroPhase,""" +
@@ -89,5 +94,51 @@ class SessionJsonTest {
             json,
             """"worstFrames":[{"totalMs":812.5,"at":"2023-11-14T22:13:19.000Z","atMs":1699999999000}]""",
         )
+    }
+
+    @Test
+    fun `intervals and their deltas against the baseline reach the export`() {
+        val json = sessionSnapshotFixture(
+            intervals = listOf(
+                IntervalStats(IntervalId.Screen("cart"), SessionStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
+            ),
+            baseline = comparisonFixture(),
+        ).toJson()
+
+        assertContains(json, """"intervals":[{"interval":"screen:cart","frameBudgetMs":17,"frames":90""")
+        assertContains(json, """"baseline":{"comparable":true""")
+        assertContains(
+            json,
+            """{"metric":"P95_MS","baseline":10.0,"baselineRuns":3,"current":12.0,"change":2.0,"changePercent":20.0}""",
+        )
+        assertContains(json, """{"phase":"LAYOUT","baselineMs":4.0,"currentMs":7.0,"changeMs":3.0}""")
+    }
+
+    @Test
+    fun `the session carries its own budget and does not repeat itself among the intervals`() {
+        val json = sessionSnapshotFixture(
+            intervals = listOf(
+                IntervalStats(IntervalId.Session, SessionStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
+                IntervalStats(IntervalId.Screen("cart"), SessionStats.EMPTY.copy(frames = 90)),
+            ),
+        ).toJson()
+
+        assertContains(json, """"session":{"frameBudgetMs":17,""")
+        assertContains(json, """"intervals":[{"interval":"screen:cart",""")
+        assertFalse(json.contains(""""interval":"session""""), "the session is exported twice")
+    }
+
+    @Test
+    fun `a baseline from another device exports both environments instead of deltas`() {
+        val json = sessionSnapshotFixture(
+            baseline = BaselineComparison.OtherEnvironment(
+                recorded = BASELINE_ENVIRONMENT,
+                current = BASELINE_ENVIRONMENT.copy(model = "Pixel 5"),
+            ),
+        ).toJson()
+
+        assertContains(json, """"baseline":{"comparable":false""")
+        assertContains(json, """"recordedEnvironment":{"manufacturer":"Google","model":"Pixel 8","apiLevel":34}""")
+        assertContains(json, """"environment":{"manufacturer":"Google","model":"Pixel 5","apiLevel":34}""")
     }
 }

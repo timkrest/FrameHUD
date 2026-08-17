@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
@@ -185,12 +186,12 @@ class FrameAggregatorTest {
         aggregator.startCollecting()
         aggregator.addThermalLevel(ThermalLevel.SEVERE)
 
-        aggregator.beginMark()
+        aggregator.beginMark("scroll")
         aggregator.addFrame(totalMs = 10f)
         assertTrue(hasThermalIssue(assertNotNull(aggregator.endMark())))
 
         aggregator.addThermalLevel(ThermalLevel.NONE)
-        aggregator.beginMark()
+        aggregator.beginMark("scroll")
         advancePastThrottle()
         aggregator.addFrame(totalMs = 10f)
         assertFalse(hasThermalIssue(assertNotNull(aggregator.endMark())))
@@ -248,7 +249,7 @@ class FrameAggregatorTest {
         aggregator.startCollecting()
         aggregator.addFrame(totalMs = 10f)
 
-        aggregator.beginMark()
+        aggregator.beginMark("scroll")
         advancePastThrottle()
         aggregator.addFrame(totalMs = 40f)
         advancePastThrottle()
@@ -263,10 +264,10 @@ class FrameAggregatorTest {
     @Test
     fun `beginning a mark twice reports only the frames after the second one`() {
         aggregator.startCollecting()
-        aggregator.beginMark()
+        aggregator.beginMark("scroll")
         aggregator.addFrame(totalMs = 10f)
 
-        aggregator.beginMark()
+        aggregator.beginMark("scroll")
         advancePastThrottle()
         aggregator.addFrame(totalMs = 10f)
 
@@ -333,6 +334,135 @@ class FrameAggregatorTest {
         assertNull(aggregator.metrics.value.phases.total.peak)
     }
 
+    @Test
+    fun `a second visit to a screen adds to the interval the first one started`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.restartScreen("Checkout")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.restartScreen("Home")
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(2, aggregator.interval(IntervalId.Screen("Home")).frames)
+        assertEquals(1, aggregator.interval(IntervalId.Screen("Checkout")).frames)
+        assertEquals(3, aggregator.interval(IntervalId.Session).frames)
+    }
+
+    @Test
+    fun `a jank streak does not continue across separate visits to a screen`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 40f)
+        aggregator.restartScreen("Checkout")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.restartScreen("Home")
+        aggregator.addFrame(totalMs = 40f)
+
+        assertEquals(1, aggregator.interval(IntervalId.Screen("Home")).maxJankStreak)
+    }
+
+    @Test
+    fun `a mark collects every stretch it covered under one name`() {
+        aggregator.startCollecting("Home")
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.endMark()
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(2, aggregator.interval(IntervalId.Mark("scroll")).frames)
+    }
+
+    @Test
+    fun `frames drawn while no mark is set belong to no mark`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+
+        assertTrue(aggregator.intervals().none { it.id is IntervalId.Mark })
+    }
+
+    @Test
+    fun `a reset drops the intervals and keeps collecting the screen in view`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.restartScreen("Checkout")
+        aggregator.addFrame(totalMs = 10f)
+
+        aggregator.reset()
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(listOf(IntervalId.Session, IntervalId.Screen("Checkout")), aggregator.intervals().map { it.id })
+        assertEquals(1, aggregator.interval(IntervalId.Screen("Checkout")).frames)
+    }
+
+    @Test
+    fun `an unnamed screen has no interval of its own`() {
+        aggregator.startCollecting()
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(listOf(IntervalId.Session), aggregator.intervals().map { it.id })
+    }
+
+    @Test
+    fun `the budget key follows the deadline that judged the frames, not the reported rate`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 5f, deadlineNs = DEADLINE_60HZ_NS / 2, refreshRateHz = null)
+
+        assertEquals(8, aggregator.intervals().first { it.id == IntervalId.Session }.frameBudgetMs)
+    }
+
+    @Test
+    fun `an interval carries the budget that judged nearly all its frames`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f, refreshRateHz = 60f)
+        aggregator.restartScreen("Checkout")
+        aggregator.addFrame(totalMs = 10f, refreshRateHz = 120f)
+
+        val budgets = aggregator.intervals().associate { it.id to it.frameBudgetMs }
+        assertEquals(17, budgets[IntervalId.Screen("Home")])
+        assertEquals(8, budgets[IntervalId.Screen("Checkout")])
+        assertNull(budgets[IntervalId.Session])
+    }
+
+    @Test
+    fun `screens past the tracked limit are dropped rather than remembered`() {
+        aggregator.startCollecting("Home")
+        repeat(40) { index ->
+            aggregator.restartScreen("screen-$index")
+            aggregator.addFrame(totalMs = 10f)
+        }
+
+        val screens = aggregator.intervals().filter { it.id is IntervalId.Screen }
+        assertEquals(32, screens.size)
+        assertEquals(40, aggregator.interval(IntervalId.Session).frames)
+    }
+
+    @Test
+    fun `reset starts tracking the active screen after the name limit dropped it`() {
+        aggregator.startCollecting("Home")
+        repeat(32) { index -> aggregator.restartScreen("screen-$index") }
+
+        aggregator.reset()
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(1, aggregator.interval(IntervalId.Screen("screen-31")).frames)
+    }
+
+    @Test
+    fun `a reset while nothing is collecting leaves the interval stopped`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.stopCollecting()
+
+        aggregator.reset()
+        advance(1_000)
+
+        assertEquals(0L, aggregator.interval(IntervalId.Screen("Home")).durationMs)
+    }
+
+    private fun FrameAggregator.interval(id: IntervalId): SessionStats =
+        assertNotNull(intervals().firstOrNull { it.id == id }, "no interval for $id").stats
+
     private fun hasThermalIssue(stats: SessionStats): Boolean = stats.confidence.issues.any { it is ConfidenceIssue.ThermalThrottling }
 
     private fun advancePastThrottle() {
@@ -350,10 +480,8 @@ class FrameAggregatorTest {
         totalDurationNs: Long = (totalMs * NS_PER_MS).toLong(),
         refreshRateHz: Float? = 60f,
     ) {
-        val durationsMs = FloatArray(FramePhase.entries.size)
-        durationsMs[FramePhase.TOTAL.ordinal] = totalMs
         addFrame(
-            durationsMs = durationsMs,
+            durationsMs = phaseDurationsMs(totalMs),
             totalDurationNs = totalDurationNs,
             deadlineNs = deadlineNs,
             frameEndNs = clock.nanos,

@@ -16,6 +16,10 @@ FrameHUD нужен для первого разбора: открыть экр�
 | **[Perfetto](https://perfetto.dev/docs/data-sources/frametimeline)** | Точный разбор плохого кадра. Показывает потоки, scheduler, Binder, GC, RenderThread, GPU и SurfaceFlinger на одной временной шкале. |
 | **[Play Vitals](https://support.google.com/googleplay/android-developer/answer/9844486?hl=en)** | Статистика после релиза: slow и frozen frames, перцентили и затронутые сессии на реальных устройствах. |
 
+FrameHUD ещё и сравнивает прогон с базлайном прошлых прогонов на том же устройстве, так что
+регрессию видно уже на QA-проходе. Macrobenchmark это не заменяет: он повторяет фиксированный
+сценарий на сборке, близкой к релизной, а FrameHUD меряет то, что в прогоне и происходило.
+
 JankStats ближе всего к FrameHUD: на API 24+ оба используют `FrameMetrics`. Разница в готовности.
 JankStats отдаёт события каждого кадра, а FrameHUD сразу собирает из них панель, статистику экрана и
 сессии, события и jank gate для instrumentation-тестов. `framehud-metrics` убирает панель и

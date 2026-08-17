@@ -6,7 +6,9 @@ import android.view.Window
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.SessionStats
@@ -38,12 +40,11 @@ internal class MetricsEngine(
     private val thermalMonitor = ThermalMonitor()
     private val batteryMonitor = BatteryMonitor()
 
-    @Volatile
-    private var boundScreen: String? = null
+    private val measuredScreen = MeasuredScreen()
 
-    @Volatile
-    var screenOverride: String? = null
-        private set
+    private var sessionId = 0
+
+    val screenOverride: String? get() = measuredScreen.screenOverride
 
     @Volatile
     var context: Map<String, String> = emptyMap()
@@ -52,9 +53,6 @@ internal class MetricsEngine(
     fun setContext(value: Map<String, String>) {
         context = value.toMap()
     }
-
-    @Volatile
-    private var activeScreen: String? = null
 
     private val _activeMark = MutableStateFlow<String?>(null)
 
@@ -96,15 +94,12 @@ internal class MetricsEngine(
             thermalMonitor.unbind()
             batteryMonitor.unbind()
         }
-        setFrozen(false)
     }
 
     fun bindWindow(window: Window, screen: String?, creation: ScreenCreation?) {
         val sampler = sampler?.takeIf { isRunning } ?: return
         if (sampler.isBoundTo(window)) return
-        boundScreen = screen
-        val label = screenOverride ?: screen
-        activeScreen = label
+        val label = measuredScreen.bind(screen)
         tracer.screenChanged(label)
         collector.expectFirstFrame(window = window, creation = creation)
         sampler.bind(window)
@@ -117,22 +112,24 @@ internal class MetricsEngine(
     }
 
     fun setScreen(name: String?) {
-        if (screenOverride == name) return
-        val previous = activeScreen
-        screenOverride = name
-        val current = name ?: boundScreen
-        if (current == previous) return
-        endMark()
+        when (val rename = measuredScreen.rename(name)) {
+            MeasuredScreen.Rename.None -> Unit
+            MeasuredScreen.Rename.WhileUnbound -> endMark()
+            is MeasuredScreen.Rename.Renamed -> restartScreen(rename)
+        }
+    }
+
+    private fun restartScreen(rename: MeasuredScreen.Rename.Renamed) {
+        endMark(endedScreen = rename.previous)
         val sampler = sampler?.takeIf { it.isBound } ?: return
-        activeScreen = current
-        tracer.screenChanged(current)
+        tracer.screenChanged(rename.current)
         val listeners = config().eventListeners
         val endedContext = context
         sampler.post {
             eventDispatcher.onScreenEnded(
                 listeners = listeners,
-                stats = aggregator.restartScreen(current),
-                screen = previous,
+                stats = aggregator.restartScreen(rename.current),
+                screen = rename.previous,
                 context = endedContext,
             )
         }
@@ -144,7 +141,7 @@ internal class MetricsEngine(
         if (name == null) return
         _activeMark.value = name
         tracer.markChanged(name)
-        onAggregates(aggregator::beginMark)
+        onAggregates { aggregator.beginMark(name) }
     }
 
     fun unbindWindow() {
@@ -152,9 +149,7 @@ internal class MetricsEngine(
         if (sampler.unbind() == null) return
         collector.forgetFirstFrame()
         endMark()
-        val endedScreen = activeScreen
-        boundScreen = null
-        activeScreen = null
+        val endedScreen = measuredScreen.unbind()
         tracer.screenChanged(null)
         val listeners = config().eventListeners
         val endedContext = context
@@ -191,6 +186,7 @@ internal class MetricsEngine(
     @AnyThread
     fun reset() {
         onAggregates {
+            sessionId++
             aggregator.reset()
             memoryMonitor.reset()
             eventDispatcher.reset()
@@ -205,6 +201,7 @@ internal class MetricsEngine(
         ExportStats(
             session = aggregator.sessionStats(),
             screen = aggregator.screenStats(),
+            intervals = aggregator.intervals(),
             metrics = aggregator.refreshMetricsIgnoringThrottle(),
             memory = memoryMonitor.liveStats,
             thermal = thermalMonitor.liveStats,
@@ -212,6 +209,16 @@ internal class MetricsEngine(
             screenName = aggregator.screenName,
             mark = _activeMark.value,
             context = context,
+        )
+    }
+
+    @WorkerThread
+    fun awaitBaselineStats(timeoutMs: Long): BaselineStats? = awaitOnMetricsThread(timeoutMs) {
+        BaselineStats(
+            sessionId = sessionId,
+            session = aggregator.sessionStats(),
+            environment = BaselineEnvironment.current(),
+            intervals = aggregator.intervals(),
         )
     }
 
@@ -231,12 +238,11 @@ internal class MetricsEngine(
         return if (done.await(timeoutMs, TimeUnit.MILLISECONDS)) result.get() else null
     }
 
-    private fun endMark() {
+    private fun endMark(endedScreen: String? = measuredScreen.active) {
         val ended = _activeMark.value ?: return
         _activeMark.value = null
         tracer.markChanged(null)
         val listeners = config().eventListeners
-        val screen = activeScreen
         val endedContext = context
         onMetricsThread {
             aggregator.endMark()?.let { stats ->
@@ -244,7 +250,7 @@ internal class MetricsEngine(
                     listeners = listeners,
                     stats = stats,
                     mark = ended,
-                    screen = screen,
+                    screen = endedScreen,
                     context = endedContext,
                 )
             }
@@ -256,7 +262,7 @@ internal class MetricsEngine(
         eventDispatcher.onFirstFrame(
             listeners = config().eventListeners,
             timeToDisplayMs = timeToDisplayMs,
-            screen = activeScreen,
+            screen = aggregator.screenName,
             context = context,
         )
     }
@@ -323,7 +329,7 @@ internal class MetricsEngine(
             memory = memoryMonitor.liveStats,
             thermal = thermalMonitor.liveStats,
             choreographerTicksPerSecond = choreographerTickMonitor.liveTicksPerSecond,
-            screen = activeScreen,
+            screen = aggregator.screenName,
             mark = _activeMark.value,
             context = context,
         )
@@ -337,10 +343,17 @@ internal class MetricsEngine(
         const val MIN_TICK_INTERVAL_MS = 250L
     }
 
-    /** Captured in one metrics-thread read, so the names describe the same instant as the numbers. */
+    class BaselineStats(
+        val sessionId: Int,
+        val session: SessionStats,
+        val environment: BaselineEnvironment,
+        val intervals: List<IntervalStats>,
+    )
+
     class ExportStats(
         val session: SessionStats,
         val screen: SessionStats,
+        val intervals: List<IntervalStats>,
         val metrics: PerformanceMetrics,
         val memory: MemoryStats,
         val thermal: ThermalStats,

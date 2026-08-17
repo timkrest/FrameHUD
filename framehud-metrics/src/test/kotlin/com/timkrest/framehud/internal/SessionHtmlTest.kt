@@ -1,5 +1,6 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.MeasurementConfidence
@@ -115,5 +116,33 @@ class SessionHtmlTest {
 
         assertContains(html, "No frames in the window.")
         assertFalse(html.contains("<svg"), "an empty window still drew a chart")
+    }
+
+    @Test
+    fun `the report puts the baseline next to this run and names the phase that grew`() {
+        val html = sessionSnapshotFixture(baseline = comparisonFixture()).toHtml()
+
+        assertContains(html, "Baseline")
+        assertContains(html, "baseline of 3 run(s)")
+        assertContains(html, "<td>10.0 ms</td><td>3</td><td>12.0 ms</td><td>+2.0 ms (+20%)</td>")
+        assertContains(html, "Layout grew the most, 4.0 → 7.0 ms.")
+    }
+
+    @Test
+    fun `a baseline from another device says so instead of showing deltas`() {
+        val html = sessionSnapshotFixture(
+            baseline = BaselineComparison.OtherEnvironment(
+                recorded = BASELINE_ENVIRONMENT,
+                current = BASELINE_ENVIRONMENT.copy(model = "Pixel 5"),
+            ),
+        ).toHtml()
+
+        assertContains(html, "Recorded on Google Pixel 8, API 34")
+        assertContains(html, "this run is Google Pixel 5, API 34")
+    }
+
+    @Test
+    fun `a run without a baseline shows no baseline section`() {
+        assertFalse(sessionSnapshotFixture().toHtml().contains("Baseline"))
     }
 }

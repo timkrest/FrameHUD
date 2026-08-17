@@ -7,6 +7,7 @@ import android.view.Window
 import androidx.annotation.AnyThread
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.FramePhase
 import java.util.concurrent.atomic.AtomicReference
 
 internal class FrameMetricsCollector(

@@ -1,6 +1,8 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.FrameHistory
+import com.timkrest.framehud.FramePhase
+import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.MetricValue
 
 internal class FrameWindow(size: Int) {
@@ -20,6 +22,20 @@ internal class FrameWindow(size: Int) {
     fun metricValue(phase: FramePhase): MetricValue = phaseRings[phase].toMetricValue()
 
     fun overrunValue(): MetricValue = overruns.toMetricValue()
+
+    fun phases(hasGpuDuration: Boolean): FramePhases = FramePhases(
+        unknownDelay = metricValue(FramePhase.UNKNOWN_DELAY),
+        input = metricValue(FramePhase.INPUT),
+        animation = metricValue(FramePhase.ANIMATION),
+        layout = metricValue(FramePhase.LAYOUT),
+        draw = metricValue(FramePhase.DRAW),
+        sync = metricValue(FramePhase.SYNC),
+        commandIssue = metricValue(FramePhase.COMMAND_ISSUE),
+        swapBuffers = metricValue(FramePhase.SWAP_BUFFERS),
+        gpu = if (hasGpuDuration) metricValue(FramePhase.GPU) else null,
+        total = metricValue(FramePhase.TOTAL),
+        overrun = overrunValue(),
+    )
 
     fun jankPercent(): Float = jank.percent()
 

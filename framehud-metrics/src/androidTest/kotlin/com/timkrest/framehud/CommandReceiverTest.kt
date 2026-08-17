@@ -1,11 +1,13 @@
 package com.timkrest.framehud
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.timkrest.framehud.internal.baselineFile
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -35,6 +37,8 @@ class CommandReceiverTest {
             FrameHud.mark = null
             FrameHud.context = emptyMap()
         }
+        FrameHud.baselineOverride = null
+        baselineFile(targetContext.applicationContext as Application).delete()
     }
 
     @Test
@@ -76,6 +80,18 @@ class CommandReceiverTest {
         }
     }
 
+    @Test
+    fun theBaselineCommandAnswersWithThePathOfTheBaseline() {
+        ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
+            assertNotNull(FrameHud.awaitSessionStats(TIMEOUT_MS), "nothing was collecting")
+            scenario.drawFrames(FRAMES)
+
+            val result = assertNotNull(broadcast(Intent(FrameHudCommandReceiver.ACTION_BASELINE)))
+            assertTrue(result.endsWith("baseline.json"), "expected a baseline path, got $result")
+            assertTrue(File(result).length() > 0L, "the baseline is empty")
+        }
+    }
+
     private fun broadcast(intent: Intent): String? {
         val done = CountDownLatch(1)
         val resultData = AtomicReference<String?>()
@@ -99,5 +115,6 @@ class CommandReceiverTest {
 
     private companion object {
         const val TIMEOUT_MS = 10_000L
+        const val FRAMES = 30
     }
 }

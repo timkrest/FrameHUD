@@ -1,5 +1,6 @@
 package com.timkrest.framehud
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -7,6 +8,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.util.Log
 import com.timkrest.framehud.internal.LOG_TAG
+import com.timkrest.framehud.internal.baselineFile
 
 /**
  * Drives [FrameHud] over `adb shell am broadcast -a com.timkrest.framehud.<COMMAND> <package>`.
@@ -48,7 +50,18 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
                 FrameHud.context = pairs
                 resultData = if (pairs.isEmpty()) "context cleared" else "context $pairs"
             }
-            ACTION_EXPORT -> exportAsync()
+            ACTION_EXPORT -> respondAsync("export") {
+                FrameHud.exportSession(EXPORT_TIMEOUT_MS)?.json?.absolutePath ?: "nothing collected"
+            }
+            ACTION_BASELINE -> {
+                val file = (context.applicationContext as? Application)?.let(::baselineFile)
+                respondAsync("baseline") {
+                    when {
+                        FrameHud.saveBaseline(EXPORT_TIMEOUT_MS) == null -> "nothing collected"
+                        else -> file?.absolutePath ?: "baseline updated"
+                    }
+                }
+            }
         }
     }
 
@@ -76,19 +89,18 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun exportAsync() {
+    private fun respondAsync(command: String, respond: () -> String) {
         val pending = goAsync()
         Thread({
             try {
-                val export = FrameHud.exportSession(EXPORT_TIMEOUT_MS)
-                pending.resultData = export?.json?.absolutePath ?: "nothing collected"
+                pending.resultData = respond()
             } catch (e: Exception) {
-                Log.w(LOG_TAG, "Export over adb failed", e)
+                Log.w(LOG_TAG, "The $command command over adb failed", e)
                 pending.resultData = "failed: $e"
             } finally {
                 pending.finish()
             }
-        }, "framehud-export").start()
+        }, "framehud-$command").start()
     }
 
     companion object {
@@ -99,6 +111,7 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         const val ACTION_MARK = "com.timkrest.framehud.MARK"
         const val ACTION_CONTEXT = "com.timkrest.framehud.CONTEXT"
         const val ACTION_EXPORT = "com.timkrest.framehud.EXPORT"
+        const val ACTION_BASELINE = "com.timkrest.framehud.BASELINE"
         const val EXTRA_NAME = "name"
         const val EXPORT_TIMEOUT_MS = 5_000L
     }

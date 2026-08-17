@@ -1,16 +1,19 @@
 package com.timkrest.framehud.internal
 
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.FramePhase
 import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 @WorkerThread
 internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: Boolean = false) {
 
     private val totals = LatencyHistogram()
     private val confidence = ConfidenceTracker(isEmulator)
+    private val framesPerBudgetMs = mutableMapOf<Int, FrameCount>()
     private val phaseSumsMs = DoubleArray(FramePhase.entries.size)
     private var hasReportedGpuDuration = false
     private var collectingSinceMs: Long? = null
@@ -22,7 +25,8 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
     private var currentJankStreak = 0
     private var maxJankStreak = 0
 
-    fun addFrame(durationsMs: FloatArray, overrunMs: Float, refreshRateHz: Float) {
+    fun addFrame(durationsMs: FloatArray, overrunMs: Float, refreshRateHz: Float, frameBudgetMs: Float) {
+        framesPerBudgetMs.getOrPut(frameBudgetMs.roundToInt()) { FrameCount() }.frames++
         val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
         totals.add(totalMs)
         for (phase in FramePhase.entries) {
@@ -45,6 +49,11 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
         droppedReports += count
     }
 
+    fun frameBudgetMs(): Int? {
+        val (budget, counted) = framesPerBudgetMs.maxByOrNull { it.value.frames } ?: return null
+        return budget.takeIf { counted.frames >= totals.count * DOMINANT_BUDGET_SHARE }
+    }
+
     fun addThermalLevel(level: ThermalLevel) = confidence.addThermalLevel(level)
 
     fun addSlowListener(callMs: Float) = confidence.addSlowListener(callMs)
@@ -56,6 +65,7 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
     }
 
     fun stopCollecting() {
+        currentJankStreak = 0
         val startedMs = collectingSinceMs ?: return
         collectedMs += clock.elapsedRealtimeMs() - startedMs
         collectingSinceMs = null
@@ -81,24 +91,19 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
 
     private fun phaseAverages(frames: Int): PhaseAverages {
         if (frames == 0) return PhaseAverages.EMPTY
-        fun average(phase: FramePhase) = (phaseSumsMs[phase.ordinal] / frames).toFloat()
-        return PhaseAverages(
-            unknownDelay = average(FramePhase.UNKNOWN_DELAY),
-            input = average(FramePhase.INPUT),
-            animation = average(FramePhase.ANIMATION),
-            layout = average(FramePhase.LAYOUT),
-            draw = average(FramePhase.DRAW),
-            sync = average(FramePhase.SYNC),
-            commandIssue = average(FramePhase.COMMAND_ISSUE),
-            swapBuffers = average(FramePhase.SWAP_BUFFERS),
-            gpu = if (hasReportedGpuDuration) average(FramePhase.GPU) else null,
-            total = average(FramePhase.TOTAL),
-        )
+        return PhaseAverages.of { phase ->
+            if (phase == FramePhase.GPU && !hasReportedGpuDuration) {
+                null
+            } else {
+                (phaseSumsMs[phase.ordinal] / frames).toFloat()
+            }
+        }
     }
 
     fun clear() {
         totals.clear()
         confidence.clear()
+        framesPerBudgetMs.clear()
         phaseSumsMs.fill(0.0)
         hasReportedGpuDuration = false
         jankyFrames = 0
@@ -113,4 +118,12 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
 
     private fun collectedDurationMs(): Long =
         collectedMs + (collectingSinceMs?.let { clock.elapsedRealtimeMs() - it } ?: 0L)
+
+    private class FrameCount {
+        var frames = 0
+    }
+
+    private companion object {
+        const val DOMINANT_BUDGET_SHARE = 0.95f
+    }
 }

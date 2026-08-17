@@ -8,9 +8,7 @@ class FrameWindowTest {
     private val window = FrameWindow(size = 8)
 
     private fun addFrame(totalMs: Float, overrunMs: Float = -1f, frameEndNs: Long = 0L) {
-        val durations = FloatArray(FramePhase.entries.size)
-        durations[FramePhase.TOTAL.ordinal] = totalMs
-        window.add(durationsMs = durations, overrunMs = overrunMs, frameEndNs = frameEndNs)
+        window.add(durationsMs = phaseDurationsMs(totalMs), overrunMs = overrunMs, frameEndNs = frameEndNs)
     }
 
     @Test

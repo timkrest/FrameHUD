@@ -16,6 +16,10 @@ or show its impact after release.
 | **[Perfetto](https://perfetto.dev/docs/data-sources/frametimeline)** | Detailed analysis of a bad frame. Puts app threads, scheduling, Binder, GC, RenderThread, GPU and SurfaceFlinger on one timeline. |
 | **[Play Vitals](https://support.google.com/googleplay/android-developer/answer/9844486?hl=en)** | Post-release statistics: slow and frozen frames, percentiles and affected sessions across real devices. |
 
+FrameHUD also compares a run with a baseline of earlier runs on the same device, which catches a
+regression during a QA pass. That is not a replacement for Macrobenchmark, which repeats a fixed
+scenario against a release-like build, while FrameHUD measures whatever the run happened to do.
+
 JankStats is the closest match to FrameHUD: on API 24+ both use `FrameMetrics`. The difference is
 how much is already built. JankStats emits every frame; FrameHUD turns those frames into a panel,
 screen and session statistics, events and a jank gate for instrumentation tests. `framehud-metrics`

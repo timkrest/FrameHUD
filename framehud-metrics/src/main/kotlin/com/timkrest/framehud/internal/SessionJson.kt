@@ -1,12 +1,14 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.IntervalComparison
+import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
-import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 
-internal const val EXPORT_SCHEMA_VERSION = 4
+internal const val EXPORT_SCHEMA_VERSION = 5
 
 internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     put("schema", EXPORT_SCHEMA_VERSION)
@@ -18,11 +20,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
         put("versionName", appVersionName)
         put("versionCode", appVersionCode)
     }
-    putObject("device") {
-        put("manufacturer", manufacturer)
-        put("model", model)
-        put("apiLevel", apiLevel)
-    }
+    putObject("device") { putEnvironment(environment) }
     putObject("display") {
         put("refreshRateHz", display.refreshRateHz)
         put("frameBudgetMs", display.frameBudgetMs)
@@ -36,11 +34,25 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
             for ((key, value) in context) put(key, value)
         }
     }
-    putObject("session") { putStats(session) }
+    putObject("session") {
+        sessionBudgetMs()?.let { put("frameBudgetMs", it) }
+        putStats(session)
+    }
     putObject("screen") {
         put("name", screenName)
         putStats(screen)
     }
+    putArray("intervals") {
+        for (interval in intervals) {
+            if (interval.id == IntervalId.Session) continue
+            addObject {
+                put("interval", interval.id.key())
+                interval.frameBudgetMs?.let { put("frameBudgetMs", it) }
+                putStats(interval.stats)
+            }
+        }
+    }
+    putBaseline(baseline)
     putObject("window") {
         put("fps", window.fps)
         put("jankPercent", window.jankPercent)
@@ -94,6 +106,62 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     }
 }
 
+private fun SessionSnapshot.sessionBudgetMs(): Int? =
+    intervals.firstOrNull { it.id == IntervalId.Session }?.frameBudgetMs
+
+private fun JsonObjectScope.putBaseline(comparison: BaselineComparison?) {
+    when (comparison) {
+        null -> putNull("baseline")
+        is BaselineComparison.OtherEnvironment -> putObject("baseline") {
+            put("comparable", false)
+            putObject("recordedEnvironment") { putEnvironment(comparison.recorded) }
+            putObject("environment") { putEnvironment(comparison.current) }
+        }
+        is BaselineComparison.Compared -> putObject("baseline") {
+            put("comparable", true)
+            putArray("intervals") {
+                for (interval in comparison.intervals) addObject { putIntervalComparison(interval) }
+            }
+        }
+    }
+}
+
+private fun JsonObjectScope.putIntervalComparison(interval: IntervalComparison) {
+    put("interval", interval.interval.key())
+    put("recordedRuns", interval.recordedRuns)
+    put("frames", interval.currentFrames)
+    putArray("metrics") {
+        for (delta in interval.metrics) {
+            addObject {
+                put("metric", delta.metric.name)
+                put("baseline", delta.baseline)
+                put("baselineRuns", delta.baselineRuns)
+                put("current", delta.current)
+                put("change", delta.change)
+                put("changePercent", delta.changePercent)
+            }
+        }
+    }
+    putArray("uncompared") {
+        for (left in interval.uncompared) {
+            addObject {
+                put("metric", left.metric.name)
+                put("gap", left.gap.name)
+            }
+        }
+    }
+    putArray("phases") {
+        for (delta in interval.phases) {
+            addObject {
+                put("phase", delta.phase.name)
+                put("baselineMs", delta.baselineMs)
+                put("currentMs", delta.currentMs)
+                put("changeMs", delta.changeMs)
+            }
+        }
+    }
+}
+
 private fun JsonObjectScope.putStats(stats: SessionStats) {
     put("frames", stats.frames)
     put("durationMs", stats.durationMs)
@@ -105,22 +173,11 @@ private fun JsonObjectScope.putStats(stats: SessionStats) {
     put("frozenFrames", stats.frozenFrames)
     put("maxJankStreak", stats.maxJankStreak)
     put("droppedReports", stats.droppedReports)
-    putObject("phases") { putPhaseAverages(stats.phases) }
+    putObject("phases") {
+        put("bottleneckStage", stats.phases.bottleneckStage.name)
+        putPhaseAverages(stats.phases)
+    }
     putObject("confidence") { putConfidence(stats.confidence) }
-}
-
-private fun JsonObjectScope.putPhaseAverages(phases: PhaseAverages) {
-    put("bottleneckStage", phases.bottleneckStage.name)
-    put("unknownDelayMs", phases.unknownDelay)
-    put("inputMs", phases.input)
-    put("animationMs", phases.animation)
-    put("layoutMs", phases.layout)
-    put("drawMs", phases.draw)
-    put("syncMs", phases.sync)
-    put("commandIssueMs", phases.commandIssue)
-    put("swapBuffersMs", phases.swapBuffers)
-    put("gpuMs", phases.gpu)
-    put("totalMs", phases.total)
 }
 
 private fun JsonObjectScope.putConfidence(confidence: MeasurementConfidence) {

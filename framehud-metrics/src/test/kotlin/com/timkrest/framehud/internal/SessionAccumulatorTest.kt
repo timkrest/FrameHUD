@@ -6,6 +6,7 @@ import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SessionAccumulatorTest {
@@ -62,6 +63,17 @@ class SessionAccumulatorTest {
         val full = SessionAccumulator(TestMetricsClock())
         repeat(300) { full.addFrame(totalMs = 10f, isJanky = false) }
         assertTrue(full.stats().confidence.issues.isEmpty())
+    }
+
+    @Test
+    fun `a budget owns the interval only while nearly every frame was judged against it`() {
+        val session = SessionAccumulator(TestMetricsClock())
+        repeat(29) { session.addFrame(totalMs = 10f, isJanky = false) }
+        session.addFrame(totalMs = 10f, isJanky = false, refreshRateHz = 120f)
+        assertEquals(17, session.frameBudgetMs())
+
+        session.addFrame(totalMs = 10f, isJanky = false, refreshRateHz = 120f)
+        assertNull(session.frameBudgetMs())
     }
 
     @Test
@@ -184,10 +196,12 @@ class SessionAccumulatorTest {
         refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ,
         layoutMs: Float = 0f,
     ) {
-        val durationsMs = FloatArray(FramePhase.entries.size)
-        durationsMs[FramePhase.TOTAL.ordinal] = totalMs
-        durationsMs[FramePhase.LAYOUT.ordinal] = layoutMs
-        addFrame(durationsMs = durationsMs, overrunMs = overrunMs, refreshRateHz = refreshRateHz)
+        addFrame(
+            durationsMs = phaseDurationsMs(totalMs, layoutMs),
+            overrunMs = overrunMs,
+            refreshRateHz = refreshRateHz,
+            frameBudgetMs = MS_PER_SECOND / refreshRateHz,
+        )
     }
 
     private companion object {

@@ -4,8 +4,9 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHudConfig
-import com.timkrest.framehud.FramePhases
+import com.timkrest.framehud.FramePhase
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
@@ -15,19 +16,12 @@ import kotlinx.coroutines.flow.StateFlow
 internal class FrameAggregator(
     private var config: FrameHudConfig,
     private val clock: MetricsClock,
-    private val isEmulator: Boolean,
+    isEmulator: Boolean,
 ) {
 
     private val frameWindow = FrameWindow(config.metricsSampleWindowFrames)
 
-    private val session = SessionAccumulator(clock, isEmulator)
-
-    private val screen = SessionAccumulator(clock, isEmulator)
-
-    var screenName: String? = null
-        private set
-
-    private var mark: SessionAccumulator? = null
+    private val accumulators = IntervalAccumulators(clock, isEmulator)
 
     private val worstFrames = WorstFrames(WORST_FRAME_CAPACITY)
 
@@ -38,14 +32,13 @@ internal class FrameAggregator(
 
     val liveMetrics: PerformanceMetrics get() = readings.live
 
+    val screenName: String? get() = accumulators.screenName
+
     private var lastUpdateTime = 0L
     private var display = displayOf(config.fallbackRefreshRateHz)
     private var isDrainingToIdle = false
 
     private var hasReportedGpuDuration = false
-
-    private var latestThermalLevel: ThermalLevel? = null
-    private var latestBattery: BatterySample? = null
 
     fun addFrame(
         durationsMs: FloatArray,
@@ -63,41 +56,32 @@ internal class FrameAggregator(
         val overrunMs = frameOverrunMs(totalDurationNs, deadlineNs, totalMs)
 
         frameWindow.add(durationsMs = durationsMs, overrunMs = overrunMs, frameEndNs = frameEndNs)
-        eachAccumulator {
-            it.addFrame(durationsMs = durationsMs, overrunMs = overrunMs, refreshRateHz = display.refreshRateHz)
-        }
+        accumulators.addFrame(
+            durationsMs = durationsMs,
+            overrunMs = overrunMs,
+            refreshRateHz = display.refreshRateHz,
+            frameBudgetMs = display.frameBudgetMs,
+        )
         worstFrames.add(totalMs = totalMs, endNs = frameEndNs)
 
         isDrainingToIdle = true
         maybeEmit()
     }
 
-    fun addDroppedReports(count: Int) = eachAccumulator { it.addDroppedReports(count) }
+    fun addDroppedReports(count: Int) = accumulators.addDroppedReports(count)
 
-    fun addThermalLevel(level: ThermalLevel) {
-        latestThermalLevel = level
-        eachAccumulator { it.addThermalLevel(level) }
-    }
+    fun addThermalLevel(level: ThermalLevel) = accumulators.addThermalLevel(level)
 
-    fun addBattery(sample: BatterySample) {
-        latestBattery = sample
-        eachAccumulator { it.addBattery(sample) }
-    }
+    fun addBattery(sample: BatterySample) = accumulators.addBattery(sample)
 
-    fun addSlowListener(callMs: Float) = eachAccumulator { it.addSlowListener(callMs) }
-
-    private inline fun eachAccumulator(action: (SessionAccumulator) -> Unit) {
-        action(session)
-        action(screen)
-        mark?.let(action)
-    }
+    fun addSlowListener(callMs: Float) = accumulators.addSlowListener(callMs)
 
     fun onTick() {
         if (isDrainingToIdle) maybeEmit() else refreshLiveSession()
     }
 
     private fun refreshLiveSession() {
-        readings.updateLive(readings.live.copy(session = session.stats()))
+        readings.updateLive(readings.live.copy(session = accumulators.sessionStats()))
     }
 
     @AnyThread
@@ -105,70 +89,33 @@ internal class FrameAggregator(
         readings.setFrozen(frozen)
     }
 
-    fun startCollecting(label: String? = null) {
-        session.startCollecting()
-        beginScreen(label)
-    }
+    fun startCollecting(label: String? = null) = accumulators.startCollecting(label)
 
-    fun stopCollecting() {
-        session.stopCollecting()
-        screen.stopCollecting()
-        forgetStaleEnvironment()
-    }
+    fun stopCollecting() = accumulators.stopCollecting()
 
-    private fun forgetStaleEnvironment() {
-        latestThermalLevel = null
-        latestBattery = null
-    }
+    fun restartScreen(label: String? = null): SessionStats = accumulators.restartScreen(label)
 
-    fun restartScreen(label: String? = null): SessionStats {
-        screen.stopCollecting()
-        val ended = screen.stats()
-        beginScreen(label)
-        return ended
-    }
+    fun beginMark(name: String) = accumulators.beginMark(name)
 
-    private fun beginScreen(label: String?) {
-        screenName = label
-        screen.clear()
-        screen.startCollecting()
-        seedEnvironment(screen)
-    }
-
-    fun beginMark() {
-        mark = SessionAccumulator(clock, isEmulator).apply { startCollecting() }.also(::seedEnvironment)
-    }
-
-    private fun seedEnvironment(accumulator: SessionAccumulator) {
-        latestThermalLevel?.let(accumulator::addThermalLevel)
-        latestBattery?.let(accumulator::addBattery)
-    }
-
-    fun endMark(): SessionStats? {
-        val ended = mark ?: return null
-        mark = null
-        ended.stopCollecting()
-        return ended.stats()
-    }
+    fun endMark(): SessionStats? = accumulators.endMark()
 
     fun refreshMetricsIgnoringThrottle(): PerformanceMetrics {
         emitMetrics(clock.elapsedRealtimeMs())
         return liveMetrics
     }
 
-    fun sessionStats(): SessionStats = session.stats()
+    fun sessionStats(): SessionStats = accumulators.sessionStats()
 
-    fun screenStats(): SessionStats = screen.stats()
+    fun screenStats(): SessionStats = accumulators.screenStats()
+
+    fun intervals(): List<IntervalStats> = accumulators.intervals()
 
     fun worstFrames(): List<WorstFrames.Frame> = worstFrames.snapshot()
 
     fun reset() {
         frameWindow.clear()
-        session.clear()
-        screen.clear()
-        mark?.clear()
+        accumulators.clear()
         worstFrames.clear()
-        eachAccumulator(::seedEnvironment)
         isDrainingToIdle = false
         lastUpdateTime = 0L
         readings.reset(PerformanceMetrics.EMPTY)
@@ -192,19 +139,7 @@ internal class FrameAggregator(
         lastUpdateTime = now
         val fps = frameWindow.fps(clock.nanoTime())
         val metrics = PerformanceMetrics(
-            phases = FramePhases(
-                unknownDelay = frameWindow.metricValue(FramePhase.UNKNOWN_DELAY),
-                input = frameWindow.metricValue(FramePhase.INPUT),
-                animation = frameWindow.metricValue(FramePhase.ANIMATION),
-                layout = frameWindow.metricValue(FramePhase.LAYOUT),
-                draw = frameWindow.metricValue(FramePhase.DRAW),
-                sync = frameWindow.metricValue(FramePhase.SYNC),
-                commandIssue = frameWindow.metricValue(FramePhase.COMMAND_ISSUE),
-                swapBuffers = frameWindow.metricValue(FramePhase.SWAP_BUFFERS),
-                gpu = if (hasReportedGpuDuration) frameWindow.metricValue(FramePhase.GPU) else null,
-                total = frameWindow.metricValue(FramePhase.TOTAL),
-                overrun = frameWindow.overrunValue(),
-            ),
+            phases = frameWindow.phases(hasReportedGpuDuration),
             window = FrameWindowStats(
                 fps = fps,
                 jankPercent = frameWindow.jankPercent(),
@@ -212,7 +147,7 @@ internal class FrameAggregator(
                 worstFrameMs = frameWindow.worstTotalMs(),
                 history = frameWindow.history(),
             ),
-            session = session.stats(),
+            session = accumulators.sessionStats(),
             display = display,
         )
         readings.update(metrics)

@@ -30,6 +30,7 @@
                 <action android:name="com.timkrest.framehud.MARK" />
                 <action android:name="com.timkrest.framehud.CONTEXT" />
                 <action android:name="com.timkrest.framehud.EXPORT" />
+                <action android:name="com.timkrest.framehud.BASELINE" />
             </intent-filter>
         </receiver>
     </application>

@@ -13,6 +13,12 @@ import kotlin.test.fail
 class JankThresholdsTest {
 
     @Test
+    fun `a limit that cannot judge is refused at construction`() {
+        assertFailsWith<IllegalArgumentException> { JankThresholds(maxJankPercent = Float.NaN) }
+        assertFailsWith<IllegalArgumentException> { JankThresholds(maxP95FrameMs = -1f) }
+    }
+
+    @Test
     fun `a clean session passes`() {
         val verdict = JankThresholds().verdict(TAG, session(jankPercent = 2f, p95FrameMs = 40f))
         assertIs<GateVerdict.Pass>(verdict)

@@ -8,4 +8,23 @@ public data class JankThresholds(
     val maxFrozenFrames: Int = 0,
     val maxP95FrameMs: Float = Float.POSITIVE_INFINITY,
     val maxLostTimeMs: Float = Float.POSITIVE_INFINITY,
-)
+    val baseline: BaselineThresholds? = null,
+) {
+    init {
+        require(maxJankPercent >= 0f) { "maxJankPercent must be zero or more, got $maxJankPercent" }
+        require(maxFrozenFrames >= 0) { "maxFrozenFrames must be zero or more, got $maxFrozenFrames" }
+        require(maxP95FrameMs >= 0f) { "maxP95FrameMs must be zero or more, got $maxP95FrameMs" }
+        require(maxLostTimeMs >= 0f) { "maxLostTimeMs must be zero or more, got $maxLostTimeMs" }
+    }
+
+    public companion object {
+
+        @JvmStatic
+        @JvmOverloads
+        public fun baselineOnly(baseline: BaselineThresholds = BaselineThresholds()): JankThresholds = JankThresholds(
+            maxJankPercent = Float.POSITIVE_INFINITY,
+            maxFrozenFrames = Int.MAX_VALUE,
+            baseline = baseline,
+        )
+    }
+}

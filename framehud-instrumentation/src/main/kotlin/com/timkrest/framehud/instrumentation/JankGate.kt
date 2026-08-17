@@ -1,6 +1,7 @@
 package com.timkrest.framehud.instrumentation
 
 import com.timkrest.framehud.MeasuredMetric
+import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.internal.formatInvariant
 
@@ -26,45 +27,63 @@ internal fun GateVerdict.throwOrWarn(onInconclusive: OnInconclusive, warn: (Stri
     }
 }
 
-internal fun JankThresholds.verdict(tag: String, stats: SessionStats): GateVerdict {
-    val (tainted, trusted) = thresholdChecks(stats)
-        .partition { stats.confidence.issuesAffecting(it.metric).isNotEmpty() }
-    val tail = "over ${stats.frames} frames"
+internal fun JankThresholds.verdict(tag: String, stats: SessionStats): GateVerdict = gateVerdict(
+    tag = tag,
+    checks = thresholdChecks(stats),
+    confidence = stats.confidence,
+    tail = "over ${stats.frames} frames",
+)
+
+internal sealed interface GateCheck {
+
+    val metric: MeasuredMetric
+
+    data class Measured(override val metric: MeasuredMetric, val violationMessage: String?) : GateCheck
+
+    data class Unjudged(override val metric: MeasuredMetric, val reason: String) : GateCheck
+}
+
+internal fun gateVerdict(
+    tag: String,
+    checks: List<GateCheck>,
+    confidence: MeasurementConfidence,
+    tail: String,
+): GateVerdict {
+    val (tainted, trusted) = checks.filterIsInstance<GateCheck.Measured>()
+        .partition { confidence.issuesAffecting(it.metric).isNotEmpty() }
 
     val trustedViolations = trusted.mapNotNull { it.violationMessage }
     if (trustedViolations.isNotEmpty()) {
         return GateVerdict.Fail("$tag: ${trustedViolations.joinToString("; ")} $tail")
     }
-    if (tainted.isEmpty()) return GateVerdict.Pass
 
-    val issues = tainted
-        .flatMap { stats.confidence.issuesAffecting(it.metric) }
-        .distinct()
-        .joinToString("; ") { it.summary }
+    val doubts = tainted.flatMap { confidence.issuesAffecting(it.metric) }.distinct().map { it.summary } +
+        checks.filterIsInstance<GateCheck.Unjudged>().map { it.reason }
+    if (doubts.isEmpty()) return GateVerdict.Pass
+
     val taintedViolations = tainted.mapNotNull { it.violationMessage }
-    val reason = if (taintedViolations.isEmpty()) issues else "${taintedViolations.joinToString("; ")}, but $issues"
+    val doubted = doubts.joinToString("; ")
+    val reason = if (taintedViolations.isEmpty()) doubted else "${taintedViolations.joinToString("; ")}, but $doubted"
     return GateVerdict.Inconclusive("$tag: inconclusive — $reason $tail")
 }
 
-private class ThresholdCheck(val metric: MeasuredMetric, val violationMessage: String?)
-
-private fun JankThresholds.thresholdChecks(stats: SessionStats): List<ThresholdCheck> = listOfNotNull(
+private fun JankThresholds.thresholdChecks(stats: SessionStats): List<GateCheck> = listOfNotNull(
     limitCheck(MeasuredMetric.JANK_PERCENT, stats.jankPercent, maxJankPercent, "jank %.1f%% over %.1f%%"),
     frozenFramesCheck(stats.frozenFrames),
     limitCheck(MeasuredMetric.P95, stats.p95FrameMs, maxP95FrameMs, "p95 %.1f ms over %.1f ms"),
     limitCheck(MeasuredMetric.LOST_TIME, stats.lostTimeMs, maxLostTimeMs, "lost time %.1f ms over %.1f ms"),
 )
 
-private fun JankThresholds.frozenFramesCheck(frozenFrames: Int): ThresholdCheck? {
+private fun JankThresholds.frozenFramesCheck(frozenFrames: Int): GateCheck.Measured? {
     if (maxFrozenFrames == Int.MAX_VALUE) return null
-    return ThresholdCheck(
+    return GateCheck.Measured(
         metric = MeasuredMetric.FROZEN_FRAMES,
         violationMessage = "$frozenFrames frozen frame(s), allowed $maxFrozenFrames"
             .takeIf { frozenFrames > maxFrozenFrames },
     )
 }
 
-private fun limitCheck(metric: MeasuredMetric, value: Float, limit: Float, violation: String): ThresholdCheck? {
+private fun limitCheck(metric: MeasuredMetric, value: Float, limit: Float, violation: String): GateCheck.Measured? {
     if (!limit.isFinite()) return null
-    return ThresholdCheck(metric, formatInvariant(violation, value, limit).takeIf { value > limit })
+    return GateCheck.Measured(metric, formatInvariant(violation, value, limit).takeIf { value > limit })
 }

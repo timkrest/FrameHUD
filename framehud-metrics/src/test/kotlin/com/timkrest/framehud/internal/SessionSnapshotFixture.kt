@@ -1,10 +1,17 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.Baseline
+import com.timkrest.framehud.BaselineComparison
+import com.timkrest.framehud.BaselineEntry
+import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
+import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalStats
 import java.util.TimeZone
@@ -15,6 +22,8 @@ internal fun sessionSnapshotFixture(
     context: Map<String, String> = emptyMap(),
     session: SessionStats = SessionStats.EMPTY,
     screen: SessionStats = SessionStats.EMPTY,
+    intervals: List<IntervalStats> = emptyList(),
+    baseline: BaselineComparison? = null,
     phases: FramePhases = FramePhases.EMPTY,
     window: FrameWindowStats = FrameWindowStats.EMPTY,
     worstFrames: List<WorstFrames.Frame> = emptyList(),
@@ -26,9 +35,7 @@ internal fun sessionSnapshotFixture(
     packageName = "com.example.app",
     appVersionName = "9.9",
     appVersionCode = 42L,
-    apiLevel = 34,
-    manufacturer = "Google",
-    model = "Pixel 8",
+    environment = BASELINE_ENVIRONMENT,
     isEnabled = true,
     isFrozen = false,
     screenName = screenName,
@@ -36,6 +43,8 @@ internal fun sessionSnapshotFixture(
     context = context,
     session = session,
     screen = screen,
+    intervals = intervals,
+    baseline = baseline,
     phases = phases,
     window = window,
     display = DisplayInfo(refreshRateHz = 60f, frameBudgetMs = 16.6f),
@@ -54,3 +63,27 @@ internal fun windowOf(totalsMs: FloatArray, deadlinesMs: FloatArray) = FrameWind
 
 internal const val TAKEN_AT_EPOCH_MS = 1_700_000_000_000L
 internal const val TAKEN_AT_NS = 1_000_000_000_000L
+
+internal val BASELINE_ENVIRONMENT = BaselineEnvironment(
+    manufacturer = "Google",
+    model = "Pixel 8",
+    apiLevel = 34,
+)
+
+internal fun comparisonFixture(): BaselineComparison = Baseline(
+    environment = BASELINE_ENVIRONMENT,
+    entries = mapOf(
+        IntervalId.Session to BaselineEntry
+            .of(baselineStats(p95FrameMs = 10f, layoutMs = 4f))
+            .copy(runs = 3),
+    ),
+).compare(
+    environment = BASELINE_ENVIRONMENT,
+    intervals = listOf(IntervalStats(IntervalId.Session, baselineStats(p95FrameMs = 12f, layoutMs = 7f))),
+)
+
+private fun baselineStats(p95FrameMs: Float, layoutMs: Float) = SessionStats.EMPTY.copy(
+    frames = 300,
+    p95FrameMs = p95FrameMs,
+    phases = PhaseAverages(layout = layoutMs),
+)

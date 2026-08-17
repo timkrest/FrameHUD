@@ -1,8 +1,11 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.BaselineComparison
+import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalStats
@@ -11,7 +14,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-/** Everything a session report shows, captured at one moment so both formats agree. */
 internal class SessionSnapshot(
     val takenAtEpochMs: Long,
     val takenAtNs: Long,
@@ -20,9 +22,7 @@ internal class SessionSnapshot(
     val packageName: String,
     val appVersionName: String?,
     val appVersionCode: Long,
-    val apiLevel: Int,
-    val manufacturer: String,
-    val model: String,
+    val environment: BaselineEnvironment,
     val isEnabled: Boolean,
     val isFrozen: Boolean,
     val screenName: String?,
@@ -30,6 +30,8 @@ internal class SessionSnapshot(
     val context: Map<String, String>,
     val session: SessionStats,
     val screen: SessionStats,
+    val intervals: List<IntervalStats>,
+    val baseline: BaselineComparison?,
     val phases: FramePhases,
     val window: FrameWindowStats,
     val display: DisplayInfo,

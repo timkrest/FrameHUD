@@ -50,6 +50,11 @@ public object FrameHud {
     @set:MainThread
     public var mark: String? = null
 
+    @Volatile
+    @get:AnyThread
+    @set:AnyThread
+    public var baselineOverride: Baseline? = null
+
     public fun install(application: Application): Unit = Unit
 
     public fun show(): Unit = Unit
@@ -69,6 +74,12 @@ public object FrameHud {
 
     @WorkerThread
     public fun exportSession(timeoutMs: Long): SessionExport? = null
+
+    @WorkerThread
+    public fun saveBaseline(timeoutMs: Long): Baseline? = null
+
+    @WorkerThread
+    public fun awaitBaselineComparison(timeoutMs: Long): BaselineComparison? = null
 
     public fun shareSession(activity: Activity, export: SessionExport): Unit = Unit
 }

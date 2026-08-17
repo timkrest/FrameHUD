@@ -45,7 +45,37 @@ public data class PhaseAverages(
         PipelineStage.GPU -> gpu ?: 0f
     }
 
+    public operator fun get(phase: FramePhase): Float? = when (phase) {
+        FramePhase.UNKNOWN_DELAY -> unknownDelay
+        FramePhase.INPUT -> input
+        FramePhase.ANIMATION -> animation
+        FramePhase.LAYOUT -> layout
+        FramePhase.DRAW -> draw
+        FramePhase.SYNC -> sync
+        FramePhase.COMMAND_ISSUE -> commandIssue
+        FramePhase.SWAP_BUFFERS -> swapBuffers
+        FramePhase.GPU -> gpu
+        FramePhase.TOTAL -> total
+    }
+
     public companion object {
         public val EMPTY: PhaseAverages = PhaseAverages()
+
+        @InternalFrameHudApi
+        public fun of(average: (FramePhase) -> Float?): PhaseAverages {
+            fun ms(phase: FramePhase) = average(phase) ?: 0f
+            return PhaseAverages(
+                unknownDelay = ms(FramePhase.UNKNOWN_DELAY),
+                input = ms(FramePhase.INPUT),
+                animation = ms(FramePhase.ANIMATION),
+                layout = ms(FramePhase.LAYOUT),
+                draw = ms(FramePhase.DRAW),
+                sync = ms(FramePhase.SYNC),
+                commandIssue = ms(FramePhase.COMMAND_ISSUE),
+                swapBuffers = ms(FramePhase.SWAP_BUFFERS),
+                gpu = average(FramePhase.GPU),
+                total = ms(FramePhase.TOTAL),
+            )
+        }
     }
 }

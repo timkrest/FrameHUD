@@ -1,5 +1,6 @@
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.FramePhase
 import com.timkrest.framehud.MetricValue
 
 internal class PhaseRings(capacity: Int) {
