@@ -3,10 +3,10 @@ package com.timkrest.framehud.internal
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FramePhases
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PhaseAverages
-import com.timkrest.framehud.SessionStats
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -25,7 +25,7 @@ class SessionHtmlTest {
     @Test
     fun `confidence issues list their summaries`() {
         val confidence = MeasurementConfidence(issues = listOf(ConfidenceIssue.Emulator))
-        val html = sessionSnapshotFixture(session = SessionStats.EMPTY.copy(confidence = confidence)).toHtml()
+        val html = sessionSnapshotFixture(session = IntervalStats.EMPTY.copy(confidence = confidence)).toHtml()
         assertContains(html, "running on an emulator")
     }
 
@@ -34,7 +34,7 @@ class SessionHtmlTest {
         val html = sessionSnapshotFixture(
             screenName = "cart",
             context = mapOf("variant" to "b"),
-            session = SessionStats.EMPTY.copy(frames = 120, p95FrameMs = 18f, jankPercent = 7.5f, frozenFrames = 1),
+            session = IntervalStats.EMPTY.copy(frames = 120, p95FrameMs = 18f, jankPercent = 7.5f, frozenFrames = 1),
             window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
             worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS - 1_000_000_000L)),
         ).toHtml()
@@ -68,7 +68,7 @@ class SessionHtmlTest {
 
     private fun everyStyledElement() = sessionSnapshotFixture(
         context = mapOf("variant" to "b"),
-        session = SessionStats.EMPTY.copy(droppedReports = 2),
+        session = IntervalStats.EMPTY.copy(droppedReports = 2),
         window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
         worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS)),
     )
@@ -90,8 +90,8 @@ class SessionHtmlTest {
     @Test
     fun `a phase is reported per interval, with the peak the whole session reached`() {
         val html = sessionSnapshotFixture(
-            session = SessionStats.EMPTY.copy(phases = PhaseAverages(layout = 9f, total = 12f)),
-            screen = SessionStats.EMPTY.copy(phases = PhaseAverages(layout = 4f, total = 6f)),
+            session = IntervalStats.EMPTY.copy(phases = PhaseAverages(layout = 9f, total = 12f)),
+            screen = IntervalStats.EMPTY.copy(phases = PhaseAverages(layout = 4f, total = 6f)),
             phases = FramePhases(layout = MetricValue(average = 9f, peak = 21f)),
         ).toHtml()
 
@@ -102,7 +102,7 @@ class SessionHtmlTest {
 
     @Test
     fun `a screen issue the whole session does not share is called out`() {
-        val screen = SessionStats.EMPTY.copy(
+        val screen = IntervalStats.EMPTY.copy(
             confidence = MeasurementConfidence(issues = listOf(ConfidenceIssue.ShortSample(12))),
         )
         val html = sessionSnapshotFixture(screen = screen).toHtml()

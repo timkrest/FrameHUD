@@ -2,8 +2,8 @@ package com.timkrest.framehud.internal
 
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.FramePhase
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.PhaseAverages
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -41,7 +41,7 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
         } else {
             currentJankStreak = 0
         }
-        if (totalMs > SessionStats.FROZEN_FRAME_MS) frozenFrames++
+        if (totalMs > IntervalStats.FROZEN_FRAME_MS) frozenFrames++
         confidence.addRefreshRate(refreshRateHz)
     }
 
@@ -71,9 +71,9 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
         collectingSinceMs = null
     }
 
-    fun stats(): SessionStats {
+    fun stats(): IntervalStats {
         val frames = totals.count
-        return SessionStats(
+        return IntervalStats(
             frames = frames,
             durationMs = collectedDurationMs(),
             p50FrameMs = totals.percentile(P50),

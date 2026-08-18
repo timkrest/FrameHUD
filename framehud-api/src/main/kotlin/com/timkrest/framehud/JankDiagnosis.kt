@@ -88,6 +88,7 @@ public data class JankDiagnosis(
 
         private const val VSYNC_STARVATION_RATIO = 0.7f
 
+        @InternalFrameHudApi
         public fun of(
             metrics: PerformanceMetrics,
             memory: MemoryStats,
@@ -120,7 +121,7 @@ public data class JankDiagnosis(
             )
         }
 
-        private fun gcTimeShare(memory: MemoryStats, session: SessionStats): Float =
+        private fun gcTimeShare(memory: MemoryStats, session: IntervalStats): Float =
             if (session.durationMs > 0L) memory.gcTimeMs.toFloat() / session.durationMs else 0f
 
         private fun isVsyncStarved(choreographerTicksPerSecond: Int, refreshRateHz: Float): Boolean =

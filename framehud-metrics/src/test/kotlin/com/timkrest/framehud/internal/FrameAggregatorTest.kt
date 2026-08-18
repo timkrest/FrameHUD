@@ -3,8 +3,8 @@ package com.timkrest.framehud.internal
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.PerformanceMetrics
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -460,10 +460,10 @@ class FrameAggregatorTest {
         assertEquals(0L, aggregator.interval(IntervalId.Screen("Home")).durationMs)
     }
 
-    private fun FrameAggregator.interval(id: IntervalId): SessionStats =
+    private fun FrameAggregator.interval(id: IntervalId): IntervalStats =
         assertNotNull(intervals().firstOrNull { it.id == id }, "no interval for $id").stats
 
-    private fun hasThermalIssue(stats: SessionStats): Boolean = stats.confidence.issues.any { it is ConfidenceIssue.ThermalThrottling }
+    private fun hasThermalIssue(stats: IntervalStats): Boolean = stats.confidence.issues.any { it is ConfidenceIssue.ThermalThrottling }
 
     private fun advancePastThrottle() {
         clock.elapsedMs += FrameHudConfig.DEFAULT_METRICS_THROTTLE_INTERVAL_MS

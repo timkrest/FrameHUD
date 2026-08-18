@@ -1,8 +1,8 @@
 package com.timkrest.framehud.instrumentation
 
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.internal.formatInvariant
 
 public enum class OnInconclusive {
@@ -14,11 +14,15 @@ internal sealed interface GateVerdict {
     data object Pass : GateVerdict
     data class Fail(val message: String) : GateVerdict
     data class Inconclusive(val message: String) : GateVerdict
+
+    /** Nothing was checked, and no run can be blamed for it. */
+    data class Skipped(val message: String) : GateVerdict
 }
 
 internal fun GateVerdict.throwOrWarn(onInconclusive: OnInconclusive, warn: (String) -> Unit) {
     when (this) {
         GateVerdict.Pass -> Unit
+        is GateVerdict.Skipped -> warn(message)
         is GateVerdict.Fail -> throw AssertionError(message)
         is GateVerdict.Inconclusive -> when (onInconclusive) {
             OnInconclusive.FAIL -> throw AssertionError(message)
@@ -27,7 +31,7 @@ internal fun GateVerdict.throwOrWarn(onInconclusive: OnInconclusive, warn: (Stri
     }
 }
 
-internal fun JankThresholds.verdict(tag: String, stats: SessionStats): GateVerdict = gateVerdict(
+internal fun JankThresholds.verdict(tag: String, stats: IntervalStats): GateVerdict = gateVerdict(
     tag = tag,
     checks = thresholdChecks(stats),
     confidence = stats.confidence,
@@ -67,7 +71,7 @@ internal fun gateVerdict(
     return GateVerdict.Inconclusive("$tag: inconclusive — $reason $tail")
 }
 
-private fun JankThresholds.thresholdChecks(stats: SessionStats): List<GateCheck> = listOfNotNull(
+private fun JankThresholds.thresholdChecks(stats: IntervalStats): List<GateCheck> = listOfNotNull(
     limitCheck(MeasuredMetric.JANK_PERCENT, stats.jankPercent, maxJankPercent, "jank %.1f%% over %.1f%%"),
     frozenFramesCheck(stats.frozenFrames),
     limitCheck(MeasuredMetric.P95, stats.p95FrameMs, maxP95FrameMs, "p95 %.1f ms over %.1f ms"),

@@ -16,7 +16,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
@@ -49,7 +48,7 @@ class ScreenEventsTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.renderFrames()
 
-            val stats = assertNotNull(FrameHud.awaitSessionStats(STATS_TIMEOUT_MS), "nothing was collecting")
+            val stats = await { FrameHud.sessionStats() }
             assertTrue(stats.frames > 0, "no frames reached the collector")
         }
     }
@@ -169,7 +168,6 @@ class ScreenEventsTest {
             MainActivity::class.java.simpleName,
             DetailsActivity::class.java.simpleName,
         )
-        const val STATS_TIMEOUT_MS = 2_000L
         const val EVENT_TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 50L
     }

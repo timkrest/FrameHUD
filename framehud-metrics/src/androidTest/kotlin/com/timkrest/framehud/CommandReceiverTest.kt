@@ -72,7 +72,7 @@ class CommandReceiverTest {
     @Test
     fun theExportCommandAnswersWithThePathOfTheReport() {
         ActivityScenario.launch(BlankActivity::class.java).use {
-            assertNotNull(FrameHud.awaitSessionStats(TIMEOUT_MS), "nothing was collecting")
+            awaitCollector()
 
             val result = assertNotNull(broadcast(Intent(FrameHudCommandReceiver.ACTION_EXPORT)))
             assertTrue(result.endsWith(".json"), "expected a report path, got $result")
@@ -83,7 +83,7 @@ class CommandReceiverTest {
     @Test
     fun theBaselineCommandAnswersWithThePathOfTheBaseline() {
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
-            assertNotNull(FrameHud.awaitSessionStats(TIMEOUT_MS), "nothing was collecting")
+            awaitCollector()
             scenario.drawFrames(FRAMES)
 
             val result = assertNotNull(broadcast(Intent(FrameHudCommandReceiver.ACTION_BASELINE)))

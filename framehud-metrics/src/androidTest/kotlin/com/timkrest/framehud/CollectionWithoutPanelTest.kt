@@ -5,7 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 class CollectionWithoutPanelTest {
@@ -18,13 +18,9 @@ class CollectionWithoutPanelTest {
     @Test
     fun theSessionOutlivesTheScreen() {
         ActivityScenario.launch(BlankActivity::class.java).use {
-            assertNotNull(FrameHud.awaitSessionStats(TIMEOUT_MS), "no panel, so nothing started collecting")
+            assertTrue(await { FrameHud.gateStats().isCollecting }, "no panel, so nothing started collecting")
         }
 
-        assertNotNull(FrameHud.awaitSessionStats(TIMEOUT_MS), "the session went away with the screen")
-    }
-
-    private companion object {
-        const val TIMEOUT_MS = 5_000L
+        assertTrue(await { FrameHud.gateStats().isCollecting }, "the session went away with the screen")
     }
 }

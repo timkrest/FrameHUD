@@ -6,6 +6,42 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `FrameHud.diagnosis`, a `StateFlow<JankDiagnosis>` that says what the rolling window is bound by
+  and what it blames. Reading it no longer means collecting four flows and calling `JankDiagnosis.of`
+  yourself, which is why that factory is now internal. It reads healthy while no screen draws, and
+  freezes with the other readings.
+- `FrameHud.intervals()` answers with what the run measured per interval: the session, every screen
+  and every mark, each with the frame budget that judged it, including the ones that drew no frame. `IntervalReport` was public and
+  `Baseline.updatedWith` and `Baseline.compare` took it, but nothing handed one out, so a baseline of
+  your own could only be built for the session and only without a budget.
+- `FramePhases.get(FramePhase)` reads one phase of the last frames, the way `PhaseAverages.get`
+  already read one phase of an interval.
+- `BaselineEntry.of` takes the number of runs the stats already average.
+
+### Changed
+
+- `SessionStats` is now `IntervalStats`, and the type that names it and carries its frame budget is
+  now `IntervalReport`. Both types describe a session, a screen or a mark; only the old names said
+  otherwise.
+- Reading a session suspends instead of blocking. `awaitSessionStats`, `exportSession`,
+  `saveBaseline` and `awaitBaselineComparison` are now `sessionStats()`, `exportSession()`,
+  `saveBaseline()` and `compareWithBaseline()`, and none of them takes a timeout: wrap the call in
+  `withTimeout` when a run must not wait. The export and the baseline write run on `Dispatchers.IO`
+  on their own, so an app no longer has to move them off the main thread by hand. In a test without a
+  coroutine, `runBlocking` does what the blocking calls did.
+- `null` now says one thing per call. `sessionStats()` always answers, with `IntervalStats.EMPTY`
+  when nothing was collected; `exportSession()` returns null when nothing was collecting;
+  `saveBaseline()` returns null when the session recorded no frame; and a call that finds FrameHud
+  uninstalled throws instead of logging and answering null.
+- `compareWithBaseline()` never returns null: a device with no baseline yet is
+  `BaselineComparison.NoBaseline`. The JSON export writes the same `"baseline": null` it always did.
+- `IntervalComparison.interval` is now `id`, the name `IntervalReport` already uses.
+- `BaselineEntry` no longer copies. Its `copy` carried the internal record of which runs measured a
+  figure cleanly, so a changed number kept the trust of the number it replaced. Build an entry with
+  `BaselineEntry.of`, which now takes `runs`.
+
 ## [0.10.0] - 2026-08-17
 
 ### Added

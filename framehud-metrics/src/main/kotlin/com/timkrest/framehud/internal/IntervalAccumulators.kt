@@ -2,8 +2,8 @@ package com.timkrest.framehud.internal
 
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 
 @WorkerThread
@@ -76,7 +76,7 @@ internal class IntervalAccumulators(
         latestBattery = null
     }
 
-    fun restartScreen(label: String? = null): SessionStats {
+    fun restartScreen(label: String? = null): IntervalStats {
         screen.stopCollecting()
         val ended = screen.stats()
         beginScreen(label)
@@ -96,7 +96,7 @@ internal class IntervalAccumulators(
         markTotals.begin(name)?.let(::seedEnvironment)
     }
 
-    fun endMark(): SessionStats? {
+    fun endMark(): IntervalStats? {
         markTotals.end()
         val ended = mark ?: return null
         mark = null
@@ -109,12 +109,12 @@ internal class IntervalAccumulators(
         latestBattery?.let(accumulator::addBattery)
     }
 
-    fun sessionStats(): SessionStats = session.stats()
+    fun sessionStats(): IntervalStats = session.stats()
 
-    fun screenStats(): SessionStats = screen.stats()
+    fun screenStats(): IntervalStats = screen.stats()
 
-    fun intervals(): List<IntervalStats> = buildList {
-        add(IntervalStats(IntervalId.Session, session.stats(), session.frameBudgetMs()))
+    fun intervals(): List<IntervalReport> = buildList {
+        add(IntervalReport(IntervalId.Session, session.stats(), session.frameBudgetMs()))
         addAll(screenTotals.intervals())
         addAll(markTotals.intervals())
     }

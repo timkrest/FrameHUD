@@ -4,13 +4,10 @@ import android.util.Log
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.JankSeverity
-import com.timkrest.framehud.MemoryStats
-import com.timkrest.framehud.PerformanceMetrics
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
-import com.timkrest.framehud.ThermalStats
 
 @WorkerThread
 internal class EventDispatcher(private val clock: MetricsClock, private val onSlowListener: (callMs: Float) -> Unit) {
@@ -32,20 +29,13 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
 
     fun onSample(
         listeners: List<FrameHudEventListener>,
-        metrics: PerformanceMetrics,
-        memory: MemoryStats,
-        thermal: ThermalStats,
-        choreographerTicksPerSecond: Int,
+        diagnosis: JankDiagnosis,
+        frozenFrames: Int,
+        thermalLevel: ThermalLevel,
         screen: String?,
         mark: String?,
         context: Map<String, String>,
     ) {
-        val diagnosis = JankDiagnosis.of(
-            metrics = metrics,
-            memory = memory,
-            thermal = thermal,
-            choreographerTicksPerSecond = choreographerTicksPerSecond,
-        )
         val burst = diagnosis.severity != JankSeverity.NONE
         if (burst && !isInBurst) {
             listeners.emit(
@@ -54,7 +44,6 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
         }
         isInBurst = burst
 
-        val frozenFrames = metrics.session.frozenFrames
         if (frozenFrames > lastFrozenFrames) {
             listeners.emit(
                 FrameHudEvent.FrozenFrames(
@@ -67,20 +56,20 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
         }
         lastFrozenFrames = frozenFrames
 
-        if (thermal.level != lastThermalLevel) {
+        if (thermalLevel != lastThermalLevel) {
             val isFirstReading = lastThermalLevel == ThermalLevel.UNKNOWN
-            if (!isFirstReading || thermal.level.isThrottling) {
+            if (!isFirstReading || thermalLevel.isThrottling) {
                 listeners.emit(
-                    FrameHudEvent.ThermalChanged(level = thermal.level, screen = screen, mark = mark, context = context),
+                    FrameHudEvent.ThermalChanged(level = thermalLevel, screen = screen, mark = mark, context = context),
                 )
             }
-            lastThermalLevel = thermal.level
+            lastThermalLevel = thermalLevel
         }
     }
 
     fun onScreenEnded(
         listeners: List<FrameHudEventListener>,
-        stats: SessionStats,
+        stats: IntervalStats,
         screen: String?,
         context: Map<String, String>,
     ) {
@@ -91,7 +80,7 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
 
     fun onMarkEnded(
         listeners: List<FrameHudEventListener>,
-        stats: SessionStats,
+        stats: IntervalStats,
         mark: String,
         screen: String?,
         context: Map<String, String>,

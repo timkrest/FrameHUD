@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.annotation.WorkerThread
 import androidx.core.content.pm.PackageInfoCompat
 import com.timkrest.framehud.Baseline
+import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.SessionExport
 import com.timkrest.framehud.metrics.BuildConfig
@@ -45,7 +46,7 @@ internal fun sessionSnapshot(
         session = stats.session,
         screen = stats.screen,
         intervals = stats.intervals,
-        baseline = baseline?.compare(environment, stats.intervals),
+        baseline = baseline?.compare(environment, stats.intervals) ?: BaselineComparison.NoBaseline,
         phases = stats.metrics.phases,
         window = stats.metrics.window,
         display = stats.metrics.display,

@@ -1,7 +1,7 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.ConfidenceIssue
-import com.timkrest.framehud.SessionStats
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -24,10 +24,10 @@ class SessionAccumulatorTest {
     @Test
     fun `a frame at the frozen threshold is not frozen, a millisecond past it is`() {
         val session = SessionAccumulator(TestMetricsClock())
-        session.addFrame(totalMs = SessionStats.FROZEN_FRAME_MS, isJanky = true)
+        session.addFrame(totalMs = IntervalStats.FROZEN_FRAME_MS, isJanky = true)
         assertEquals(0, session.stats().frozenFrames)
 
-        session.addFrame(totalMs = SessionStats.FROZEN_FRAME_MS + 1f, isJanky = true)
+        session.addFrame(totalMs = IntervalStats.FROZEN_FRAME_MS + 1f, isJanky = true)
         assertEquals(1, session.stats().frozenFrames)
     }
 

@@ -8,17 +8,17 @@ import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalStats
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 @MainThread
 internal class MetricsEngine(
@@ -56,6 +56,8 @@ internal class MetricsEngine(
 
     private val _activeMark = MutableStateFlow<String?>(null)
 
+    private val diagnosisReadings = FreezableReading(JankDiagnosis.HEALTHY)
+
     private val samplerLock = Any()
 
     @Volatile
@@ -77,6 +79,9 @@ internal class MetricsEngine(
 
     @get:AnyThread
     val activeMark: StateFlow<String?> = _activeMark.asStateFlow()
+
+    @get:AnyThread
+    val diagnosis: StateFlow<JankDiagnosis> = diagnosisReadings.published
 
     fun start(context: Context) {
         if (isRunning) return
@@ -154,6 +159,7 @@ internal class MetricsEngine(
         val listeners = config().eventListeners
         val endedContext = context
         sampler.post {
+            diagnosisReadings.update(JankDiagnosis.HEALTHY)
             aggregator.stopCollecting()
             memoryMonitor.stopCollecting()
             eventDispatcher.onScreenEnded(
@@ -177,6 +183,7 @@ internal class MetricsEngine(
 
     @AnyThread
     fun setFrozen(frozen: Boolean) {
+        diagnosisReadings.setFrozen(frozen)
         aggregator.setFrozen(frozen)
         memoryMonitor.setFrozen(frozen)
         choreographerTickMonitor.setFrozen(frozen)
@@ -190,14 +197,18 @@ internal class MetricsEngine(
             aggregator.reset()
             memoryMonitor.reset()
             eventDispatcher.reset()
+            diagnosisReadings.reset(JankDiagnosis.HEALTHY)
         }
     }
 
-    @WorkerThread
-    fun awaitSessionStats(timeoutMs: Long): SessionStats? = awaitOnMetricsThread(timeoutMs, aggregator::sessionStats)
+    @AnyThread
+    suspend fun sessionStats(): IntervalStats? = readOnMetricsThread(aggregator::sessionStats)
 
-    @WorkerThread
-    fun awaitExportStats(timeoutMs: Long): ExportStats? = awaitOnMetricsThread(timeoutMs) {
+    @AnyThread
+    suspend fun intervals(): List<IntervalReport>? = readOnMetricsThread(aggregator::intervals)
+
+    @AnyThread
+    suspend fun exportStats(): ExportStats? = readOnMetricsThread {
         ExportStats(
             session = aggregator.sessionStats(),
             screen = aggregator.screenStats(),
@@ -212,8 +223,8 @@ internal class MetricsEngine(
         )
     }
 
-    @WorkerThread
-    fun awaitBaselineStats(timeoutMs: Long): BaselineStats? = awaitOnMetricsThread(timeoutMs) {
+    @AnyThread
+    suspend fun baselineStats(): BaselineStats? = readOnMetricsThread {
         BaselineStats(
             sessionId = sessionId,
             session = aggregator.sessionStats(),
@@ -222,20 +233,14 @@ internal class MetricsEngine(
         )
     }
 
-    @WorkerThread
-    private fun <T : Any> awaitOnMetricsThread(timeoutMs: Long, read: () -> T): T? {
-        val sampler = sampler ?: return null
-        val result = AtomicReference<T>()
-        val done = CountDownLatch(1)
-        val posted = sampler.post {
-            try {
-                result.set(read())
-            } finally {
-                done.countDown()
+    @AnyThread
+    private suspend fun <T : Any> readOnMetricsThread(read: () -> T): T? = suspendCancellableCoroutine { waiting ->
+        val sampler = sampler
+        val posted = sampler != null &&
+            sampler.post {
+                if (waiting.isActive) waiting.resumeWith(runCatching(read))
             }
-        }
-        if (!posted) return null
-        return if (done.await(timeoutMs, TimeUnit.MILLISECONDS)) result.get() else null
+        if (!posted) waiting.resume(null)
     }
 
     private fun endMark(endedScreen: String? = measuredScreen.active) {
@@ -323,18 +328,27 @@ internal class MetricsEngine(
         aggregator.onTick()
         sampleMonitors()
         if (sampler?.isBound != true) return
+        val metrics = aggregator.liveMetrics
+        val memory = memoryMonitor.liveStats
+        val thermal = thermalMonitor.liveStats
+        val diagnosis = JankDiagnosis.of(
+            metrics = metrics,
+            memory = memory,
+            thermal = thermal,
+            choreographerTicksPerSecond = choreographerTickMonitor.liveTicksPerSecond,
+        )
+        diagnosisReadings.update(diagnosis)
         eventDispatcher.onSample(
             listeners = config().eventListeners,
-            metrics = aggregator.liveMetrics,
-            memory = memoryMonitor.liveStats,
-            thermal = thermalMonitor.liveStats,
-            choreographerTicksPerSecond = choreographerTickMonitor.liveTicksPerSecond,
+            diagnosis = diagnosis,
+            frozenFrames = metrics.session.frozenFrames,
+            thermalLevel = thermal.level,
             screen = aggregator.screenName,
             mark = _activeMark.value,
             context = context,
         )
         tracer.jankBurstChanged(eventDispatcher.isInBurst)
-        tracer.publishCounters(metrics = aggregator.liveMetrics, memory = memoryMonitor.liveStats)
+        tracer.publishCounters(metrics = metrics, memory = memory)
     }
 
     private fun tickIntervalMs(): Long = maxOf(config().metricsThrottleIntervalMs, MIN_TICK_INTERVAL_MS)
@@ -345,15 +359,15 @@ internal class MetricsEngine(
 
     class BaselineStats(
         val sessionId: Int,
-        val session: SessionStats,
+        val session: IntervalStats,
         val environment: BaselineEnvironment,
-        val intervals: List<IntervalStats>,
+        val intervals: List<IntervalReport>,
     )
 
     class ExportStats(
-        val session: SessionStats,
-        val screen: SessionStats,
-        val intervals: List<IntervalStats>,
+        val session: IntervalStats,
+        val screen: IntervalStats,
+        val intervals: List<IntervalReport>,
         val metrics: PerformanceMetrics,
         val memory: MemoryStats,
         val thermal: ThermalStats,

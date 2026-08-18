@@ -6,9 +6,9 @@ import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.BaselineTrust
 import com.timkrest.framehud.BudgetCandidate
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.PhaseAverages
-import com.timkrest.framehud.SessionStats
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -32,7 +32,8 @@ class BaselineJsonTest {
 
     @Test
     fun `the runs behind each figure survive a round trip`() {
-        val entry = entry(p95FrameMs = 10f).copy(
+        val entry = entry(
+            p95FrameMs = 10f,
             runs = 3,
             trust = BaselineTrust(
                 cleanRuns = mapOf(MeasuredMetric.P95 to 0, MeasuredMetric.P99 to 2),
@@ -46,7 +47,8 @@ class BaselineJsonTest {
 
     @Test
     fun `the frame budget and the candidate budget survive a round trip`() {
-        val entry = entry(p95FrameMs = 10f).copy(
+        val entry = entry(
+            p95FrameMs = 10f,
             runs = 3,
             frameBudgetMs = 17,
             trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
@@ -173,7 +175,8 @@ class BaselineJsonTest {
 
     @Test
     fun `a candidate budget that already replaced the budget rejects the file`() {
-        val entry = entry(p95FrameMs = 10f).copy(
+        val entry = entry(
+            p95FrameMs = 10f,
             runs = 3,
             frameBudgetMs = 17,
             trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
@@ -187,7 +190,8 @@ class BaselineJsonTest {
 
     @Test
     fun `a candidate for the budget already in effect rejects the file`() {
-        val entry = entry(p95FrameMs = 10f).copy(
+        val entry = entry(
+            p95FrameMs = 10f,
             runs = 3,
             frameBudgetMs = 17,
             trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
@@ -201,7 +205,8 @@ class BaselineJsonTest {
 
     @Test
     fun `a candidate backed by more runs than the entry holds rejects the file`() {
-        val entry = entry(p95FrameMs = 10f).copy(
+        val entry = entry(
+            p95FrameMs = 10f,
             runs = 3,
             frameBudgetMs = 17,
             trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
@@ -230,15 +235,37 @@ class BaselineJsonTest {
 
     private fun read(json: String): Baseline? = (parseBaseline(json) as? ParsedBaseline.Read)?.baseline
 
-    private fun entry(p95FrameMs: Float) = BaselineEntry.of(
-        SessionStats.EMPTY.copy(
-            frames = 100,
-            p95FrameMs = p95FrameMs,
-            lostTimeMs = 25f,
-            frozenFrames = 1,
-            phases = PhaseAverages(layout = 4f, draw = 2f, total = 12f),
-        ),
-    )
+    private fun entry(
+        p95FrameMs: Float,
+        runs: Int = 1,
+        frameBudgetMs: Int? = null,
+        trust: BaselineTrust? = null,
+    ): BaselineEntry {
+        val measured = BaselineEntry.of(
+            stats = IntervalStats.EMPTY.copy(
+                frames = 100,
+                p95FrameMs = p95FrameMs,
+                lostTimeMs = 25f,
+                frozenFrames = 1,
+                phases = PhaseAverages(layout = 4f, draw = 2f, total = 12f),
+            ),
+            frameBudgetMs = frameBudgetMs,
+            runs = runs,
+        )
+        if (trust == null) return measured
+        return BaselineEntry.restored(
+            runs = measured.runs,
+            p50FrameMs = measured.p50FrameMs,
+            p95FrameMs = measured.p95FrameMs,
+            p99FrameMs = measured.p99FrameMs,
+            jankPercent = measured.jankPercent,
+            lostTimeMsPerFrame = measured.lostTimeMsPerFrame,
+            frozenPercent = measured.frozenPercent,
+            phases = measured.phases,
+            frameBudgetMs = measured.frameBudgetMs,
+            trust = trust,
+        )
+    }
 
     private companion object {
         val ENVIRONMENT = BaselineEnvironment(

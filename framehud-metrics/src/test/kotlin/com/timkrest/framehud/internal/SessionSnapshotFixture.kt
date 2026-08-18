@@ -9,10 +9,10 @@ import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PhaseAverages
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalStats
 import java.util.TimeZone
 
@@ -20,10 +20,10 @@ internal fun sessionSnapshotFixture(
     screenName: String? = null,
     mark: String? = null,
     context: Map<String, String> = emptyMap(),
-    session: SessionStats = SessionStats.EMPTY,
-    screen: SessionStats = SessionStats.EMPTY,
-    intervals: List<IntervalStats> = emptyList(),
-    baseline: BaselineComparison? = null,
+    session: IntervalStats = IntervalStats.EMPTY,
+    screen: IntervalStats = IntervalStats.EMPTY,
+    intervals: List<IntervalReport> = emptyList(),
+    baseline: BaselineComparison = BaselineComparison.NoBaseline,
     phases: FramePhases = FramePhases.EMPTY,
     window: FrameWindowStats = FrameWindowStats.EMPTY,
     worstFrames: List<WorstFrames.Frame> = emptyList(),
@@ -73,16 +73,14 @@ internal val BASELINE_ENVIRONMENT = BaselineEnvironment(
 internal fun comparisonFixture(): BaselineComparison = Baseline(
     environment = BASELINE_ENVIRONMENT,
     entries = mapOf(
-        IntervalId.Session to BaselineEntry
-            .of(baselineStats(p95FrameMs = 10f, layoutMs = 4f))
-            .copy(runs = 3),
+        IntervalId.Session to BaselineEntry.of(baselineStats(p95FrameMs = 10f, layoutMs = 4f), runs = 3),
     ),
 ).compare(
     environment = BASELINE_ENVIRONMENT,
-    intervals = listOf(IntervalStats(IntervalId.Session, baselineStats(p95FrameMs = 12f, layoutMs = 7f))),
+    intervals = listOf(IntervalReport(IntervalId.Session, baselineStats(p95FrameMs = 12f, layoutMs = 7f))),
 )
 
-private fun baselineStats(p95FrameMs: Float, layoutMs: Float) = SessionStats.EMPTY.copy(
+private fun baselineStats(p95FrameMs: Float, layoutMs: Float) = IntervalStats.EMPTY.copy(
     frames = 300,
     p95FrameMs = p95FrameMs,
     phases = PhaseAverages(layout = layoutMs),

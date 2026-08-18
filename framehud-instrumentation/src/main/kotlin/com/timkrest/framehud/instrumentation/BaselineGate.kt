@@ -5,19 +5,22 @@ import com.timkrest.framehud.BaselineMetric
 import com.timkrest.framehud.ComparisonGap
 import com.timkrest.framehud.IntervalComparison
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MetricDelta
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.internal.grewTheMost
 
 internal fun BaselineThresholds.verdict(
     tag: String,
     comparison: BaselineComparison,
-    stats: SessionStats,
+    stats: IntervalStats,
 ): GateVerdict = when (comparison) {
     is BaselineComparison.OtherEnvironment -> GateVerdict.Inconclusive(
         "$tag: inconclusive — the baseline was recorded on ${comparison.recorded.label}, " +
             "this run measured ${comparison.current.label}",
     )
+
+    BaselineComparison.NoBaseline ->
+        GateVerdict.Skipped("$tag: no baseline on this device yet, nothing to compare against")
 
     is BaselineComparison.Compared -> comparison.interval(IntervalId.Session)
         ?.let { session -> sessionVerdict(tag, session, stats) }
@@ -27,7 +30,7 @@ internal fun BaselineThresholds.verdict(
 private fun BaselineThresholds.sessionVerdict(
     tag: String,
     session: IntervalComparison,
-    stats: SessionStats,
+    stats: IntervalStats,
 ): GateVerdict = gateVerdict(
     tag = tag,
     checks = metrics.map { metric -> session.checkOf(metric, maxRelativeIncreasePercent) },

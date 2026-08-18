@@ -23,7 +23,7 @@ class ExportSessionTest {
     @Test
     fun theFileProviderServesAnExport() {
         ActivityScenario.launch(BlankActivity::class.java).use {
-            val export = assertNotNull(FrameHud.exportSession(TIMEOUT_MS), "nothing was collecting")
+            val export = assertNotNull(await { FrameHud.exportSession() }, "nothing was collecting")
 
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             val uri = FileProvider.getUriForFile(context, exportAuthority(context), export.html)
@@ -40,7 +40,7 @@ class ExportSessionTest {
         }
         try {
             ActivityScenario.launch(BlankActivity::class.java).use {
-                val export = assertNotNull(FrameHud.exportSession(TIMEOUT_MS), "nothing was collecting")
+                val export = assertNotNull(await { FrameHud.exportSession() }, "nothing was collecting")
 
                 assertTrue(export.json.length() > 0L, "the JSON report is empty")
                 assertTrue(export.html.length() > 0L, "the HTML report is empty")
@@ -53,9 +53,5 @@ class ExportSessionTest {
                 FrameHud.context = emptyMap()
             }
         }
-    }
-
-    private companion object {
-        const val TIMEOUT_MS = 5_000L
     }
 }

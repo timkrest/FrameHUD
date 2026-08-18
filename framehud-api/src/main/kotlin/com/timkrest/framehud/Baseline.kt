@@ -68,7 +68,8 @@ public data class BudgetCandidate(
 }
 
 @Immutable
-public data class BaselineEntry(
+@ConsistentCopyVisibility
+public data class BaselineEntry internal constructor(
     val runs: Int,
     val p50FrameMs: Float,
     val p95FrameMs: Float,
@@ -199,15 +200,18 @@ public data class BaselineEntry(
 
     public companion object {
 
-        /** A [frameBudgetMs] of null keeps jank percent and lost time out of the entry. */
-        public fun of(stats: SessionStats, frameBudgetMs: Int? = null): BaselineEntry {
+        /**
+         * A [frameBudgetMs] of null keeps jank percent and lost time out of the entry. [runs] says
+         * how many runs [stats] already average, which is what a comparison reports back.
+         */
+        public fun of(stats: IntervalStats, frameBudgetMs: Int? = null, runs: Int = 1): BaselineEntry {
             val cleanRuns = TRUST_CATEGORIES.mapNotNull { category ->
                 val unjudged = category in BUDGET_CATEGORIES && frameBudgetMs == null
                 if (unjudged || stats.confidence.issuesAffecting(category).isNotEmpty()) category to 0 else null
             }.toMap()
             val measuredGpu = stats.phases.gpu != null && cleanRuns[MeasuredMetric.RENDER_PHASES] != 0
             return BaselineEntry(
-                runs = 1,
+                runs = runs,
                 p50FrameMs = stats.p50FrameMs,
                 p95FrameMs = stats.p95FrameMs,
                 p99FrameMs = stats.p99FrameMs,
@@ -219,6 +223,31 @@ public data class BaselineEntry(
                 trust = BaselineTrust(cleanRuns = cleanRuns, gpuRuns = if (measuredGpu) null else 0),
             )
         }
+
+        @InternalFrameHudApi
+        public fun restored(
+            runs: Int,
+            p50FrameMs: Float = 0f,
+            p95FrameMs: Float = 0f,
+            p99FrameMs: Float = 0f,
+            jankPercent: Float = 0f,
+            lostTimeMsPerFrame: Float = 0f,
+            frozenPercent: Float = 0f,
+            phases: PhaseAverages = PhaseAverages.EMPTY,
+            frameBudgetMs: Int? = null,
+            trust: BaselineTrust = BaselineTrust(),
+        ): BaselineEntry = BaselineEntry(
+            runs = runs,
+            p50FrameMs = p50FrameMs,
+            p95FrameMs = p95FrameMs,
+            p99FrameMs = p99FrameMs,
+            jankPercent = jankPercent,
+            lostTimeMsPerFrame = lostTimeMsPerFrame,
+            frozenPercent = frozenPercent,
+            phases = phases,
+            frameBudgetMs = frameBudgetMs,
+            trust = trust,
+        )
 
         private fun Float.per(frames: Int): Float = if (frames == 0) 0f else this / frames
     }
@@ -232,7 +261,7 @@ public data class Baseline(
 ) {
 
     /** Keeps the entries this run did not measure, and starts over when [environment] differs. */
-    public fun updatedWith(environment: BaselineEnvironment, intervals: List<IntervalStats>): Baseline {
+    public fun updatedWith(environment: BaselineEnvironment, intervals: List<IntervalReport>): Baseline {
         val recorded = intervals.withFrames().associate { it.id to BaselineEntry.of(it.stats, it.frameBudgetMs) }
         if (environment != this.environment) return Baseline(environment, recorded)
         return Baseline(
@@ -242,21 +271,19 @@ public data class Baseline(
     }
 
     /** Intervals this baseline never recorded, and intervals that drew no frame, are left out. */
-    public fun compare(environment: BaselineEnvironment, intervals: List<IntervalStats>): BaselineComparison {
+    public fun compare(environment: BaselineEnvironment, intervals: List<IntervalReport>): BaselineComparison {
         if (environment != this.environment) {
             return BaselineComparison.OtherEnvironment(recorded = this.environment, current = environment)
         }
         return BaselineComparison.Compared(
-            intervals.withFrames().mapNotNull { interval ->
-                entries[interval.id]?.compareWith(interval)
-            },
+            intervals.withFrames().mapNotNull { report -> entries[report.id]?.compareWith(report) },
         )
     }
 }
 
 internal const val PERCENT: Float = 100f
 
-private fun List<IntervalStats>.withFrames(): List<IntervalStats> = filter { it.stats.frames > 0 }
+private fun List<IntervalReport>.withFrames(): List<IntervalReport> = filter { it.stats.frames > 0 }
 
 private val BUDGET_CATEGORIES = setOf(MeasuredMetric.JANK_PERCENT, MeasuredMetric.LOST_TIME)
 
@@ -308,10 +335,10 @@ private fun FramePhase.trustedAs(): Set<MeasuredMetric> = when (this) {
 
 private fun mean(baseline: Float, current: Float, weight: Float): Float = baseline + (current - baseline) * weight
 
-private fun BaselineEntry.compareWith(interval: IntervalStats): IntervalComparison {
-    val stats = interval.stats
-    val current = BaselineEntry.of(stats, interval.frameBudgetMs)
-    val budgetsMatch = frameBudgetMs != null && frameBudgetMs == interval.frameBudgetMs
+private fun BaselineEntry.compareWith(report: IntervalReport): IntervalComparison {
+    val stats = report.stats
+    val current = BaselineEntry.of(stats, report.frameBudgetMs)
+    val budgetsMatch = frameBudgetMs != null && frameBudgetMs == report.frameBudgetMs
     val deltas = mutableListOf<MetricDelta>()
     val gaps = mutableListOf<UncomparedMetric>()
     for (metric in BaselineMetric.entries) {
@@ -331,7 +358,7 @@ private fun BaselineEntry.compareWith(interval: IntervalStats): IntervalComparis
         }
     }
     return IntervalComparison(
-        interval = interval.id,
+        id = report.id,
         recordedRuns = runs,
         currentFrames = stats.frames,
         metrics = deltas,

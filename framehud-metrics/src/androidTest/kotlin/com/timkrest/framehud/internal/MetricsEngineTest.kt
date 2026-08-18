@@ -10,6 +10,7 @@ import com.timkrest.framehud.BlankActivity
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
+import com.timkrest.framehud.await
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,18 +51,18 @@ class MetricsEngineTest {
     }
 
     @Test
-    fun thereAreNoSessionStatsBeforeTheEngineStarts() {
-        assertNull(engine.awaitSessionStats(TIMEOUT_MS), "an engine that never started answered")
+    fun thereAreNoStatsBeforeTheEngineStarts() {
+        assertNull(await { engine.sessionStats() }, "an engine that never started answered")
     }
 
     @Test
     fun theAggregatesStayReadableAfterStop() {
         onMainThread { engine.start(context) }
-        assertNotNull(engine.awaitSessionStats(TIMEOUT_MS), "nothing was collecting")
+        assertNotNull(await { engine.sessionStats() }, "nothing was collecting")
 
         onMainThread { engine.stop() }
 
-        assertNotNull(engine.awaitSessionStats(TIMEOUT_MS), "the aggregates went away with the last activity")
+        assertNotNull(await { engine.sessionStats() }, "the aggregates went away with the last activity")
     }
 
     @Test
@@ -107,7 +108,7 @@ class MetricsEngineTest {
         onMainThread { engine.setMark(null) }
         awaitMetricsThread()
 
-        val export = assertNotNull(engine.awaitExportStats(TIMEOUT_MS), "the metrics thread never answered")
+        val export = assertNotNull(await { engine.exportStats() }, "the metrics thread never answered")
         assertEquals(SCREEN, export.screenName, "the export lost the name of the screen its numbers came from")
         val ended = events.filterIsInstance<FrameHudEvent.MarkEnded>().single()
         assertNull(ended.screen, "the mark was named after a screen that was already gone")
@@ -146,12 +147,12 @@ class MetricsEngineTest {
     @Test
     fun renamingTheMetricsThreadRetiresTheOldOne() {
         onMainThread { engine.start(context) }
-        assertNotNull(engine.awaitSessionStats(TIMEOUT_MS), "nothing was collecting")
+        assertNotNull(await { engine.sessionStats() }, "nothing was collecting")
 
         config = config.copy(metricsThreadName = "$threadName-renamed")
         onMainThread { engine.applyConfig(config) }
 
-        assertNotNull(engine.awaitSessionStats(TIMEOUT_MS), "the renamed thread answers nothing")
+        assertNotNull(await { engine.sessionStats() }, "the renamed thread answers nothing")
         assertTrue(awaitThreadGone(threadName), "the retired metrics thread is still running")
     }
 
@@ -160,7 +161,7 @@ class MetricsEngineTest {
     }
 
     private fun awaitMetricsThread() {
-        assertNotNull(engine.awaitSessionStats(TIMEOUT_MS), "the metrics thread never answered")
+        assertNotNull(await { engine.sessionStats() }, "the metrics thread never answered")
     }
 
     private fun threadsNamed(name: String): Int = Thread.getAllStackTraces().keys.count { it.name == name }

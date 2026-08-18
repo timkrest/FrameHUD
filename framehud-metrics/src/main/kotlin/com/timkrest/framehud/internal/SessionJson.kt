@@ -4,9 +4,9 @@ import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.IntervalComparison
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
-import com.timkrest.framehud.SessionStats
 
 internal const val EXPORT_SCHEMA_VERSION = 5
 
@@ -109,9 +109,9 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
 private fun SessionSnapshot.sessionBudgetMs(): Int? =
     intervals.firstOrNull { it.id == IntervalId.Session }?.frameBudgetMs
 
-private fun JsonObjectScope.putBaseline(comparison: BaselineComparison?) {
+private fun JsonObjectScope.putBaseline(comparison: BaselineComparison) {
     when (comparison) {
-        null -> putNull("baseline")
+        BaselineComparison.NoBaseline -> putNull("baseline")
         is BaselineComparison.OtherEnvironment -> putObject("baseline") {
             put("comparable", false)
             putObject("recordedEnvironment") { putEnvironment(comparison.recorded) }
@@ -127,7 +127,7 @@ private fun JsonObjectScope.putBaseline(comparison: BaselineComparison?) {
 }
 
 private fun JsonObjectScope.putIntervalComparison(interval: IntervalComparison) {
-    put("interval", interval.interval.key())
+    put("interval", interval.id.key())
     put("recordedRuns", interval.recordedRuns)
     put("frames", interval.currentFrames)
     putArray("metrics") {
@@ -162,7 +162,7 @@ private fun JsonObjectScope.putIntervalComparison(interval: IntervalComparison) 
     }
 }
 
-private fun JsonObjectScope.putStats(stats: SessionStats) {
+private fun JsonObjectScope.putStats(stats: IntervalStats) {
     put("frames", stats.frames)
     put("durationMs", stats.durationMs)
     put("p50FrameMs", stats.p50FrameMs)

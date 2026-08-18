@@ -1,8 +1,8 @@
 package com.timkrest.framehud.ui
 
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PipelineStage
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
 import org.junit.Test
@@ -107,7 +107,7 @@ class PanelFormatterTest {
     }
 
     private fun sessionTotals(durationMs: Long): String =
-        formatSessionTotals(SessionStats.EMPTY.copy(frames = 120, durationMs = durationMs))
+        formatSessionTotals(IntervalStats.EMPTY.copy(frames = 120, durationMs = durationMs))
 
     private fun withLocale(locale: Locale, block: () -> Unit) {
         val previous = Locale.getDefault()

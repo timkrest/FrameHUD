@@ -7,10 +7,10 @@ import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.BaselineMetric
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.PhaseAverages
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertContains
@@ -159,15 +159,17 @@ class BaselineThresholdsTest {
         val recorded = Baseline(
             environment = ENVIRONMENT,
             entries = mapOf(
-                IntervalId.Session to BaselineEntry
-                    .of(statsOf(p95FrameMs = baseline, phases = baselinePhases), frameBudgetMs = BUDGET_MS)
-                    .copy(runs = 4),
+                IntervalId.Session to BaselineEntry.of(
+                    stats = statsOf(p95FrameMs = baseline, phases = baselinePhases),
+                    frameBudgetMs = BUDGET_MS,
+                    runs = 4,
+                ),
             ),
         )
         return recorded.compare(
             ENVIRONMENT,
             listOf(
-                IntervalStats(
+                IntervalReport(
                     id = IntervalId.Session,
                     stats = statsOf(p95FrameMs = current, phases = currentPhases)
                         .copy(confidence = MeasurementConfidence(currentIssues)),
@@ -178,10 +180,10 @@ class BaselineThresholdsTest {
     }
 
     private fun statsOf(p95FrameMs: Float, phases: PhaseAverages) =
-        SessionStats.EMPTY.copy(frames = 500, p95FrameMs = p95FrameMs, phases = phases)
+        IntervalStats.EMPTY.copy(frames = 500, p95FrameMs = p95FrameMs, phases = phases)
 
     private fun session(issues: List<ConfidenceIssue> = emptyList()) =
-        SessionStats.EMPTY.copy(frames = 500, confidence = MeasurementConfidence(issues))
+        IntervalStats.EMPTY.copy(frames = 500, confidence = MeasurementConfidence(issues))
 
     private companion object {
         const val TAG = "sample test"

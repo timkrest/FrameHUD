@@ -19,9 +19,11 @@ import com.timkrest.framehud.internal.readBaseline
 import com.timkrest.framehud.internal.sessionSnapshot
 import com.timkrest.framehud.internal.writeBaseline
 import com.timkrest.framehud.internal.writeTo
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 /**
  * Frame timings for the activity in focus. Collection needs no panel; the `framehud` artifact adds
@@ -73,6 +75,10 @@ public object FrameHud {
 
     @get:AnyThread
     public val thermalStats: StateFlow<ThermalStats> get() = engine.thermalStats
+
+    /** What the rolling window says about jank, and what it blames. Healthy while no screen draws. */
+    @get:AnyThread
+    public val diagnosis: StateFlow<JankDiagnosis> get() = engine.diagnosis
 
     /**
      * Names the screen the user sees — a route pattern like `product/{id}`, not `product/12345` —
@@ -180,103 +186,94 @@ public object FrameHud {
         synchronized(freezeLock) { setFrozen(!_isFrozen.value) }
     }
 
+    /** Metrics of the session since [reset]. The last session outlives collection. */
+    @AnyThread
+    public suspend fun sessionStats(): IntervalStats = engine.sessionStats() ?: IntervalStats.EMPTY
+
     /**
-     * Returns session metrics since [reset], or null if nothing was collected or the read timed out.
-     * The last session remains available after collection stops. This method blocks and is intended
-     * for instrumentation tests.
+     * What the run measured per interval since [reset]: the session, every screen and every mark,
+     * including the ones that drew no frame.
      */
-    @WorkerThread
-    public fun awaitSessionStats(timeoutMs: Long): SessionStats? {
-        checkBlockingAllowed("awaitSessionStats")
-        return engine.awaitSessionStats(timeoutMs)
-    }
+    @AnyThread
+    public suspend fun intervals(): List<IntervalReport> = engine.intervals().orEmpty()
 
     /**
      * Writes the session since [reset] into `framehud/` under the app's external files directory —
-     * `adb pull`-able without root — and returns both files, or null if nothing was collected or
-     * the read timed out. Blocks for the read and the write, throws on an I/O failure, and never
-     * uploads anything. The app may put its own diagnostic files next to the returned ones.
+     * `adb pull`-able without root — and returns both files. Null when nothing was collecting.
+     * Throws on an I/O failure, and never uploads anything. The app may put its own diagnostic
+     * files next to the returned ones.
      */
-    @WorkerThread
-    public fun exportSession(timeoutMs: Long): SessionExport? {
-        checkBlockingAllowed("exportSession")
-        val application = application ?: run {
-            Log.w(LOG_TAG, "Not installed, nothing to export")
-            return null
+    @AnyThread
+    public suspend fun exportSession(): SessionExport? {
+        val application = installedApplication("export")
+        val stats = engine.exportStats() ?: return null
+        return withContext(Dispatchers.IO) {
+            val snapshot = sessionSnapshot(
+                application = application,
+                stats = stats,
+                isEnabled = currentConfig.enabled,
+                isFrozen = _isFrozen.value,
+                baseline = loadedBaseline(),
+            )
+            snapshot.writeTo(exportDirectory(application))
         }
-        val stats = engine.awaitExportStats(timeoutMs) ?: return null
-        val snapshot = sessionSnapshot(
-            application = application,
-            stats = stats,
-            isEnabled = currentConfig.enabled,
-            isFrozen = _isFrozen.value,
-            baseline = loadedBaseline(application),
-        )
-        return snapshot.writeTo(exportDirectory(application))
     }
 
     /**
      * Averages the session since [reset] into `framehud/baseline.json` as one run and returns what
-     * the file now holds. Null when nothing was collected or the read timed out. Blocks, and throws
-     * when the write fails. A second call before the next [reset] changes nothing. Reads and writes
-     * the file even when [baselineOverride] is set.
+     * the file now holds. Null when the session recorded no frame. Throws when the write fails. A
+     * second call before the next [reset] changes nothing. Reads and writes the file even when
+     * [baselineOverride] is set.
      */
-    @WorkerThread
-    public fun saveBaseline(timeoutMs: Long): Baseline? {
-        checkBlockingAllowed("saveBaseline")
-        val application = application ?: run {
-            Log.w(LOG_TAG, "Not installed, no baseline to save")
-            return null
-        }
-        val stats = engine.awaitBaselineStats(timeoutMs) ?: return null
-        if (stats.session.frames == 0) return null
+    @AnyThread
+    public suspend fun saveBaseline(): Baseline? {
+        val application = installedApplication("save a baseline")
+        val stats = engine.baselineStats()?.takeIf { it.session.frames > 0 } ?: return null
         val file = baselineFile(application)
-        return synchronized(baselineLock) {
-            val stored = readBaseline(file)
-            if (stats.sessionId == savedSessionId) {
-                Log.w(LOG_TAG, "This session is already in the baseline; reset before measuring the next run")
-                return@synchronized stored
+        return withContext(Dispatchers.IO) {
+            synchronized(baselineLock) {
+                val stored = readBaseline(file)
+                if (stats.sessionId == savedSessionId) {
+                    Log.w(LOG_TAG, "This session is already in the baseline; reset before measuring the next run")
+                    return@synchronized stored
+                }
+                val updated = (stored ?: Baseline(stats.environment, emptyMap()))
+                    .updatedWith(stats.environment, stats.intervals)
+                writeBaseline(file, updated)
+                savedSessionId = stats.sessionId
+                updated
             }
-            val updated = (stored ?: Baseline(stats.environment, emptyMap()))
-                .updatedWith(stats.environment, stats.intervals)
-            writeBaseline(file, updated)
-            savedSessionId = stats.sessionId
-            updated
         }
     }
 
     /**
      * Compares the session since [reset] with [baselineOverride], or with `framehud/baseline.json`
-     * when none is set. Null when the device has no baseline yet, when nothing was collected, or
-     * when the read timed out. Blocks.
+     * when none is set.
      */
-    @WorkerThread
-    public fun awaitBaselineComparison(timeoutMs: Long): BaselineComparison? {
-        checkBlockingAllowed("awaitBaselineComparison")
-        return gateStats(timeoutMs)?.comparison
-    }
+    @AnyThread
+    public suspend fun compareWithBaseline(): BaselineComparison = gateStats().comparison
 
     @InternalFrameHudApi
-    @WorkerThread
-    public fun awaitGateStats(timeoutMs: Long): GateStats? {
-        checkBlockingAllowed("awaitGateStats")
-        return gateStats(timeoutMs)
-    }
-
-    @WorkerThread
-    private fun gateStats(timeoutMs: Long): GateStats? {
-        val stats = engine.awaitBaselineStats(timeoutMs) ?: return null
-        val baseline = application?.let(::loadedBaseline)
+    @AnyThread
+    public suspend fun gateStats(): GateStats {
+        val baseline = withContext(Dispatchers.IO) { loadedBaseline() }
+        val stats = engine.baselineStats()
         return GateStats(
-            session = stats.session,
-            comparison = baseline?.compare(stats.environment, stats.intervals),
+            session = stats?.session ?: IntervalStats.EMPTY,
+            comparison = when {
+                baseline == null -> BaselineComparison.NoBaseline
+                stats == null -> BaselineComparison.Compared(emptyList())
+                else -> baseline.compare(stats.environment, stats.intervals)
+            },
+            isCollecting = stats != null,
         )
     }
 
     @InternalFrameHudApi
     public class GateStats(
-        public val session: SessionStats,
-        public val comparison: BaselineComparison?,
+        public val session: IntervalStats,
+        public val comparison: BaselineComparison,
+        public val isCollecting: Boolean,
     )
 
     /**
@@ -298,8 +295,12 @@ public object FrameHud {
     }
 
     @WorkerThread
-    private fun loadedBaseline(application: Application): Baseline? =
-        baselineOverride ?: readBaseline(baselineFile(application))
+    private fun loadedBaseline(): Baseline? =
+        baselineOverride ?: application?.let { readBaseline(baselineFile(it)) }
+
+    @AnyThread
+    private fun installedApplication(action: String): Application =
+        checkNotNull(application) { "FrameHud is not installed, cannot $action" }
 
     private fun applyConfig(newConfig: FrameHudConfig) {
         checkMainThread()
@@ -349,13 +350,6 @@ public object FrameHud {
 
     private fun checkMainThread() {
         check(Looper.myLooper() === Looper.getMainLooper()) { "FrameHud must be used from the main thread" }
-    }
-
-    @AnyThread
-    private fun checkBlockingAllowed(method: String) {
-        check(Looper.myLooper() !== Looper.getMainLooper()) {
-            "$method blocks; call it from a test or background thread"
-        }
     }
 
     private const val EXPORT_MIME_TYPE = "*/*"

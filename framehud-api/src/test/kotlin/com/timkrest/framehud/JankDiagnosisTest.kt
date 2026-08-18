@@ -108,7 +108,7 @@ class JankDiagnosisTest {
                 PipelineStage.GPU -> FramePhases(unknownDelay = unknownDelay, gpu = busiestStage)
             },
             window = FrameWindowStats(jankPercent = jankPercent),
-            session = SessionStats.EMPTY.copy(durationMs = sessionDurationMs),
+            session = IntervalStats.EMPTY.copy(durationMs = sessionDurationMs),
             display = DisplayInfo(refreshRateHz = 60f, frameBudgetMs = 16.7f),
         )
     }

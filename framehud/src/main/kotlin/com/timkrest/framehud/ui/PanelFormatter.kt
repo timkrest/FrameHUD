@@ -1,10 +1,10 @@
 package com.timkrest.framehud.ui
 
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PipelineStage
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalStats
 import com.timkrest.framehud.internal.MS_PER_SECOND
 import com.timkrest.framehud.internal.formatInvariant
@@ -51,14 +51,14 @@ internal fun formatWindowSummary(window: FrameWindowStats): String = formatInvar
     window.worstFrameMs,
 )
 
-internal fun formatSessionLatency(session: SessionStats): String = formatInvariant(
+internal fun formatSessionLatency(session: IntervalStats): String = formatInvariant(
     "$LABEL_SESSION  p50 %5.1f  p95 %5.1f  p99 %5.1f",
     session.p50FrameMs,
     session.p95FrameMs,
     session.p99FrameMs,
 )
 
-internal fun formatSessionTotals(session: SessionStats): String = formatInvariant(
+internal fun formatSessionTotals(session: IntervalStats): String = formatInvariant(
     "$LABEL_SESSION %df %s jank %.1f%% frz%d run%d",
     session.frames,
     formatDuration(session.durationMs),

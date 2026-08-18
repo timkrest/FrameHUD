@@ -6,7 +6,6 @@ import com.timkrest.framehud.FrameHud
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -24,13 +23,12 @@ class MetricsThreadTest {
 
             scenario.renderFrames()
 
-            val stats = assertNotNull(FrameHud.awaitSessionStats(STATS_TIMEOUT_MS), "nothing was collecting")
+            val stats = await { FrameHud.sessionStats() }
             assertTrue(stats.frames > 0, "no frames reached the renamed thread")
         }
     }
 
     private companion object {
         const val RENAMED_THREAD = "framehud-renamed"
-        const val STATS_TIMEOUT_MS = 2_000L
     }
 }

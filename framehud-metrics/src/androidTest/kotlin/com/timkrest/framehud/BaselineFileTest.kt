@@ -38,7 +38,7 @@ class BaselineFileTest {
     fun aSavedBaselineIsReadBackByTheNextRunAndReachesTheReport() {
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             scenario.drawFrames(FRAMES)
-            val saved = assertNotNull(FrameHud.saveBaseline(TIMEOUT_MS), "nothing was collecting")
+            val saved = assertNotNull(await { FrameHud.saveBaseline() }, "nothing was collecting")
             assertTrue(saved.entries.containsKey(IntervalId.Session), "the session never reached the baseline")
             assertTrue(baselineFile(application).length() > 0L, "the baseline file is empty")
 
@@ -46,11 +46,10 @@ class BaselineFileTest {
             FrameHud.reset()
             scenario.drawFrames(FRAMES)
 
-            val comparison = assertNotNull(FrameHud.awaitBaselineComparison(TIMEOUT_MS), "the baseline was not read")
-            val compared = assertIs<BaselineComparison.Compared>(comparison)
+            val compared = assertIs<BaselineComparison.Compared>(await { FrameHud.compareWithBaseline() })
             assertNotNull(compared.interval(IntervalId.Session), "the session was not compared")
 
-            val export = assertNotNull(FrameHud.exportSession(TIMEOUT_MS), "nothing was collecting")
+            val export = assertNotNull(await { FrameHud.exportSession() }, "nothing was collecting")
             assertContains(export.json.readText(), """"baseline":{"comparable":true""")
         }
     }
@@ -59,9 +58,9 @@ class BaselineFileTest {
     fun savingTwiceWithoutAResetWeighsTheRunOnce() {
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             scenario.drawFrames(FRAMES)
-            assertNotNull(FrameHud.saveBaseline(TIMEOUT_MS), "nothing was collecting")
+            assertNotNull(await { FrameHud.saveBaseline() }, "nothing was collecting")
 
-            val again = assertNotNull(FrameHud.saveBaseline(TIMEOUT_MS), "the baseline was not read back")
+            val again = assertNotNull(await { FrameHud.saveBaseline() }, "the baseline was not read back")
 
             assertEquals(1, again.entries.getValue(IntervalId.Session).runs)
         }
@@ -69,6 +68,5 @@ class BaselineFileTest {
 
     private companion object {
         const val FRAMES = 30
-        const val TIMEOUT_MS = 5_000L
     }
 }

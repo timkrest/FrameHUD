@@ -4,10 +4,10 @@ import androidx.compose.ui.graphics.Color
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PerformanceMetrics
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
 import org.junit.Test
@@ -148,7 +148,7 @@ class PanelLinesTest {
             gpu = gpuMs?.let { MetricValue(current = it, average = it) },
         ),
         window = FrameWindowStats(jankPercent = jankPercent),
-        session = SessionStats.EMPTY.copy(droppedReports = droppedReports),
+        session = IntervalStats.EMPTY.copy(droppedReports = droppedReports),
         display = DisplayInfo(frameBudgetMs = 16.7f),
     )
 

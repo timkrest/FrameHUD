@@ -9,6 +9,8 @@ import android.os.Bundle
 import android.util.Log
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.baselineFile
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 
 /**
  * Drives [FrameHud] over `adb shell am broadcast -a com.timkrest.framehud.<COMMAND> <package>`.
@@ -51,13 +53,13 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
                 resultData = if (pairs.isEmpty()) "context cleared" else "context $pairs"
             }
             ACTION_EXPORT -> respondAsync("export") {
-                FrameHud.exportSession(EXPORT_TIMEOUT_MS)?.json?.absolutePath ?: "nothing collected"
+                FrameHud.exportSession()?.json?.absolutePath ?: "nothing collected"
             }
             ACTION_BASELINE -> {
                 val file = (context.applicationContext as? Application)?.let(::baselineFile)
                 respondAsync("baseline") {
                     when {
-                        FrameHud.saveBaseline(EXPORT_TIMEOUT_MS) == null -> "nothing collected"
+                        FrameHud.saveBaseline() == null -> "nothing collected"
                         else -> file?.absolutePath ?: "baseline updated"
                     }
                 }
@@ -89,11 +91,11 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun respondAsync(command: String, respond: () -> String) {
+    private fun respondAsync(command: String, respond: suspend () -> String) {
         val pending = goAsync()
         Thread({
             try {
-                pending.resultData = respond()
+                pending.resultData = runBlocking { withTimeout(COMMAND_TIMEOUT_MS) { respond() } }
             } catch (e: Exception) {
                 Log.w(LOG_TAG, "The $command command over adb failed", e)
                 pending.resultData = "failed: $e"
@@ -113,6 +115,6 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         const val ACTION_EXPORT = "com.timkrest.framehud.EXPORT"
         const val ACTION_BASELINE = "com.timkrest.framehud.BASELINE"
         const val EXTRA_NAME = "name"
-        const val EXPORT_TIMEOUT_MS = 5_000L
+        const val COMMAND_TIMEOUT_MS = 5_000L
     }
 }

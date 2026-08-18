@@ -5,9 +5,9 @@ import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalStats
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,10 +28,10 @@ internal class SessionSnapshot(
     val screenName: String?,
     val mark: String?,
     val context: Map<String, String>,
-    val session: SessionStats,
-    val screen: SessionStats,
-    val intervals: List<IntervalStats>,
-    val baseline: BaselineComparison?,
+    val session: IntervalStats,
+    val screen: IntervalStats,
+    val intervals: List<IntervalReport>,
+    val baseline: BaselineComparison,
     val phases: FramePhases,
     val window: FrameWindowStats,
     val display: DisplayInfo,

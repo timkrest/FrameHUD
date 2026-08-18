@@ -53,7 +53,7 @@ public data class UncomparedMetric(
 
 @Immutable
 public data class IntervalComparison(
-    val interval: IntervalId,
+    val id: IntervalId,
     val recordedRuns: Int,
     val currentFrames: Int,
     val metrics: List<MetricDelta>,
@@ -73,7 +73,7 @@ public sealed interface BaselineComparison {
 
     @Immutable
     public data class Compared(val intervals: List<IntervalComparison>) : BaselineComparison {
-        public fun interval(id: IntervalId): IntervalComparison? = intervals.firstOrNull { it.interval == id }
+        public fun interval(id: IntervalId): IntervalComparison? = intervals.firstOrNull { it.id == id }
     }
 
     @Immutable
@@ -81,4 +81,7 @@ public sealed interface BaselineComparison {
         val recorded: BaselineEnvironment,
         val current: BaselineEnvironment,
     ) : BaselineComparison
+
+    /** No run has recorded a baseline on this device yet. */
+    public data object NoBaseline : BaselineComparison
 }

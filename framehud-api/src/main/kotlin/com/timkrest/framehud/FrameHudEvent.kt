@@ -47,7 +47,7 @@ public sealed interface FrameHudEvent {
         override val summary: String get() = "${origin()}: ${diagnosis.summary}"
     }
 
-    /** Frames over [SessionStats.FROZEN_FRAME_MS] seen since the previous sample. */
+    /** Frames over [IntervalStats.FROZEN_FRAME_MS] seen since the previous sample. */
     public data class FrozenFrames(
         val count: Int,
         override val screen: String?,
@@ -72,7 +72,7 @@ public sealed interface FrameHudEvent {
      * [stats] cover only the frames drawn on that screen.
      */
     public data class ScreenEnded(
-        val stats: SessionStats,
+        val stats: IntervalStats,
         override val screen: String?,
         override val context: Map<String, String> = emptyMap(),
     ) : FrameHudEvent {
@@ -88,7 +88,7 @@ public sealed interface FrameHudEvent {
      * contain only frames drawn while the mark was active.
      */
     public data class MarkEnded(
-        val stats: SessionStats,
+        val stats: IntervalStats,
         override val screen: String?,
         override val mark: String,
         override val context: Map<String, String> = emptyMap(),
@@ -111,7 +111,7 @@ private fun FrameHudEvent.origin(): String {
     }
 }
 
-private fun SessionStats.summarize(origin: String): String {
+private fun IntervalStats.summarize(origin: String): String {
     val summary = formatInvariant(
         "%s: %d frames in %.1fs, jank %.1f%%, lost %.0f ms, p95 %.1f ms, frozen %d",
         origin,

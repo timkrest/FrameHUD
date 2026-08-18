@@ -66,7 +66,7 @@ class FrameHudEventTest {
         }
     }
 
-    private fun stats() = SessionStats.EMPTY.copy(
+    private fun stats() = IntervalStats.EMPTY.copy(
         frames = 120,
         durationMs = 2_000L,
         p95FrameMs = 18f,

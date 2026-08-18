@@ -28,6 +28,13 @@ public final class com/timkrest/framehud/BaselineComparison$Compared : com/timkr
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/BaselineComparison$NoBaseline : com/timkrest/framehud/BaselineComparison {
+	public static final field INSTANCE Lcom/timkrest/framehud/BaselineComparison$NoBaseline;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/timkrest/framehud/BaselineComparison$OtherEnvironment : com/timkrest/framehud/BaselineComparison {
 	public fun <init> (Lcom/timkrest/framehud/BaselineEnvironment;Lcom/timkrest/framehud/BaselineEnvironment;)V
 	public final fun component1 ()Lcom/timkrest/framehud/BaselineEnvironment;
@@ -43,8 +50,6 @@ public final class com/timkrest/framehud/BaselineComparison$OtherEnvironment : c
 
 public final class com/timkrest/framehud/BaselineEntry {
 	public static final field Companion Lcom/timkrest/framehud/BaselineEntry$Companion;
-	public fun <init> (IFFFFFFLcom/timkrest/framehud/PhaseAverages;Ljava/lang/Integer;Lcom/timkrest/framehud/BaselineTrust;)V
-	public synthetic fun <init> (IFFFFFFLcom/timkrest/framehud/PhaseAverages;Ljava/lang/Integer;Lcom/timkrest/framehud/BaselineTrust;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component10 ()Lcom/timkrest/framehud/BaselineTrust;
 	public final fun component2 ()F
@@ -55,8 +60,6 @@ public final class com/timkrest/framehud/BaselineEntry {
 	public final fun component7 ()F
 	public final fun component8 ()Lcom/timkrest/framehud/PhaseAverages;
 	public final fun component9 ()Ljava/lang/Integer;
-	public final fun copy (IFFFFFFLcom/timkrest/framehud/PhaseAverages;Ljava/lang/Integer;Lcom/timkrest/framehud/BaselineTrust;)Lcom/timkrest/framehud/BaselineEntry;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/BaselineEntry;IFFFFFFLcom/timkrest/framehud/PhaseAverages;Ljava/lang/Integer;Lcom/timkrest/framehud/BaselineTrust;ILjava/lang/Object;)Lcom/timkrest/framehud/BaselineEntry;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun get (Lcom/timkrest/framehud/BaselineMetric;)F
 	public final fun getFrameBudgetMs ()Ljava/lang/Integer;
@@ -73,8 +76,8 @@ public final class com/timkrest/framehud/BaselineEntry {
 }
 
 public final class com/timkrest/framehud/BaselineEntry$Companion {
-	public final fun of (Lcom/timkrest/framehud/SessionStats;Ljava/lang/Integer;)Lcom/timkrest/framehud/BaselineEntry;
-	public static synthetic fun of$default (Lcom/timkrest/framehud/BaselineEntry$Companion;Lcom/timkrest/framehud/SessionStats;Ljava/lang/Integer;ILjava/lang/Object;)Lcom/timkrest/framehud/BaselineEntry;
+	public final fun of (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;I)Lcom/timkrest/framehud/BaselineEntry;
+	public static synthetic fun of$default (Lcom/timkrest/framehud/BaselineEntry$Companion;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;IILjava/lang/Object;)Lcom/timkrest/framehud/BaselineEntry;
 }
 
 public final class com/timkrest/framehud/BaselineEnvironment {
@@ -349,37 +352,37 @@ public final class com/timkrest/framehud/FrameHudEvent$JankBurst : com/timkrest/
 }
 
 public final class com/timkrest/framehud/FrameHudEvent$MarkEnded : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/timkrest/framehud/SessionStats;
+	public fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;
+	public final fun copy (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public fun getMark ()Ljava/lang/String;
 	public fun getScreen ()Ljava/lang/String;
-	public final fun getStats ()Lcom/timkrest/framehud/SessionStats;
+	public final fun getStats ()Lcom/timkrest/framehud/IntervalStats;
 	public fun getSummary ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/timkrest/framehud/FrameHudEvent$ScreenEnded : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/timkrest/framehud/SessionStats;
+	public fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;Lcom/timkrest/framehud/SessionStats;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;
+	public final fun copy (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public fun getMark ()Ljava/lang/String;
 	public fun getScreen ()Ljava/lang/String;
-	public final fun getStats ()Lcom/timkrest/framehud/SessionStats;
+	public final fun getStats ()Lcom/timkrest/framehud/IntervalStats;
 	public fun getSummary ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -443,6 +446,7 @@ public final class com/timkrest/framehud/FramePhases {
 	public final fun copy (Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;)Lcom/timkrest/framehud/FramePhases;
 	public static synthetic fun copy$default (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;Lcom/timkrest/framehud/MetricValue;ILjava/lang/Object;)Lcom/timkrest/framehud/FramePhases;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun get (Lcom/timkrest/framehud/FramePhase;)Lcom/timkrest/framehud/MetricValue;
 	public final fun getAnimation ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getBottleneck ()Lcom/timkrest/framehud/MetricValue;
 	public final fun getBottleneckStage ()Lcom/timkrest/framehud/PipelineStage;
@@ -511,7 +515,7 @@ public final class com/timkrest/framehud/IntervalComparison {
 	public final fun gap (Lcom/timkrest/framehud/BaselineMetric;)Lcom/timkrest/framehud/ComparisonGap;
 	public final fun getCurrentFrames ()I
 	public final fun getGrownPhases ()Ljava/util/List;
-	public final fun getInterval ()Lcom/timkrest/framehud/IntervalId;
+	public final fun getId ()Lcom/timkrest/framehud/IntervalId;
 	public final fun getMetrics ()Ljava/util/List;
 	public final fun getPhases ()Ljava/util/List;
 	public final fun getRecordedRuns ()I
@@ -556,20 +560,61 @@ public final class com/timkrest/framehud/IntervalId$Session : com/timkrest/frame
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/timkrest/framehud/IntervalStats {
-	public fun <init> (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/SessionStats;Ljava/lang/Integer;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/SessionStats;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+public final class com/timkrest/framehud/IntervalReport {
+	public fun <init> (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/IntervalId;
-	public final fun component2 ()Lcom/timkrest/framehud/SessionStats;
+	public final fun component2 ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun component3 ()Ljava/lang/Integer;
-	public final fun copy (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/SessionStats;Ljava/lang/Integer;)Lcom/timkrest/framehud/IntervalStats;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/SessionStats;Ljava/lang/Integer;ILjava/lang/Object;)Lcom/timkrest/framehud/IntervalStats;
+	public final fun copy (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;)Lcom/timkrest/framehud/IntervalReport;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/IntervalReport;Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;ILjava/lang/Object;)Lcom/timkrest/framehud/IntervalReport;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFrameBudgetMs ()Ljava/lang/Integer;
 	public final fun getId ()Lcom/timkrest/framehud/IntervalId;
-	public final fun getStats ()Lcom/timkrest/framehud/SessionStats;
+	public final fun getStats ()Lcom/timkrest/framehud/IntervalStats;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/IntervalStats {
+	public static final field Companion Lcom/timkrest/framehud/IntervalStats$Companion;
+	public static final field FROZEN_FRAME_MS F
+	public fun <init> ()V
+	public fun <init> (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;)V
+	public synthetic fun <init> (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component10 ()I
+	public final fun component11 ()Lcom/timkrest/framehud/PhaseAverages;
+	public final fun component12 ()Lcom/timkrest/framehud/MeasurementConfidence;
+	public final fun component2 ()J
+	public final fun component3 ()F
+	public final fun component4 ()F
+	public final fun component5 ()F
+	public final fun component6 ()F
+	public final fun component7 ()F
+	public final fun component8 ()I
+	public final fun component9 ()I
+	public final fun copy (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;)Lcom/timkrest/framehud/IntervalStats;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/IntervalStats;IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;ILjava/lang/Object;)Lcom/timkrest/framehud/IntervalStats;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConfidence ()Lcom/timkrest/framehud/MeasurementConfidence;
+	public final fun getDroppedReports ()I
+	public final fun getDurationMs ()J
+	public final fun getFrames ()I
+	public final fun getFrozenFrames ()I
+	public final fun getJankPercent ()F
+	public final fun getLostTimeMs ()F
+	public final fun getMaxJankStreak ()I
+	public final fun getP50FrameMs ()F
+	public final fun getP95FrameMs ()F
+	public final fun getP99FrameMs ()F
+	public final fun getPhases ()Lcom/timkrest/framehud/PhaseAverages;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/IntervalStats$Companion {
+	public final fun getEMPTY ()Lcom/timkrest/framehud/IntervalStats;
 }
 
 public abstract interface class com/timkrest/framehud/JankCause {
@@ -671,7 +716,6 @@ public final class com/timkrest/framehud/JankDiagnosis {
 
 public final class com/timkrest/framehud/JankDiagnosis$Companion {
 	public final fun getHEALTHY ()Lcom/timkrest/framehud/JankDiagnosis;
-	public final fun of (Lcom/timkrest/framehud/PerformanceMetrics;Lcom/timkrest/framehud/MemoryStats;Lcom/timkrest/framehud/ThermalStats;I)Lcom/timkrest/framehud/JankDiagnosis;
 }
 
 public final class com/timkrest/framehud/JankSeverity : java/lang/Enum {
@@ -812,18 +856,18 @@ public final class com/timkrest/framehud/OverlayMode : java/lang/Enum {
 public final class com/timkrest/framehud/PerformanceMetrics {
 	public static final field Companion Lcom/timkrest/framehud/PerformanceMetrics$Companion;
 	public fun <init> ()V
-	public fun <init> (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/SessionStats;Lcom/timkrest/framehud/DisplayInfo;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/SessionStats;Lcom/timkrest/framehud/DisplayInfo;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/DisplayInfo;)V
+	public synthetic fun <init> (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/DisplayInfo;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/FramePhases;
 	public final fun component2 ()Lcom/timkrest/framehud/FrameWindowStats;
-	public final fun component3 ()Lcom/timkrest/framehud/SessionStats;
+	public final fun component3 ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun component4 ()Lcom/timkrest/framehud/DisplayInfo;
-	public final fun copy (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/SessionStats;Lcom/timkrest/framehud/DisplayInfo;)Lcom/timkrest/framehud/PerformanceMetrics;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/PerformanceMetrics;Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/SessionStats;Lcom/timkrest/framehud/DisplayInfo;ILjava/lang/Object;)Lcom/timkrest/framehud/PerformanceMetrics;
+	public final fun copy (Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/DisplayInfo;)Lcom/timkrest/framehud/PerformanceMetrics;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/PerformanceMetrics;Lcom/timkrest/framehud/FramePhases;Lcom/timkrest/framehud/FrameWindowStats;Lcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/DisplayInfo;ILjava/lang/Object;)Lcom/timkrest/framehud/PerformanceMetrics;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDisplay ()Lcom/timkrest/framehud/DisplayInfo;
 	public final fun getPhases ()Lcom/timkrest/framehud/FramePhases;
-	public final fun getSession ()Lcom/timkrest/framehud/SessionStats;
+	public final fun getSession ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun getWindow ()Lcom/timkrest/framehud/FrameWindowStats;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -911,47 +955,6 @@ public final class com/timkrest/framehud/SessionExport {
 	public final fun getJson ()Ljava/io/File;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/timkrest/framehud/SessionStats {
-	public static final field Companion Lcom/timkrest/framehud/SessionStats$Companion;
-	public static final field FROZEN_FRAME_MS F
-	public fun <init> ()V
-	public fun <init> (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;)V
-	public synthetic fun <init> (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component10 ()I
-	public final fun component11 ()Lcom/timkrest/framehud/PhaseAverages;
-	public final fun component12 ()Lcom/timkrest/framehud/MeasurementConfidence;
-	public final fun component2 ()J
-	public final fun component3 ()F
-	public final fun component4 ()F
-	public final fun component5 ()F
-	public final fun component6 ()F
-	public final fun component7 ()F
-	public final fun component8 ()I
-	public final fun component9 ()I
-	public final fun copy (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;)Lcom/timkrest/framehud/SessionStats;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/SessionStats;IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;ILjava/lang/Object;)Lcom/timkrest/framehud/SessionStats;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getConfidence ()Lcom/timkrest/framehud/MeasurementConfidence;
-	public final fun getDroppedReports ()I
-	public final fun getDurationMs ()J
-	public final fun getFrames ()I
-	public final fun getFrozenFrames ()I
-	public final fun getJankPercent ()F
-	public final fun getLostTimeMs ()F
-	public final fun getMaxJankStreak ()I
-	public final fun getP50FrameMs ()F
-	public final fun getP95FrameMs ()F
-	public final fun getP99FrameMs ()F
-	public final fun getPhases ()Lcom/timkrest/framehud/PhaseAverages;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/timkrest/framehud/SessionStats$Companion {
-	public final fun getEMPTY ()Lcom/timkrest/framehud/SessionStats;
 }
 
 public final class com/timkrest/framehud/ThermalLevel : java/lang/Enum {

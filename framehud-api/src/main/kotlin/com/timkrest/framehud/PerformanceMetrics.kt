@@ -6,7 +6,7 @@ import androidx.compose.runtime.Immutable
 public data class PerformanceMetrics(
     val phases: FramePhases = FramePhases.EMPTY,
     val window: FrameWindowStats = FrameWindowStats.EMPTY,
-    val session: SessionStats = SessionStats.EMPTY,
+    val session: IntervalStats = IntervalStats.EMPTY,
     val display: DisplayInfo = DisplayInfo.DEFAULT,
 ) {
     public companion object {

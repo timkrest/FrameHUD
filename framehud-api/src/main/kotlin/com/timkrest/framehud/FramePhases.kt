@@ -48,6 +48,19 @@ public data class FramePhases(
         PipelineStage.GPU -> gpu?.copy(peak = null) ?: MetricValue.ZERO
     }
 
+    public operator fun get(phase: FramePhase): MetricValue? = when (phase) {
+        FramePhase.UNKNOWN_DELAY -> unknownDelay
+        FramePhase.INPUT -> input
+        FramePhase.ANIMATION -> animation
+        FramePhase.LAYOUT -> layout
+        FramePhase.DRAW -> draw
+        FramePhase.SYNC -> sync
+        FramePhase.COMMAND_ISSUE -> commandIssue
+        FramePhase.SWAP_BUFFERS -> swapBuffers
+        FramePhase.GPU -> gpu
+        FramePhase.TOTAL -> total
+    }
+
     public companion object {
         public val EMPTY: FramePhases = FramePhases()
     }

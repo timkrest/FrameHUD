@@ -14,7 +14,7 @@ public enum class BaselineMetric {
     /** Spread over every frame the interval collected, janky or not. */
     LOST_TIME_MS_PER_FRAME,
 
-    /** Frames over [SessionStats.FROZEN_FRAME_MS], 0..100. */
+    /** Frames over [IntervalStats.FROZEN_FRAME_MS], 0..100. */
     FROZEN_PERCENT,
 
     ;

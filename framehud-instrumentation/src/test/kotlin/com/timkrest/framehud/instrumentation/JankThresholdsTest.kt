@@ -1,8 +1,8 @@
 package com.timkrest.framehud.instrumentation
 
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasurementConfidence
-import com.timkrest.framehud.SessionStats
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -113,7 +113,7 @@ class JankThresholdsTest {
         p95FrameMs: Float = 0f,
         lostTimeMs: Float = 0f,
         issues: List<ConfidenceIssue> = emptyList(),
-    ) = SessionStats.EMPTY.copy(
+    ) = IntervalStats.EMPTY.copy(
         frames = 500,
         jankPercent = jankPercent,
         frozenFrames = frozenFrames,

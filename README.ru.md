@@ -125,10 +125,14 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 
 `show()`, `hide()` и `toggle()` — сокращения для `enabled`.
 
-`FrameHud.metrics`, `memoryStats`, `thermalStats` и `choreographerTicksPerSecond` — обычные
-`StateFlow`, так что метрики читаются и без панели. Показание разложено на `phases` (тайминги по
-стадиям), `window` (fps, jank и p95 по окну выборки), `session` (с последнего сброса) и `display`
-(герцовка и бюджет кадра).
+`FrameHud.metrics`, `memoryStats`, `thermalStats`, `choreographerTicksPerSecond` и `diagnosis` —
+обычные `StateFlow`, так что метрики читаются и без панели. Показание разложено на `phases`
+(тайминги по стадиям), `window` (fps, jank и p95 по окну выборки), `session` (с последнего сброса)
+и `display` (герцовка и бюджет кадра).
+
+`sessionStats()` и `intervals()` приостанавливают вызов, пока не ответит поток метрик. Первая даёт
+сессию с последнего сброса, вторая добавляет каждый экран и каждую метку вместе с бюджетом кадра,
+по которому их судили.
 
 ## Первый кадр
 
@@ -215,8 +219,10 @@ FrameHud.context = mapOf("variant" to "new_checkout")
 никуда не загружается.
 
 ```kotlin
-val export = FrameHud.exportSession(timeoutMs = 5_000) ?: return
-FrameHud.shareSession(activity, export)
+lifecycleScope.launch {
+    val export = FrameHud.exportSession() ?: return@launch
+    FrameHud.shareSession(activity, export)
+}
 ```
 
 ```
@@ -251,7 +257,7 @@ extras очищает контекст. `EXPORT` отвечает путём к 
 
 ## Потерянное время
 
-`SessionStats.lostTimeMs` — сумма того, насколько опоздавшие кадры вышли за дедлайн. Jank-процент
+`IntervalStats.lostTimeMs` — сумма того, насколько опоздавшие кадры вышли за дедлайн. Jank-процент
 считает кадр на 18 мс и кадр на 300 мс одинаково, по одному плохому кадру; потерянное время эту
 разницу сохраняет, и два экрана с одинаковыми 5% jank перестают выглядеть одинаково.
 
@@ -260,12 +266,12 @@ extras очищает контекст. `EXPORT` отвечает путём к 
 
 ## Куда ушло время
 
-`SessionStats.phases` разбивает сессию, экран или метку по фазам конвейера, это `PhaseAverages`:
+`IntervalStats.phases` разбивает сессию, экран или метку по фазам конвейера, это `PhaseAverages`:
 сколько миллисекунд средний кадр провёл в layout, draw, swap buffers и остальных фазах и на какой
 стадии он упёрся.
 
 Строки фаз на панели показывают последние `metricsSampleWindowFrames` кадров, поэтому экран, который
-тормозил две секунды, к моменту чтения снова выглядит нормально; `SessionStats.phases` учитывает
+тормозил две секунды, к моменту чтения снова выглядит нормально; `IntervalStats.phases` учитывает
 каждый кадр интервала. Оба отчёта несут разбивку по сессии и по экрану, а HTML-отчёт ставит их
 рядом.
 
@@ -273,7 +279,7 @@ extras очищает контекст. `EXPORT` отвечает путём к 
 
 ## Достоверность замера
 
-`SessionStats.confidence` перечисляет, что мешало сбору: потерянные отчёты `FrameMetrics`,
+`IntervalStats.confidence` перечисляет, что мешало сбору: потерянные отчёты `FrameMetrics`,
 слушатель событий, занявший поток метрик, троттлинг, энергосбережение или заряд не выше 15%,
 смена герцовки, эмулятор, слишком короткая выборка. Каждая проблема называет цифры, которые она
 портит: эмулятор — только фазы render-потока и GPU, смена герцовки — jank-процент, потерянное время
@@ -321,7 +327,7 @@ adb push baseline.json /sdcard/Android/data/<package>/files/framehud/baseline.js
 хватает, остальное из этого прогона считается. Отчёт показывает, сколько прогонов усреднено в
 каждой цифре.
 
-В коде `saveBaseline` пишет файл, `awaitBaselineComparison` возвращает дельты, а
+В коде `saveBaseline` пишет файл, `compareWithBaseline` возвращает дельты, а
 `FrameHud.baselineOverride` сравнивает со своим базлайном вместо файла. Свой базлайн собирается из
 `BaselineEntry.of` и `BaselineEnvironment.current()`.
 

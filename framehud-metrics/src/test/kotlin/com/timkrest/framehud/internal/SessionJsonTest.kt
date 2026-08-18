@@ -3,10 +3,10 @@ package com.timkrest.framehud.internal
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertContains
@@ -54,7 +54,7 @@ class SessionJsonTest {
             screenName = "product/{id}",
             mark = "scroll",
             context = mapOf("variant" to "b"),
-            session = SessionStats.EMPTY.copy(frames = 120, jankPercent = 7.5f),
+            session = IntervalStats.EMPTY.copy(frames = 120, jankPercent = 7.5f),
             window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
         ).toJson()
 
@@ -74,7 +74,7 @@ class SessionJsonTest {
                 ConfidenceIssue.RefreshRateChanged(setOf(60, 120)),
             ),
         )
-        val json = sessionSnapshotFixture(session = SessionStats.EMPTY.copy(confidence = confidence)).toJson()
+        val json = sessionSnapshotFixture(session = IntervalStats.EMPTY.copy(confidence = confidence)).toJson()
 
         assertContains(json, """"suspect":true""")
         assertContains(json, """{"type":"thermalThrottling","worstLevel":"SEVERE","affected":[""")
@@ -100,7 +100,7 @@ class SessionJsonTest {
     fun `intervals and their deltas against the baseline reach the export`() {
         val json = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalStats(IntervalId.Screen("cart"), SessionStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
+                IntervalReport(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
             ),
             baseline = comparisonFixture(),
         ).toJson()
@@ -118,8 +118,8 @@ class SessionJsonTest {
     fun `the session carries its own budget and does not repeat itself among the intervals`() {
         val json = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalStats(IntervalId.Session, SessionStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
-                IntervalStats(IntervalId.Screen("cart"), SessionStats.EMPTY.copy(frames = 90)),
+                IntervalReport(IntervalId.Session, IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
+                IntervalReport(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90)),
             ),
         ).toJson()
 

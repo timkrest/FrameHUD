@@ -126,10 +126,14 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
-`FrameHud.metrics`, `memoryStats`, `thermalStats` and `choreographerTicksPerSecond` are plain
-`StateFlow`s, so the numbers are readable without the panel. A reading groups into `phases`
-(per-stage timings), `window` (fps, jank and p95 over the sampling window), `session` (since the
-last reset) and `display` (refresh rate and frame budget).
+`FrameHud.metrics`, `memoryStats`, `thermalStats`, `choreographerTicksPerSecond` and `diagnosis`
+are plain `StateFlow`s, so the numbers are readable without the panel. A reading groups into
+`phases` (per-stage timings), `window` (fps, jank and p95 over the sampling window), `session`
+(since the last reset) and `display` (refresh rate and frame budget).
+
+`sessionStats()` and `intervals()` suspend until the metrics thread answers. The first covers the
+session since the last reset; the second adds every screen and every mark, each with the frame
+budget that judged it.
 
 ## First frame
 
@@ -215,8 +219,10 @@ files directory, so CI pulls them without root; `shareSession` opens the system 
 them. Nothing is ever uploaded.
 
 ```kotlin
-val export = FrameHud.exportSession(timeoutMs = 5_000) ?: return
-FrameHud.shareSession(activity, export)
+lifecycleScope.launch {
+    val export = FrameHud.exportSession() ?: return@launch
+    FrameHud.shareSession(activity, export)
+}
 ```
 
 ```
@@ -251,7 +257,7 @@ the named sections.
 
 ## Lost time
 
-`SessionStats.lostTimeMs` sums how far the late frames ran past their deadline. Jank percent counts
+`IntervalStats.lostTimeMs` sums how far the late frames ran past their deadline. Jank percent counts
 an 18 ms frame and a 300 ms frame as one bad frame each; lost time keeps the difference between
 them, so two screens at the same 5% jank stop looking alike.
 
@@ -260,12 +266,12 @@ and `JankThresholds(maxLostTimeMs = 500f)` fails a test on it.
 
 ## Where the time went
 
-`SessionStats.phases` breaks a session, a screen or a mark down by pipeline phase, as
+`IntervalStats.phases` breaks a session, a screen or a mark down by pipeline phase, as
 `PhaseAverages`: the milliseconds an average frame spent in layout, draw, swap buffers and the rest,
 and the stage it was bound by.
 
 The panel's phase rows cover the last `metricsSampleWindowFrames` frames, so a screen that stuttered
-for two seconds can look fine again by the time you read them; `SessionStats.phases` covers every
+for two seconds can look fine again by the time you read them; `IntervalStats.phases` covers every
 frame of the interval. Both reports carry the breakdown per session and per screen, and the HTML
 report puts the two side by side.
 
@@ -273,7 +279,7 @@ report puts the two side by side.
 
 ## Measurement confidence
 
-`SessionStats.confidence` lists what got in the way while the stats collected: dropped
+`IntervalStats.confidence` lists what got in the way while the stats collected: dropped
 `FrameMetrics` reports, an event listener that held the metrics thread, thermal throttling, power
 save or a battery at 15% or below, a refresh-rate change, an emulator, a sample too short for its
 percentiles. Each issue names the figures it taints: an emulator only the render-thread and GPU
@@ -321,7 +327,7 @@ A figure a confidence issue taints stays out of the baseline and out of the comp
 throttling taints every figure of a run. A sample too short taints only the percentiles it cannot
 support, so the rest of that run still counts. The report says how many runs each figure averages.
 
-In code, `saveBaseline` writes the file, `awaitBaselineComparison` returns the deltas, and
+In code, `saveBaseline` writes the file, `compareWithBaseline` returns the deltas, and
 `FrameHud.baselineOverride` compares against a baseline of your own instead of the file. Build one
 from `BaselineEntry.of` and `BaselineEnvironment.current()`.
 

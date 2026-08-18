@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.Application
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
-import androidx.annotation.WorkerThread
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -34,6 +33,9 @@ public object FrameHud {
 
     @get:AnyThread
     public val thermalStats: StateFlow<ThermalStats> = MutableStateFlow(ThermalStats.EMPTY)
+
+    @get:AnyThread
+    public val diagnosis: StateFlow<JankDiagnosis> = MutableStateFlow(JankDiagnosis.HEALTHY)
 
     @Volatile
     @get:AnyThread
@@ -69,17 +71,20 @@ public object FrameHud {
     @AnyThread
     public fun toggleFreeze(): Unit = Unit
 
-    @WorkerThread
-    public fun awaitSessionStats(timeoutMs: Long): SessionStats? = null
+    @AnyThread
+    public suspend fun sessionStats(): IntervalStats = IntervalStats.EMPTY
 
-    @WorkerThread
-    public fun exportSession(timeoutMs: Long): SessionExport? = null
+    @AnyThread
+    public suspend fun intervals(): List<IntervalReport> = emptyList()
 
-    @WorkerThread
-    public fun saveBaseline(timeoutMs: Long): Baseline? = null
+    @AnyThread
+    public suspend fun exportSession(): SessionExport? = null
 
-    @WorkerThread
-    public fun awaitBaselineComparison(timeoutMs: Long): BaselineComparison? = null
+    @AnyThread
+    public suspend fun saveBaseline(): Baseline? = null
+
+    @AnyThread
+    public suspend fun compareWithBaseline(): BaselineComparison = BaselineComparison.NoBaseline
 
     public fun shareSession(activity: Activity, export: SessionExport): Unit = Unit
 }

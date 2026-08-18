@@ -4,9 +4,9 @@ import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FramePhase
 import com.timkrest.framehud.IntervalComparison
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MetricDelta
 import com.timkrest.framehud.PhaseAverages
-import com.timkrest.framehud.SessionStats
 import java.util.Locale
 import kotlin.math.max
 
@@ -103,7 +103,7 @@ private fun HtmlScope.stats(snapshot: SessionSnapshot) = with(snapshot) {
     }
 }
 
-private fun TableScope.statRow(snapshot: SessionSnapshot, label: String, format: (SessionStats) -> String) = with(snapshot) {
+private fun TableScope.statRow(snapshot: SessionSnapshot, label: String, format: (IntervalStats) -> String) = with(snapshot) {
     row(label, format(session), format(screen))
 }
 
@@ -139,9 +139,11 @@ private fun TableScope.phaseRow(
 }
 
 private fun HtmlScope.baseline(snapshot: SessionSnapshot) {
-    val comparison = snapshot.baseline ?: return
+    val comparison = snapshot.baseline
+    if (comparison is BaselineComparison.NoBaseline) return
     section("Baseline") {
         when (comparison) {
+            BaselineComparison.NoBaseline -> Unit
             is BaselineComparison.OtherEnvironment -> caution(
                 "Recorded on ${comparison.recorded.label}, this run is ${comparison.current.label}. " +
                     "Nothing here compares across the two.",
@@ -159,7 +161,7 @@ private fun HtmlScope.baseline(snapshot: SessionSnapshot) {
 
 private fun HtmlScope.intervalComparison(comparison: IntervalComparison) {
     meta(
-        "${comparison.interval.label} · baseline of ${comparison.recordedRuns} run(s) · " +
+        "${comparison.id.label} · baseline of ${comparison.recordedRuns} run(s) · " +
             "${comparison.currentFrames} frames this run",
     )
     if (comparison.metrics.isNotEmpty()) {

@@ -6,9 +6,9 @@ import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FramePhase
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.PerformanceMetrics
-import com.timkrest.framehud.SessionStats
 import com.timkrest.framehud.ThermalLevel
 import kotlinx.coroutines.flow.StateFlow
 
@@ -93,22 +93,22 @@ internal class FrameAggregator(
 
     fun stopCollecting() = accumulators.stopCollecting()
 
-    fun restartScreen(label: String? = null): SessionStats = accumulators.restartScreen(label)
+    fun restartScreen(label: String? = null): IntervalStats = accumulators.restartScreen(label)
 
     fun beginMark(name: String) = accumulators.beginMark(name)
 
-    fun endMark(): SessionStats? = accumulators.endMark()
+    fun endMark(): IntervalStats? = accumulators.endMark()
 
     fun refreshMetricsIgnoringThrottle(): PerformanceMetrics {
         emitMetrics(clock.elapsedRealtimeMs())
         return liveMetrics
     }
 
-    fun sessionStats(): SessionStats = accumulators.sessionStats()
+    fun sessionStats(): IntervalStats = accumulators.sessionStats()
 
-    fun screenStats(): SessionStats = accumulators.screenStats()
+    fun screenStats(): IntervalStats = accumulators.screenStats()
 
-    fun intervals(): List<IntervalStats> = accumulators.intervals()
+    fun intervals(): List<IntervalReport> = accumulators.intervals()
 
     fun worstFrames(): List<WorstFrames.Frame> = worstFrames.snapshot()
 

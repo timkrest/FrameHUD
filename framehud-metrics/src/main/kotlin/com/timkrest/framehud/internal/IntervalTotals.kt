@@ -3,7 +3,7 @@ package com.timkrest.framehud.internal
 import android.util.Log
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.IntervalId
-import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.IntervalReport
 
 @WorkerThread
 internal class IntervalTotals(
@@ -40,9 +40,9 @@ internal class IntervalTotals(
         current?.stopCollecting()
     }
 
-    fun intervals(): List<IntervalStats> =
+    fun intervals(): List<IntervalReport> =
         byName.map { (name, accumulator) ->
-            IntervalStats(idOf(name), accumulator.stats(), accumulator.frameBudgetMs())
+            IntervalReport(idOf(name), accumulator.stats(), accumulator.frameBudgetMs())
         }
 
     fun clear() {

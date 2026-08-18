@@ -11,7 +11,7 @@ class BaselineTest {
     @Test
     fun `an entry spreads lost time and frozen frames over every frame`() {
         val entry = BaselineEntry.of(
-            SessionStats.EMPTY.copy(frames = 200, lostTimeMs = 50f, frozenFrames = 2),
+            IntervalStats.EMPTY.copy(frames = 200, lostTimeMs = 50f, frozenFrames = 2),
         )
 
         assertEquals(0.25f, entry.lostTimeMsPerFrame)
@@ -20,7 +20,7 @@ class BaselineTest {
 
     @Test
     fun `an interval with no frames reports zero rather than dividing by them`() {
-        val entry = BaselineEntry.of(SessionStats.EMPTY.copy(lostTimeMs = 4f, frozenFrames = 1))
+        val entry = BaselineEntry.of(IntervalStats.EMPTY.copy(lostTimeMs = 4f, frozenFrames = 1))
 
         assertEquals(0f, entry.lostTimeMsPerFrame)
         assertEquals(0f, entry.frozenPercent)
@@ -84,7 +84,7 @@ class BaselineTest {
     fun `an interval without a baseline entry is left out`() {
         val comparison = baselineOf(p95FrameMs = 10f).compare(
             ENVIRONMENT,
-            listOf(IntervalStats(IntervalId.Mark("scroll"), statsOf(p95FrameMs = 20f))),
+            listOf(IntervalReport(IntervalId.Mark("scroll"), statsOf(p95FrameMs = 20f))),
         )
 
         assertEquals(emptyList(), assertIs<BaselineComparison.Compared>(comparison).intervals)
@@ -125,7 +125,7 @@ class BaselineTest {
 
         val comparison = baseline.compare(
             ENVIRONMENT,
-            listOf(IntervalStats(IntervalId.Session, statsOf(phases = PhaseAverages(layout = 7f, draw = 3f, input = 1f)))),
+            listOf(IntervalReport(IntervalId.Session, statsOf(phases = PhaseAverages(layout = 7f, draw = 3f, input = 1f)))),
         )
 
         val grown = assertIs<BaselineComparison.Compared>(comparison).interval(IntervalId.Session)?.grownPhases
@@ -150,7 +150,7 @@ class BaselineTest {
 
     @Test
     fun `an interval that drew nothing neither enters a baseline nor compares against one`() {
-        val empty = listOf(IntervalStats(IntervalId.Session, SessionStats.EMPTY))
+        val empty = listOf(IntervalReport(IntervalId.Session, IntervalStats.EMPTY))
 
         assertEquals(emptyMap(), Baseline(ENVIRONMENT, emptyMap()).updatedWith(ENVIRONMENT, empty).entries)
         assertEquals(
@@ -299,9 +299,9 @@ class BaselineTest {
 
     @Test
     fun `a clean run under any budget replaces budget metrics no run measured cleanly`() {
-        val mixed = IntervalStats(
+        val mixed = IntervalReport(
             id = IntervalId.Session,
-            stats = SessionStats.EMPTY.copy(
+            stats = IntervalStats.EMPTY.copy(
                 frames = 100,
                 jankPercent = 50f,
                 confidence = MeasurementConfidence(listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120)))),
@@ -382,9 +382,9 @@ class BaselineTest {
                 ),
             ),
         )
-        val emulator = IntervalStats(
+        val emulator = IntervalReport(
             IntervalId.Session,
-            SessionStats.EMPTY.copy(
+            IntervalStats.EMPTY.copy(
                 frames = 100,
                 phases = PhaseAverages(layout = 5f, swapBuffers = 10f),
                 confidence = MeasurementConfidence(listOf(ConfidenceIssue.Emulator)),
@@ -402,7 +402,7 @@ class BaselineTest {
         val seeded = Baseline(ENVIRONMENT, emptyMap())
             .updatedWith(ENVIRONMENT, listOf(droppedReportsSessionOf(PhaseAverages(layout = 100f))))
 
-        val current = IntervalStats(IntervalId.Session, statsOf(phases = PhaseAverages(layout = 7f)))
+        val current = IntervalReport(IntervalId.Session, statsOf(phases = PhaseAverages(layout = 7f)))
         val before = assertIs<BaselineComparison.Compared>(seeded.compare(ENVIRONMENT, listOf(current)))
         assertTrue(before.interval(IntervalId.Session)?.phases.orEmpty().isEmpty())
 
@@ -434,38 +434,38 @@ class BaselineTest {
     }
 
     private fun gpuSessionOf(gpuMs: Float) =
-        IntervalStats(IntervalId.Session, statsOf(phases = PhaseAverages(gpu = gpuMs)))
+        IntervalReport(IntervalId.Session, statsOf(phases = PhaseAverages(gpu = gpuMs)))
 
-    private fun emulatorGpuSessionOf(gpuMs: Float) = IntervalStats(
+    private fun emulatorGpuSessionOf(gpuMs: Float) = IntervalReport(
         IntervalId.Session,
         statsOf(phases = PhaseAverages(gpu = gpuMs))
             .copy(confidence = MeasurementConfidence(listOf(ConfidenceIssue.Emulator))),
     )
 
-    private fun mixedSession(jankPercent: Float) = IntervalStats(
+    private fun mixedSession(jankPercent: Float) = IntervalReport(
         id = IntervalId.Session,
-        stats = SessionStats.EMPTY.copy(frames = 100, jankPercent = jankPercent),
+        stats = IntervalStats.EMPTY.copy(frames = 100, jankPercent = jankPercent),
         frameBudgetMs = null,
     )
 
-    private fun droppedReportsSessionOf(phases: PhaseAverages) = IntervalStats(
+    private fun droppedReportsSessionOf(phases: PhaseAverages) = IntervalReport(
         IntervalId.Session,
-        SessionStats.EMPTY.copy(
+        IntervalStats.EMPTY.copy(
             frames = 100,
             phases = phases,
             confidence = MeasurementConfidence(listOf(ConfidenceIssue.DroppedReports(3))),
         ),
     )
 
-    private fun sessionUnderBudget(budgetMs: Int, jankPercent: Float = 0f, p95FrameMs: Float = 0f) = IntervalStats(
+    private fun sessionUnderBudget(budgetMs: Int, jankPercent: Float = 0f, p95FrameMs: Float = 0f) = IntervalReport(
         id = IntervalId.Session,
-        stats = SessionStats.EMPTY.copy(frames = 100, jankPercent = jankPercent, p95FrameMs = p95FrameMs),
+        stats = IntervalStats.EMPTY.copy(frames = 100, jankPercent = jankPercent, p95FrameMs = p95FrameMs),
         frameBudgetMs = budgetMs,
     )
 
-    private fun taintedSessionOf(p95FrameMs: Float) = IntervalStats(
+    private fun taintedSessionOf(p95FrameMs: Float) = IntervalReport(
         IntervalId.Session,
-        SessionStats.EMPTY.copy(
+        IntervalStats.EMPTY.copy(
             frames = 30,
             p95FrameMs = p95FrameMs,
             confidence = MeasurementConfidence(listOf(ConfidenceIssue.ShortSample(30))),
@@ -477,12 +477,12 @@ class BaselineTest {
         entries = mapOf(IntervalId.Session to BaselineEntry.of(statsOf(p95FrameMs = p95FrameMs)).copy(runs = runs)),
     )
 
-    private fun sessionOf(p95FrameMs: Float) = IntervalStats(IntervalId.Session, statsOf(p95FrameMs = p95FrameMs))
+    private fun sessionOf(p95FrameMs: Float) = IntervalReport(IntervalId.Session, statsOf(p95FrameMs = p95FrameMs))
 
     private fun statsOf(
         p95FrameMs: Float = 0f,
         phases: PhaseAverages = PhaseAverages.EMPTY,
-    ) = SessionStats.EMPTY.copy(frames = 100, p95FrameMs = p95FrameMs, phases = phases)
+    ) = IntervalStats.EMPTY.copy(frames = 100, p95FrameMs = p95FrameMs, phases = phases)
 
     private companion object {
         val ENVIRONMENT = BaselineEnvironment(

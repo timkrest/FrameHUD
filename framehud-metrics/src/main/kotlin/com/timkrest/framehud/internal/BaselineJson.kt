@@ -92,7 +92,7 @@ private fun JsonValue.entry(): BaselineEntry? = readOrNull {
         )
         else -> return@readOrNull null
     }
-    BaselineEntry(
+    BaselineEntry.restored(
         runs = int(RUNS) ?: return@readOrNull null,
         p50FrameMs = float(P50_MS) ?: return@readOrNull null,
         p95FrameMs = float(P95_MS) ?: return@readOrNull null,

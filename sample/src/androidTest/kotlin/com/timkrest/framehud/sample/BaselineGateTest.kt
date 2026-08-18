@@ -9,7 +9,7 @@ import com.timkrest.framehud.BaselineMetric
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.IntervalId
-import com.timkrest.framehud.SessionStats
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.instrumentation.BaselineThresholds
 import com.timkrest.framehud.instrumentation.JankAssertions
 import com.timkrest.framehud.instrumentation.JankThresholds
@@ -63,7 +63,7 @@ class BaselineGateTest {
         environment = BaselineEnvironment.current(),
         entries = mapOf(
             IntervalId.Session to BaselineEntry.of(
-                SessionStats.EMPTY.copy(frames = FRAMES_THE_GATE_NEEDS, p95FrameMs = p95FrameMs),
+                IntervalStats.EMPTY.copy(frames = FRAMES_THE_GATE_NEEDS, p95FrameMs = p95FrameMs),
             ),
         ),
     )

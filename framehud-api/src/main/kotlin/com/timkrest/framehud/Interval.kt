@@ -30,9 +30,9 @@ public sealed interface IntervalId {
 }
 
 @Immutable
-public data class IntervalStats(
+public data class IntervalReport(
     val id: IntervalId,
-    val stats: SessionStats,
+    val stats: IntervalStats,
     /** Null when no single budget judged nearly every frame. */
     val frameBudgetMs: Int? = null,
 ) {
