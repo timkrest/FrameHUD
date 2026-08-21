@@ -7,7 +7,7 @@ import android.view.Window
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 
-@MainThread
+@AnyThread
 internal class MetricsSampler(
     threadName: String,
     private val listener: Window.OnFrameMetricsAvailableListener,
@@ -35,15 +35,16 @@ internal class MetricsSampler(
         handler.post { tickGeneration++ }
     }
 
+    @MainThread
     fun bind(window: Window) {
         window.addOnFrameMetricsAvailableListener(listener, handler)
     }
 
+    @MainThread
     fun unbind(window: Window) {
         guarded("removing the frame metrics listener") { window.removeOnFrameMetricsAvailableListener(listener) }
     }
 
-    @AnyThread
     fun post(action: () -> Unit): Boolean = handler.post { guarded("running a metrics task", action) }
 
     fun quit() {

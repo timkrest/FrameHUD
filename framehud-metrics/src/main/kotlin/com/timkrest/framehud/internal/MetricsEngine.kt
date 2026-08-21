@@ -2,7 +2,6 @@ package com.timkrest.framehud.internal
 
 import android.content.Context
 import android.os.Looper
-import android.util.Log
 import android.view.Window
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
@@ -74,10 +73,11 @@ internal class MetricsEngine(
 
     private val diagnosisReadings = FreezableReading(JankDiagnosis.HEALTHY)
 
-    private val samplerLock = Any()
-
-    @Volatile
-    private var sampler: MetricsSampler? = null
+    private val metricsThread = MetricsThread(
+        listener = collector,
+        tickIntervalMs = ::tickIntervalMs,
+        onTick = ::onTick,
+    )
 
     @Volatile
     private var focusedWindow: Window? = null
@@ -111,7 +111,7 @@ internal class MetricsEngine(
     fun start(context: Context) {
         if (isRunning) return
         isRunning = true
-        requireSampler().post {
+        metricsThread.require(config().metricsThreadName).post {
             thermalMonitor.bind(context)
             batteryMonitor.bind(context)
         }
@@ -122,7 +122,7 @@ internal class MetricsEngine(
         unbindWindow()
         forgetAllWindows()
         mainThreadWatchdog.stop()
-        sampler?.post {
+        metricsThread.started?.post {
             thermalMonitor.unbind()
             batteryMonitor.unbind()
             processMonitor.stop()
@@ -130,7 +130,7 @@ internal class MetricsEngine(
     }
 
     fun bindWindow(window: Window, screen: String?, start: ScreenStart?) {
-        val sampler = sampler?.takeIf { isRunning } ?: return
+        val sampler = metricsThread.started?.takeIf { isRunning } ?: return
         if (focusedWindow === window) return
         unbindFocusedWindow()
         val label = measuredScreen.bind(screen)
@@ -151,7 +151,7 @@ internal class MetricsEngine(
     }
 
     fun measureWindow(window: Window, screen: String) {
-        val sampler = sampler?.takeIf { isRunning } ?: return
+        val sampler = metricsThread.started?.takeIf { isRunning } ?: return
         if (windows[window] != null) return
         windows.add(window, screen)
         sampler.post { aggregator.beginWindow(screen) }
@@ -159,7 +159,7 @@ internal class MetricsEngine(
     }
 
     fun forgetWindow(window: Window) {
-        val sampler = sampler ?: return
+        val sampler = metricsThread.started ?: return
         if (window === focusedWindow) return
         val screen = (windows.remove(window) ?: return).screen
         sampler.unbind(window)
@@ -168,7 +168,7 @@ internal class MetricsEngine(
     }
 
     private fun forgetAllWindows() {
-        val sampler = sampler ?: return
+        val sampler = metricsThread.started ?: return
         val forgotten = windows.clear()
         if (forgotten.isEmpty()) return
         forgotten.mapNotNull { it.get() }.forEach(sampler::unbind)
@@ -186,7 +186,7 @@ internal class MetricsEngine(
 
     private fun restartScreen(rename: MeasuredScreen.Rename.Renamed) {
         endMark(endedScreen = rename.previous)
-        val sampler = sampler ?: return
+        val sampler = metricsThread.started ?: return
         val measured = focusedWindow?.let(windows::get) ?: return
         tracer.screenChanged(rename.current)
         collector.restartScreen()
@@ -226,7 +226,7 @@ internal class MetricsEngine(
     }
 
     fun unbindWindow() {
-        val sampler = sampler ?: return
+        val sampler = metricsThread.started ?: return
         if (!unbindFocusedWindow()) return
         sampler.stopTicking()
         collector.forgetScreen()
@@ -253,10 +253,11 @@ internal class MetricsEngine(
     }
 
     fun applyConfig(newConfig: FrameHudConfig) {
-        val running = sampler
-        if (running != null && running.threadName != newConfig.metricsThreadName) {
-            replaceSampler(newConfig.metricsThreadName)
-        }
+        metricsThread.renameTo(
+            threadName = newConfig.metricsThreadName,
+            rebind = windows::windows,
+            keepTicking = focusedWindow != null,
+        )
         onAggregates { aggregator.updateConfig(newConfig) }
     }
 
@@ -314,9 +315,7 @@ internal class MetricsEngine(
             screenName = aggregator.screenName,
             mark = _activeMark.value,
             context = context,
-            flightRecording = config().perfettoTrigger?.let {
-                FlightRecording(trigger = it, timesAsked = flightRecorder.timesAsked)
-            },
+            flightRecording = flightRecorder.recordingFor(config().perfettoTrigger),
         )
     }
 
@@ -332,7 +331,7 @@ internal class MetricsEngine(
 
     @AnyThread
     private suspend fun <T : Any> readOnMetricsThread(read: () -> T): T? = suspendCancellableCoroutine { waiting ->
-        val sampler = sampler
+        val sampler = metricsThread.started
         val posted = sampler != null &&
             sampler.post {
                 if (waiting.isActive) waiting.resumeWith(runCatching(read))
@@ -394,58 +393,22 @@ internal class MetricsEngine(
         )
     }
 
-    private fun startSampler(threadName: String, previousSampler: MetricsSampler? = null): MetricsSampler {
-        val started = MetricsSampler(
-            threadName = threadName,
-            listener = collector,
-            tickIntervalMs = ::tickIntervalMs,
-            onTick = ::onTick,
-            previousSampler = previousSampler,
-        )
-        synchronized(samplerLock) { sampler = started }
-        return started
-    }
-
-    private fun replaceSampler(threadName: String) {
-        synchronized(samplerLock) {
-            val previous = sampler ?: return
-            val started = startSampler(threadName, previousSampler = previous)
-            val rebound = windows.windows()
-            rebound.forEach(previous::unbind)
-            previous.quit()
-            rebound.forEach(started::bind)
-            if (focusedWindow != null) started.startTicking()
-        }
-    }
-
     private fun unbindFocusedWindow(): Boolean {
         val window = focusedWindow ?: return false
         focusedWindow = null
         windows.remove(window)
-        sampler?.unbind(window)
+        metricsThread.started?.unbind(window)
         return true
     }
 
     @AnyThread
-    private fun requireSampler(): MetricsSampler = synchronized(samplerLock) {
-        sampler ?: startSampler(config().metricsThreadName)
-    }
-
-    @AnyThread
     private fun onMetricsThread(action: () -> Unit) {
-        synchronized(samplerLock) { postOrWarn(requireSampler(), action) }
+        metricsThread.post(config().metricsThreadName, action)
     }
 
     @AnyThread
     private fun onAggregates(action: () -> Unit) {
-        synchronized(samplerLock) {
-            val running = sampler ?: return action()
-            postOrWarn(running, action)
-        }
-    }
-
-    private fun postOrWarn(sampler: MetricsSampler, action: () -> Unit) {
-        if (!sampler.post(action)) Log.w(LOG_TAG, "The metrics thread is gone, dropped a metrics task")
+        metricsThread.postOrRunHere(action)
     }
 
     @WorkerThread
