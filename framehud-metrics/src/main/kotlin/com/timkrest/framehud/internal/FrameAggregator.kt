@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudConfig
@@ -11,6 +12,7 @@ import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.ProcessStats
@@ -142,12 +144,16 @@ internal class FrameAggregator(
         thermal: ThermalStats,
         process: ProcessStats,
         battery: BatterySample,
+        counters: List<CounterReading>,
+        mainThreadBlock: MainThreadBlock,
     ) = incidents.arm(
         trigger = trigger,
         memory = memory,
         thermal = thermal,
         process = process,
         battery = battery,
+        counters = counters,
+        mainThreadBlock = mainThreadBlock,
     )
 
     fun beginMark(name: String) = accumulators.beginMark(name)

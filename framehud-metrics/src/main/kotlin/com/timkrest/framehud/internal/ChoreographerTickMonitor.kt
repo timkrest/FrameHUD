@@ -1,5 +1,6 @@
 package com.timkrest.framehud.internal
 
+import android.os.SystemClock
 import android.view.Choreographer
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
@@ -15,6 +16,11 @@ internal class ChoreographerTickMonitor {
 
     val liveTicksPerSecond: Int get() = readings.live
 
+    @Volatile
+    @get:AnyThread
+    var lastTickUptimeMs: Long = 0L
+        private set
+
     private var activeCallback: Choreographer.FrameCallback? = null
     private var windowStartNs: Long? = null
     private var tickCount = 0
@@ -22,11 +28,13 @@ internal class ChoreographerTickMonitor {
     @MainThread
     fun start() {
         if (activeCallback != null) return
+        lastTickUptimeMs = SystemClock.uptimeMillis()
         windowStartNs = null
         tickCount = 0
         val callback = object : Choreographer.FrameCallback {
             override fun doFrame(frameTimeNanos: Long) {
                 if (activeCallback !== this) return
+                lastTickUptimeMs = SystemClock.uptimeMillis()
                 onTick(frameTimeNanos)
                 Choreographer.getInstance().postFrameCallback(this)
             }

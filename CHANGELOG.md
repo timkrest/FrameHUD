@@ -26,9 +26,9 @@ All notable changes to this project are documented here. The format follows
   slow enough on an older device to hold up frame collection.
 - `FrameHud.screens()` answers with what the run measured per screen, worst first: most frozen
   frames, then most jank, then the slowest p95, with a sample too short to judge a p95 last. The
-  panel shows the same list when its header is tapped, and the HTML report has it as a `Screens`
-  section. `IntervalId.name` reads the screen or mark an interval covers without matching on the
-  type.
+  panel shows the first eight of the same list when its header is tapped, and the HTML report has it
+  as a `Screens` section. `IntervalId.name` reads the screen or mark an interval covers without
+  matching on the type.
 - `FrameHud.incidents()` answers with what each jank burst and frozen frame was drawn around: the
   frames on either side of the trigger, the stats those frames add up to, and the memory, thermal
   and process readings of that moment. Occurrences that blame the same thing on the same screen
@@ -37,6 +37,25 @@ All notable changes to this project are documented here. The format follows
   copies of it.
   `FrameHudEvent.IncidentTrigger` names the events a window opens on. Both reports carry the
   incidents, worst case first, and the HTML report marks the trigger on each window's chart.
+- `FrameHudEvent.InternalFailure` reports a failure FrameHUD caught in itself, with the call it
+  failed in and the error, so an app can forward it to its own reporting instead of reading logcat.
+  It arrives once per call until `reset`, and the stack reaches logcat every time it happens. A call
+  that fails against a different version of a library the app ships is caught the same way, where it
+  used to take the app down. What a listener of yours throws stays that listener's failure in the
+  log, and never arrives as a failure of FrameHUD's.
+- An incident keeps the stack of a main thread that was stuck within two seconds of the trigger. A
+  main thread that goes 300 ms without handling a frame is sampled from a background thread every
+  100 ms until it draws again, and `IncidentWindow.mainThreadBlock` says how long it was held, how
+  many stacks were taken, and the calls those samples caught it in most often as `SampledCall`
+  entries. The JSON has it as `mainThreadBlock`, and the HTML report lists it under the incident's
+  chart.
+- `FrameHud.counter` answers a `FrameHudCounter` that keeps a number the frame pipeline knows
+  nothing about next to the frame data: an image decode queue, cache misses, items in flight. `set`
+  replaces the value and `add` moves it, both from any thread, and the value is read on FrameHUD's
+  own tick while every write raises the peak. The panel gets a row per counter and counts the rest
+  past four, a system trace gets a `framehud:counter:<name>` track, the session report lists them
+  all, and every incident keeps what they read when it fired. `FrameHud.counters` is the same list
+  of `CounterReading` as a `StateFlow`, and sixteen names are tracked before the rest are dropped.
 - `FrameHudConfig.frameBudgetsMs` gives a screen, a mark or the session a frame budget of its own,
   in place of the deadline the display hands out, so a scroll that has to hold 120 Hz no longer
   shares a threshold with a debug screen that never will. A budget covers everything its interval
@@ -62,10 +81,17 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- A screen name and a mark name now follow the rule a counter name does: not blank, no longer than
+  110 characters, and carrying no `|` or control character. A trace cuts a longer name down to one
+  another name could share, and the rest end its record or split it, so two screens would have
+  landed on one section. FrameHUD refuses such a name where the app sets it; over adb the command
+  answers `failed:` and leaves the name alone.
 - The export schema is 6: a `process` object holds the process health of the run and of each
   incident, and an `incidents` array holds the trigger with its diagnosis, how often the
   case happened, and the `worst` window with its stats, frames and readings. The `window` object
-  carries the `frameBudgetMs` its numbers were judged by.
+  carries the `frameBudgetMs` its numbers were judged by, and a `counters` array carries what the
+  app kept, on the session and on each incident window alike. Each incident window also carries a
+  `mainThreadBlock` object with the calls the main thread was sampled in.
 - `framehud-metrics` depends on `androidx.activity`, which it reads the `FullyDrawnReporter` from.
 - `SessionStats` is now `IntervalStats`, and the type that names it and carries its frame budget is
   now `IntervalReport`. Both types describe a session, a screen or a mark; only the old names said
@@ -86,6 +112,13 @@ All notable changes to this project are documented here. The format follows
 - `BaselineEntry` no longer copies. Its `copy` carried the internal record of which runs measured a
   figure cleanly, so a changed number kept the trust of the number it replaced. Build an entry with
   `BaselineEntry.of`, which now takes `runs`.
+- The sample now shows what this release added. Three tabs cover one run: a load screen that judges
+  frames by a budget, marks its scrolls, names every screen it shows and keeps two counters of its
+  own; a readouts screen that reads every flow FrameHUD exposes without the panel; and a session
+  screen with the intervals and their budgets, the screens worst first, the incidents, the baseline,
+  freezing, toggling collection, the report and a dialog window handed over to be measured. The
+  device tests that check how a screen gets named now launch an activity of their own, so the sample
+  is free to name its screens the way an app does.
 
 ## [0.10.0] - 2026-08-17
 

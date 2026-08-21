@@ -37,16 +37,8 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
                 FrameHud.reset()
                 resultData = "reset"
             }
-            ACTION_SCREEN -> {
-                val name = intent.name
-                FrameHud.screen = name
-                resultData = "screen ${name ?: "cleared"}"
-            }
-            ACTION_MARK -> {
-                val name = intent.name
-                FrameHud.mark = name
-                resultData = "mark ${name ?: "cleared"}"
-            }
+            ACTION_SCREEN -> resultData = setName("screen", intent.name) { FrameHud.screen = it }
+            ACTION_MARK -> resultData = setName("mark", intent.name) { FrameHud.mark = it }
             ACTION_CONTEXT -> {
                 val pairs = intent.contextPairs()
                 FrameHud.context = pairs
@@ -67,7 +59,15 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         }
     }
 
-    private val Intent.name: String? get() = readExtras()?.getString(EXTRA_NAME)?.takeIf { it.isNotBlank() }
+    private fun setName(command: String, name: String?, set: (String?) -> Unit): String = try {
+        set(name)
+        "$command ${name ?: "cleared"}"
+    } catch (e: IllegalArgumentException) {
+        Log.w(LOG_TAG, "The $command command over adb failed", e)
+        "failed: ${e.message}"
+    }
+
+    private val Intent.name: String? get() = readExtras()?.getString(EXTRA_NAME)
 
     /**
      * Reading an extra unpacks the whole bundle, and a bundle from another app can name a class

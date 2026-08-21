@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.ProcessStats
@@ -17,15 +18,17 @@ internal fun PanelExpandedContent(
     memory: MemoryStats,
     thermal: ThermalStats,
     process: ProcessStats,
+    counters: List<CounterReading>,
     isEmulator: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val lines = remember(metrics, memory, thermal, process, isEmulator) {
+    val lines = remember(metrics, memory, thermal, process, counters, isEmulator) {
         buildPanelLines(
             metrics = metrics,
             memory = memory,
             thermal = thermal,
             process = process,
+            counters = counters,
             isEmulator = isEmulator,
         )
     }

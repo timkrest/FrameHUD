@@ -6,6 +6,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.MemoryStats
@@ -47,6 +48,7 @@ internal fun buildPanelLines(
     memory: MemoryStats,
     thermal: ThermalStats,
     process: ProcessStats = ProcessStats.EMPTY,
+    counters: List<CounterReading> = emptyList(),
     isEmulator: Boolean = false,
 ): PanelLines {
     val phases = metrics.phases
@@ -98,6 +100,7 @@ internal fun buildPanelLines(
             addText(formatThermal(thermal), thermalColor(thermal.level))
         }
         formatProcessLines(process).forEach { addText(it, TextHeader) }
+        addCounters(counters)
     }.let(::PanelLines)
 }
 
@@ -187,6 +190,16 @@ private fun MutableList<PanelLine>.addMetric(
     )
 }
 
+private fun MutableList<PanelLine>.addCounters(counters: List<CounterReading>) {
+    if (counters.isEmpty()) return
+    val listed = counters.take(LISTED_COUNTERS)
+    addText(formatCounterLine(listed.first()), TextHeader)
+    separateFromRowsAbove()
+    listed.drop(1).forEach { addText(formatCounterLine(it), TextHeader) }
+    val hidden = counters.size - listed.size
+    if (hidden > 0) addText(formatMoreCounters(hidden), TextHeader)
+}
+
 private fun MutableList<PanelLine>.addText(text: String, color: Color) {
     add(PanelLine(text = text, color = color, loadFraction = 0f, hasSeparatorAbove = false))
 }
@@ -196,3 +209,5 @@ private fun MutableList<PanelLine>.separateFromRowsAbove() {
 }
 
 private const val LISTED_SCREENS = 8
+
+private const val LISTED_COUNTERS = 4

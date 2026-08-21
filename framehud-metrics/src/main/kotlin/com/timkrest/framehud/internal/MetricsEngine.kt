@@ -1,13 +1,16 @@
 package com.timkrest.framehud.internal
 
 import android.content.Context
+import android.os.Looper
 import android.util.Log
 import android.view.Window
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.BaselineEnvironment
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.FrameHudCounter
 import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
@@ -44,10 +47,17 @@ internal class MetricsEngine(
     private val thermalMonitor = ThermalMonitor()
     private val batteryMonitor = BatteryMonitor()
     private val processMonitor = ProcessStatsMonitor(clock, PROCESS_SAMPLE_INTERVAL_MS)
+    private val counterRegistry = CounterRegistry()
+    private val mainThreadWatchdog = MainThreadWatchdog(
+        mainThread = Looper.getMainLooper().thread,
+        lastTickMs = choreographerTickMonitor::lastTickUptimeMs,
+    )
 
     private val measuredScreen = MeasuredScreen()
 
     private var sessionId = 0
+
+    private val reportedFailures = mutableSetOf<String>()
 
     val screenOverride: String? get() = measuredScreen.screenOverride
 
@@ -89,6 +99,9 @@ internal class MetricsEngine(
     val processStats: StateFlow<ProcessStats> get() = processMonitor.stats
 
     @get:AnyThread
+    val counters: StateFlow<List<CounterReading>> get() = counterRegistry.counters
+
+    @get:AnyThread
     val activeMark: StateFlow<String?> = _activeMark.asStateFlow()
 
     @get:AnyThread
@@ -111,6 +124,7 @@ internal class MetricsEngine(
             thermalMonitor.unbind()
             batteryMonitor.unbind()
             processMonitor.stop()
+            mainThreadWatchdog.stop()
         }
     }
 
@@ -132,6 +146,7 @@ internal class MetricsEngine(
         sampler.bind(window)
         sampler.startTicking()
         choreographerTickMonitor.start()
+        mainThreadWatchdog.startWatching()
     }
 
     fun measureWindow(window: Window, screen: String) {
@@ -197,6 +212,9 @@ internal class MetricsEngine(
     }
 
     @AnyThread
+    fun counter(name: String): FrameHudCounter = counterRegistry.counter(name)
+
+    @AnyThread
     fun reportUsable(start: ScreenStart? = null) {
         collector.reportUsable(start)
     }
@@ -225,6 +243,7 @@ internal class MetricsEngine(
             tracer.jankBurstChanged(false)
         }
         choreographerTickMonitor.stop()
+        mainThreadWatchdog.stopWatching()
     }
 
     fun applyConfig(newConfig: FrameHudConfig) {
@@ -243,6 +262,7 @@ internal class MetricsEngine(
         choreographerTickMonitor.setFrozen(frozen)
         thermalMonitor.setFrozen(frozen)
         processMonitor.setFrozen(frozen)
+        counterRegistry.setFrozen(frozen)
     }
 
     @AnyThread
@@ -253,6 +273,8 @@ internal class MetricsEngine(
             memoryMonitor.reset()
             processMonitor.reset()
             eventDispatcher.reset()
+            counterRegistry.reset()
+            reportedFailures.clear()
             diagnosisReadings.reset(JankDiagnosis.HEALTHY)
         }
     }
@@ -279,6 +301,7 @@ internal class MetricsEngine(
             memory = memoryMonitor.liveStats,
             thermal = thermalMonitor.liveStats,
             process = processMonitor.liveStats,
+            counters = counterRegistry.liveCounters,
             worstFrames = aggregator.worstFrames(),
             incidents = aggregator.incidents(),
             screenName = aggregator.screenName,
@@ -323,6 +346,21 @@ internal class MetricsEngine(
                     context = endedContext,
                 )
             }
+        }
+    }
+
+    @AnyThread
+    fun onInternalFailure(what: String, error: Throwable) {
+        onMetricsThread {
+            if (!reportedFailures.add(what)) return@onMetricsThread
+            eventDispatcher.onInternalFailure(
+                listeners = config().eventListeners,
+                what = what,
+                error = error,
+                screen = aggregator.screenName,
+                mark = _activeMark.value,
+                context = context,
+            )
         }
     }
 
@@ -405,6 +443,7 @@ internal class MetricsEngine(
         memoryMonitor.sample()
         thermalMonitor.sample()
         batteryMonitor.sample()
+        counterRegistry.sample()
         aggregator.addThermalLevel(thermalMonitor.liveStats.level)
         aggregator.addBattery(batteryMonitor.sample)
     }
@@ -418,6 +457,7 @@ internal class MetricsEngine(
         val metrics = aggregator.liveMetrics
         val memory = memoryMonitor.liveStats
         val thermal = thermalMonitor.liveStats
+        val counters = counterRegistry.liveCounters
         val diagnosis = JankDiagnosis.of(
             metrics = metrics,
             memory = memory,
@@ -441,10 +481,12 @@ internal class MetricsEngine(
                 thermal = thermal,
                 process = processMonitor.liveStats,
                 battery = batteryMonitor.sample,
+                counters = counters,
+                mainThreadBlock = mainThreadWatchdog.latestBlock,
             )
         }
         tracer.jankBurstChanged(eventDispatcher.isInBurst)
-        tracer.publishCounters(metrics = metrics, memory = memory)
+        tracer.publishCounters(metrics = metrics, memory = memory, counters = counters)
     }
 
     private fun tickIntervalMs(): Long = maxOf(config().metricsThrottleIntervalMs, MIN_TICK_INTERVAL_MS)
@@ -469,6 +511,7 @@ internal class MetricsEngine(
         val memory: MemoryStats,
         val thermal: ThermalStats,
         val process: ProcessStats,
+        val counters: List<CounterReading>,
         val worstFrames: List<WorstFrames.Frame>,
         val incidents: List<Incident>,
         val screenName: String?,

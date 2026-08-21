@@ -223,6 +223,21 @@ public final class com/timkrest/framehud/ConfidenceIssue$ThermalThrottling : com
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/CounterReading {
+	public fun <init> (Ljava/lang/String;II)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun copy (Ljava/lang/String;II)Lcom/timkrest/framehud/CounterReading;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/CounterReading;Ljava/lang/String;IIILjava/lang/Object;)Lcom/timkrest/framehud/CounterReading;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getPeakSinceReset ()I
+	public final fun getValue ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/timkrest/framehud/DisplayInfo {
 	public static final field Companion Lcom/timkrest/framehud/DisplayInfo$Companion;
 	public static final field DEFAULT_REFRESH_RATE_HZ F
@@ -290,6 +305,11 @@ public final class com/timkrest/framehud/FrameHudConfig {
 public final class com/timkrest/framehud/FrameHudConfig$Companion {
 }
 
+public abstract interface class com/timkrest/framehud/FrameHudCounter {
+	public abstract fun add (I)V
+	public abstract fun set (I)V
+}
+
 public abstract interface class com/timkrest/framehud/FrameHudEvent {
 	public abstract fun getContext ()Ljava/util/Map;
 	public abstract fun getMark ()Ljava/lang/String;
@@ -335,6 +355,27 @@ public final class com/timkrest/framehud/FrameHudEvent$FrozenFrames : com/timkre
 }
 
 public abstract interface class com/timkrest/framehud/FrameHudEvent$IncidentTrigger : com/timkrest/framehud/FrameHudEvent {
+}
+
+public final class com/timkrest/framehud/FrameHudEvent$InternalFailure : com/timkrest/framehud/FrameHudEvent {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$InternalFailure;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$InternalFailure;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$InternalFailure;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getContext ()Ljava/util/Map;
+	public final fun getError ()Ljava/lang/Throwable;
+	public fun getMark ()Ljava/lang/String;
+	public fun getScreen ()Ljava/lang/String;
+	public fun getSummary ()Ljava/lang/String;
+	public final fun getWhat ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/timkrest/framehud/FrameHudEvent$JankBurst : com/timkrest/framehud/FrameHudEvent$IncidentTrigger {
@@ -540,8 +581,9 @@ public final class com/timkrest/framehud/Incident {
 }
 
 public final class com/timkrest/framehud/IncidentWindow {
-	public fun <init> (Lcom/timkrest/framehud/FrameHudEvent$IncidentTrigger;JLcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/FrameHistory;ILcom/timkrest/framehud/MemoryStats;Lcom/timkrest/framehud/ThermalStats;Lcom/timkrest/framehud/ProcessStats;)V
+	public fun <init> (Lcom/timkrest/framehud/FrameHudEvent$IncidentTrigger;JLcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/FrameHistory;ILcom/timkrest/framehud/MemoryStats;Lcom/timkrest/framehud/ThermalStats;Lcom/timkrest/framehud/ProcessStats;Ljava/util/List;Lcom/timkrest/framehud/MainThreadBlock;)V
 	public final fun component1 ()Lcom/timkrest/framehud/FrameHudEvent$IncidentTrigger;
+	public final fun component10 ()Lcom/timkrest/framehud/MainThreadBlock;
 	public final fun component2 ()J
 	public final fun component3 ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun component4 ()Lcom/timkrest/framehud/FrameHistory;
@@ -549,11 +591,14 @@ public final class com/timkrest/framehud/IncidentWindow {
 	public final fun component6 ()Lcom/timkrest/framehud/MemoryStats;
 	public final fun component7 ()Lcom/timkrest/framehud/ThermalStats;
 	public final fun component8 ()Lcom/timkrest/framehud/ProcessStats;
-	public final fun copy (Lcom/timkrest/framehud/FrameHudEvent$IncidentTrigger;JLcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/FrameHistory;ILcom/timkrest/framehud/MemoryStats;Lcom/timkrest/framehud/ThermalStats;Lcom/timkrest/framehud/ProcessStats;)Lcom/timkrest/framehud/IncidentWindow;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/IncidentWindow;Lcom/timkrest/framehud/FrameHudEvent$IncidentTrigger;JLcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/FrameHistory;ILcom/timkrest/framehud/MemoryStats;Lcom/timkrest/framehud/ThermalStats;Lcom/timkrest/framehud/ProcessStats;ILjava/lang/Object;)Lcom/timkrest/framehud/IncidentWindow;
+	public final fun component9 ()Ljava/util/List;
+	public final fun copy (Lcom/timkrest/framehud/FrameHudEvent$IncidentTrigger;JLcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/FrameHistory;ILcom/timkrest/framehud/MemoryStats;Lcom/timkrest/framehud/ThermalStats;Lcom/timkrest/framehud/ProcessStats;Ljava/util/List;Lcom/timkrest/framehud/MainThreadBlock;)Lcom/timkrest/framehud/IncidentWindow;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/IncidentWindow;Lcom/timkrest/framehud/FrameHudEvent$IncidentTrigger;JLcom/timkrest/framehud/IntervalStats;Lcom/timkrest/framehud/FrameHistory;ILcom/timkrest/framehud/MemoryStats;Lcom/timkrest/framehud/ThermalStats;Lcom/timkrest/framehud/ProcessStats;Ljava/util/List;Lcom/timkrest/framehud/MainThreadBlock;ILjava/lang/Object;)Lcom/timkrest/framehud/IncidentWindow;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCounters ()Ljava/util/List;
 	public final fun getFrames ()Lcom/timkrest/framehud/FrameHistory;
 	public final fun getFramesBeforeTrigger ()I
+	public final fun getMainThreadBlock ()Lcom/timkrest/framehud/MainThreadBlock;
 	public final fun getMemory ()Lcom/timkrest/framehud/MemoryStats;
 	public final fun getProcess ()Lcom/timkrest/framehud/ProcessStats;
 	public final fun getStats ()Lcom/timkrest/framehud/IntervalStats;
@@ -809,6 +854,26 @@ public final class com/timkrest/framehud/LogcatEventListener : com/timkrest/fram
 	public fun onEvent (Lcom/timkrest/framehud/FrameHudEvent;)V
 }
 
+public final class com/timkrest/framehud/MainThreadBlock {
+	public static final field Companion Lcom/timkrest/framehud/MainThreadBlock$Companion;
+	public fun <init> (JILjava/util/List;)V
+	public final fun component1 ()J
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (JILjava/util/List;)Lcom/timkrest/framehud/MainThreadBlock;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/MainThreadBlock;JILjava/util/List;ILjava/lang/Object;)Lcom/timkrest/framehud/MainThreadBlock;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCalls ()Ljava/util/List;
+	public final fun getDurationMs ()J
+	public final fun getStacksTaken ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/MainThreadBlock$Companion {
+	public final fun getNONE ()Lcom/timkrest/framehud/MainThreadBlock;
+}
+
 public final class com/timkrest/framehud/MeasuredMetric : java/lang/Enum {
 	public static final field FROZEN_FRAMES Lcom/timkrest/framehud/MeasuredMetric;
 	public static final field JANK_PERCENT Lcom/timkrest/framehud/MeasuredMetric;
@@ -1043,6 +1108,19 @@ public final class com/timkrest/framehud/ProcessStats {
 
 public final class com/timkrest/framehud/ProcessStats$Companion {
 	public final fun getEMPTY ()Lcom/timkrest/framehud/ProcessStats;
+}
+
+public final class com/timkrest/framehud/SampledCall {
+	public fun <init> (Ljava/lang/String;I)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun copy (Ljava/lang/String;I)Lcom/timkrest/framehud/SampledCall;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/SampledCall;Ljava/lang/String;IILjava/lang/Object;)Lcom/timkrest/framehud/SampledCall;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getSamples ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/timkrest/framehud/SessionExport {

@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
@@ -9,9 +10,11 @@ import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.JankCause
 import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.JankSeverity
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.PipelineStage
+import com.timkrest.framehud.SampledCall
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertContains
@@ -53,7 +56,7 @@ class SessionJsonTest {
             """"thermal":{"level":"UNKNOWN","headroom":null},""" +
             """"process":{"cpuPercent":null,"peakCpuPercent":null,"pssMb":null,"peakPssMb":null,""" +
             """"threads":null,"peakThreads":null,"openFiles":null,"peakOpenFiles":null},""" +
-            """"incidents":[]}"""
+            """"counters":[],"incidents":[]}"""
         assertEquals(expected, json)
     }
 
@@ -119,6 +122,40 @@ class SessionJsonTest {
     }
 
     @Test
+    fun `an incident carries the counters the app kept when it fired`() {
+        val json = sessionSnapshotFixture(
+            incidents = listOf(
+                incidentFixture(
+                    counters = listOf(CounterReading(name = "decode queue", value = 31, peakSinceReset = 31)),
+                ),
+            ),
+        ).toJson()
+
+        assertContains(json, """"counters":[{"name":"decode queue","value":31,"peak":31}]""")
+    }
+
+    @Test
+    fun `an incident carries the stack the main thread stood in`() {
+        val json = sessionSnapshotFixture(
+            incidents = listOf(
+                incidentFixture(
+                    mainThreadBlock = MainThreadBlock(
+                        durationMs = 850,
+                        stacksTaken = 3,
+                        calls = listOf(SampledCall(name = "Repo.load(Repo.kt:12)", samples = 3)),
+                    ),
+                ),
+            ),
+        ).toJson()
+
+        assertContains(
+            json,
+            """"mainThreadBlock":{"durationMs":850,"stacksTaken":3,""" +
+                """"calls":[{"name":"Repo.load(Repo.kt:12)","samples":3}]}""",
+        )
+    }
+
+    @Test
     fun `confidence issues carry their type, detail fields and affected metrics`() {
         val confidence = MeasurementConfidence(
             issues = listOf(
@@ -134,6 +171,15 @@ class SessionJsonTest {
         assertContains(json, """{"type":"lowBattery","powerSaveMode":true,"levelPercent":12,"affected":[""")
         assertContains(json, """{"type":"refreshRateChanged","ratesHz":[60,120],"affected":[""")
         assertContains(json, MeasuredMetric.JANK_PERCENT.name)
+    }
+
+    @Test
+    fun `counters the app kept reach the export with their peaks`() {
+        val json = sessionSnapshotFixture(
+            counters = listOf(CounterReading(name = "decode queue", value = 4, peakSinceReset = 31)),
+        ).toJson()
+
+        assertContains(json, """"counters":[{"name":"decode queue","value":4,"peak":31}]""")
     }
 
     @Test

@@ -27,6 +27,21 @@ class EventDispatcherTest {
     private val listeners = listOf(FrameHudEventListener { events += it })
 
     @Test
+    fun `a listener that fails against its own libraries does not cost the listeners after it`() {
+        val failing = FrameHudEventListener { throw NoSuchMethodError("com.example.Analytics.log") }
+
+        dispatcher.onMarkEnded(
+            listeners = listOf(failing) + listeners,
+            stats = IntervalStats.EMPTY,
+            mark = "scroll",
+            screen = null,
+            context = emptyMap(),
+        )
+
+        assertEquals(1, events.size, "the failure of one listener reached the next: $events")
+    }
+
+    @Test
     fun `a burst is reported once until it clears`() {
         sample(jankPercent = 30f)
         sample(jankPercent = 40f)

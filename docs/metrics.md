@@ -87,6 +87,8 @@ send.
   a thread of its own, and each is hidden on a device that does not report it
 - **thr** and **fd**: threads and open file descriptors, sockets and pipes included, with their
   peaks. Counts that only grow are a leak the frame numbers will not show you
+- counters the app keeps through `FrameHud.counter`, one row each with the value and its peak.
+  Four rows at most; the rest are counted as `+N more counters`
 
 ## Marks
 

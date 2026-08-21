@@ -1,6 +1,7 @@
 package com.timkrest.framehud.ui
 
 import androidx.compose.ui.graphics.Color
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.IntervalStats
@@ -34,6 +35,46 @@ class PanelLinesTest {
         val sampled = lines(metrics(), process = ProcessStats(cpuPercent = 42f, peakCpuPercent = 61f, threads = 38))
         assertTrue(sampled.any { it == "$LABEL_PROCESS_CPU 42% ▲61" }, sampled.toString())
         assertTrue(sampled.any { it == "$LABEL_THREADS 38" }, sampled.toString())
+    }
+
+    @Test
+    fun `a counter row marks a peak only once it stands above the value`() {
+        val rows = lines(
+            metrics(),
+            counters = listOf(
+                CounterReading(name = "decode queue", value = 4, peakSinceReset = 31),
+                CounterReading(name = "cache misses", value = 12, peakSinceReset = 12),
+            ),
+        )
+
+        assertTrue(rows.any { it.startsWith("decode queue") && it.endsWith("4 \u25B231") }, rows.toString())
+        assertTrue(rows.any { it.startsWith("cache misses") && it.endsWith("12") }, rows.toString())
+    }
+
+    @Test
+    fun `a divider sets the counters the app keeps apart from what FrameHud measured`() {
+        val divided = buildPanelLines(
+            metrics = metrics(),
+            memory = MemoryStats.EMPTY,
+            thermal = ThermalStats.EMPTY,
+            counters = listOf(
+                CounterReading(name = "decode queue", value = 4, peakSinceReset = 4),
+                CounterReading(name = "cache misses", value = 12, peakSinceReset = 12),
+            ),
+        ).values.filter { it.hasSeparatorAbove }.map { it.text }
+
+        assertTrue(divided.last().startsWith("decode queue"), divided.toString())
+    }
+
+    @Test
+    fun `counters past the listed rows are counted instead of shown`() {
+        val rows = lines(
+            metrics(),
+            counters = List(6) { CounterReading(name = "counter-$it", value = it, peakSinceReset = it) },
+        )
+
+        assertTrue(rows.any { it == "+2 more counters" }, rows.toString())
+        assertFalse(rows.any { it.startsWith("counter-4") }, rows.toString())
     }
 
     @Test
@@ -141,11 +182,13 @@ class PanelLinesTest {
         memory: MemoryStats = MemoryStats.EMPTY,
         thermal: ThermalStats = ThermalStats.EMPTY,
         process: ProcessStats = ProcessStats.EMPTY,
+        counters: List<CounterReading> = emptyList(),
     ): List<String> = buildPanelLines(
         metrics = metrics,
         memory = memory,
         thermal = thermal,
         process = process,
+        counters = counters,
     ).values.map { it.text }
 
     private fun List<String>.gpuRow(): String = single { it.startsWith(LABEL_GPU) }

@@ -1,10 +1,12 @@
 package com.timkrest.framehud.internal
 
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IncidentWindow
 import com.timkrest.framehud.JankCause
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
@@ -57,6 +59,8 @@ internal class IncidentRecorder(
         thermal: ThermalStats,
         process: ProcessStats,
         battery: BatterySample,
+        counters: List<CounterReading>,
+        mainThreadBlock: MainThreadBlock,
     ) {
         if (pending != null) return
         pending = PendingIncident(
@@ -67,6 +71,8 @@ internal class IncidentRecorder(
             thermal = thermal,
             process = process,
             battery = battery,
+            counters = counters,
+            mainThreadBlock = mainThreadBlock,
         )
     }
 
@@ -108,6 +114,8 @@ internal class IncidentRecorder(
                 memory = pending.memory,
                 thermal = pending.thermal,
                 process = pending.process,
+                counters = pending.counters,
+                mainThreadBlock = pending.mainThreadBlock,
             ),
         )
     }
@@ -157,6 +165,8 @@ internal class IncidentRecorder(
         val thermal: ThermalStats,
         val process: ProcessStats,
         val battery: BatterySample,
+        val counters: List<CounterReading>,
+        val mainThreadBlock: MainThreadBlock,
     ) {
         var framesAfterTrigger = 0
     }

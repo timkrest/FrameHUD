@@ -39,6 +39,12 @@ public object FrameHud {
     public val processStats: StateFlow<ProcessStats> = MutableStateFlow(ProcessStats.EMPTY)
 
     @get:AnyThread
+    public val counters: StateFlow<List<CounterReading>> = MutableStateFlow(emptyList())
+
+    @AnyThread
+    public fun counter(name: String): FrameHudCounter = NoopCounter
+
+    @get:AnyThread
     public val diagnosis: StateFlow<JankDiagnosis> = MutableStateFlow(JankDiagnosis.HEALTHY)
 
     @Volatile
@@ -104,4 +110,9 @@ public object FrameHud {
     public suspend fun compareWithBaseline(): BaselineComparison = BaselineComparison.NoBaseline
 
     public fun shareSession(activity: Activity, export: SessionExport): Unit = Unit
+}
+
+private object NoopCounter : FrameHudCounter {
+    override fun set(value: Int) = Unit
+    override fun add(delta: Int) = Unit
 }

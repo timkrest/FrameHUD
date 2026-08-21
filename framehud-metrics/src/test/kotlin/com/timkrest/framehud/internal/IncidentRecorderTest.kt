@@ -1,11 +1,13 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.JankCause
 import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.JankSeverity
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PipelineStage
 import com.timkrest.framehud.ProcessStats
@@ -251,12 +253,16 @@ class IncidentRecorderTest {
     private fun arm(
         trigger: FrameHudEvent.IncidentTrigger,
         battery: BatterySample = BatterySample.UNKNOWN,
+        counters: List<CounterReading> = emptyList(),
+        mainThreadBlock: MainThreadBlock = MainThreadBlock.NONE,
     ) = recorder.arm(
         trigger = trigger,
         memory = MemoryStats.EMPTY,
         thermal = ThermalStats.EMPTY,
         process = ProcessStats.EMPTY,
         battery = battery,
+        counters = counters,
+        mainThreadBlock = mainThreadBlock,
     )
 
     private companion object {

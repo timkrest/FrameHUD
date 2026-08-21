@@ -24,10 +24,6 @@ Nothing designed yet. Whether these happen depends on feedback.
   it to retain the last few seconds and a little time after the event
 - A Macrobenchmark bridge: reset, marks and export around a scenario, with FrameHUD results next to
   the standard JSON and trace, but no home-grown benchmark runner
-- App-defined counters next to frame data and in Perfetto, such as an image decode queue or cache
-  misses
-- A blocked-main-thread stack: a watchdog starts occasional samples only after a delay and attaches
-  recurring stack frames to the incident snapshot
 - Recomposition counts next to the frame phases: with `FrameMetrics` alone a screen that recomposes
   everything just looks slow. Needs a stable Compose API, and `ObservableComposition` is still
   experimental. Would be an opt-in `framehud-compose` module

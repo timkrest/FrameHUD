@@ -2,6 +2,7 @@ package com.timkrest.framehud.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudConfig
@@ -64,6 +65,7 @@ private fun previewState(
     memory = MutableStateFlow(PREVIEW_MEMORY),
     thermal = MutableStateFlow(ThermalStats.EMPTY),
     process = MutableStateFlow(PREVIEW_PROCESS),
+    counters = MutableStateFlow(PREVIEW_COUNTERS),
     activeMark = MutableStateFlow(activeMark),
     view = MutableStateFlow(view),
     screens = flowOf(PREVIEW_SCREENS),
@@ -80,6 +82,11 @@ private fun previewActions() = PanelActions(
     reset = {},
     drag = { _, _ -> },
     requestOverlayPermission = {},
+)
+
+private val PREVIEW_COUNTERS = listOf(
+    CounterReading(name = "decode queue", value = 4, peakSinceReset = 31),
+    CounterReading(name = "cache misses", value = 12, peakSinceReset = 12),
 )
 
 private const val PREVIEW_CHOREOGRAPHER_TICKS_PER_SECOND = 120

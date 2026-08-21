@@ -5,6 +5,7 @@ import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.ProcessStats
@@ -414,6 +415,8 @@ class FrameAggregatorTest {
             thermal = ThermalStats.EMPTY,
             process = ProcessStats.EMPTY,
             battery = BatterySample.UNKNOWN,
+            counters = emptyList(),
+            mainThreadBlock = MainThreadBlock.NONE,
         )
         aggregator.addFrame(totalMs = 400f, screen = "promo")
         aggregator.addFrame(totalMs = 20f)

@@ -12,6 +12,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import androidx.core.content.FileProvider
 import com.timkrest.framehud.internal.ActivityTracker
+import com.timkrest.framehud.internal.GuardedFailures
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
 import com.timkrest.framehud.internal.ScreenStart
@@ -19,6 +20,7 @@ import com.timkrest.framehud.internal.baselineFile
 import com.timkrest.framehud.internal.exportAuthority
 import com.timkrest.framehud.internal.exportDirectory
 import com.timkrest.framehud.internal.readBaseline
+import com.timkrest.framehud.internal.requireNameStandsApart
 import com.timkrest.framehud.internal.sessionSnapshot
 import com.timkrest.framehud.internal.writeBaseline
 import com.timkrest.framehud.internal.writeTo
@@ -39,6 +41,10 @@ public object FrameHud {
     private var currentConfig = FrameHudConfig()
 
     private val engine = MetricsEngine(::currentConfig)
+
+    init {
+        GuardedFailures.reportTo(engine::onInternalFailure)
+    }
 
     private val activityTracker = ActivityTracker(onFocused = ::onActivityFocused, onLost = ::onActivityLost)
 
@@ -83,6 +89,18 @@ public object FrameHud {
     @get:AnyThread
     public val processStats: StateFlow<ProcessStats> get() = engine.processStats
 
+    /** Sampled while a screen draws. */
+    @get:AnyThread
+    public val counters: StateFlow<List<CounterReading>> get() = engine.counters
+
+    /**
+     * Answers the counter already tracked under the name, or starts one. Rejects a name a trace
+     * could not tell apart from another: blank, over 110 characters, or carrying a `|` or a control
+     * character. Past sixteen names it answers one that discards what it is given.
+     */
+    @AnyThread
+    public fun counter(name: String): FrameHudCounter = engine.counter(name)
+
     /** What the rolling window says about jank, and what it blames. Healthy while no screen draws. */
     @get:AnyThread
     public val diagnosis: StateFlow<JankDiagnosis> get() = engine.diagnosis
@@ -92,7 +110,8 @@ public object FrameHud {
      * replacing the activity class in stats and events. A new name closes the stats of the previous
      * screen and starts the next; the window stays bound. The name holds until the next assignment,
      * even across activities, so an app that names screens must name every screen it shows. Null
-     * returns to naming screens by activity class. Must not be blank.
+     * returns to naming screens by activity class. Rejects a name a trace could not tell apart from
+     * another: blank, over 110 characters, or carrying a `|` or a control character.
      */
     @get:AnyThread
     @set:MainThread
@@ -100,7 +119,7 @@ public object FrameHud {
         get() = engine.screenOverride
         set(value) {
             checkMainThread()
-            require(value == null || value.isNotBlank()) { "A screen name must not be blank" }
+            value?.let { requireNameStandsApart("A screen name", it) }
             engine.setScreen(value)
         }
 
@@ -141,11 +160,12 @@ public object FrameHud {
      * frames count towards the session and towards that screen; the live readings, marks and events
      * stay with the activity. Call once the window is showing, so the refresh rate of its display is
      * known, and [forgetWindow] before it goes away. Measuring the same window twice, or measuring
-     * while FrameHUD is hidden, does nothing. [screen] must not be blank.
+     * while FrameHUD is hidden, does nothing. [screen] follows the naming rule [FrameHud.screen]
+     * states.
      */
     public fun measureWindow(window: Window, screen: String) {
         checkMainThread()
-        require(screen.isNotBlank()) { "A screen name must not be blank" }
+        requireNameStandsApart("A screen name", screen)
         engine.measureWindow(window, screen)
     }
 
@@ -158,7 +178,8 @@ public object FrameHud {
     /**
      * Attributes frames to an interaction rather than to the activity in focus. Holds until it is
      * cleared or the screen changes, so an interaction that ends without clearing keeps taking the
-     * frames after it. Must not be blank.
+     * frames after it. Rejects a name a trace could not tell apart from another: blank, over 110
+     * characters, or carrying a `|` or a control character.
      */
     @get:AnyThread
     @set:MainThread
@@ -166,7 +187,7 @@ public object FrameHud {
         get() = engine.activeMark.value
         set(value) {
             checkMainThread()
-            require(value == null || value.isNotBlank()) { "A mark name must not be blank" }
+            value?.let { requireNameStandsApart("A mark name", it) }
             engine.setMark(value)
         }
 

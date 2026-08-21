@@ -110,6 +110,25 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
         listeners.emit(FrameHudEvent.MarkEnded(stats = stats, mark = mark, screen = screen, context = context))
     }
 
+    fun onInternalFailure(
+        listeners: List<FrameHudEventListener>,
+        what: String,
+        error: Throwable,
+        screen: String?,
+        mark: String?,
+        context: Map<String, String>,
+    ) {
+        listeners.emit(
+            FrameHudEvent.InternalFailure(
+                what = what,
+                error = error,
+                screen = screen,
+                mark = mark,
+                context = context,
+            ),
+        )
+    }
+
     fun reset() {
         isInBurst = false
         lastFrozenFrames = 0
@@ -122,11 +141,17 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
             try {
                 listener.onEvent(event)
             } catch (e: Exception) {
-                Log.w(LOG_TAG, "Listener ${listener.javaClass.name} threw on $event", e)
+                warnAbout(listener, event, e)
+            } catch (e: LinkageError) {
+                warnAbout(listener, event, e)
             }
             val elapsedMs = (clock.nanoTime() - startNs) / NS_PER_MS
             if (elapsedMs > SLOW_LISTENER_THRESHOLD_MS) onSlowListener(elapsedMs)
         }
+    }
+
+    private fun warnAbout(listener: FrameHudEventListener, event: FrameHudEvent, thrown: Throwable) {
+        Log.w(LOG_TAG, "Listener ${listener.javaClass.name} threw on $event", thrown)
     }
 
     private companion object {

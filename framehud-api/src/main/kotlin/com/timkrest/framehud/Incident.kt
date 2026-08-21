@@ -16,8 +16,8 @@ public data class Incident(
 }
 
 /**
- * [memory], [thermal] and [process] are readings of the moment [trigger] fired, not averages over
- * [frames].
+ * [memory], [thermal], [process], [counters] and [mainThreadBlock] are readings of the moment
+ * [trigger] fired, not averages over [frames].
  */
 public data class IncidentWindow(
     val trigger: FrameHudEvent.IncidentTrigger,
@@ -28,6 +28,8 @@ public data class IncidentWindow(
     val memory: MemoryStats,
     val thermal: ThermalStats,
     val process: ProcessStats,
+    val counters: List<CounterReading>,
+    val mainThreadBlock: MainThreadBlock,
 ) {
     init {
         require(framesBeforeTrigger in 0..frames.size) {

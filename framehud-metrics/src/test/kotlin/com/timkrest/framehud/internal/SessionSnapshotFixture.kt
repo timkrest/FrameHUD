@@ -4,6 +4,7 @@ import com.timkrest.framehud.Baseline
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.BaselineEntry
 import com.timkrest.framehud.BaselineEnvironment
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudEvent
@@ -14,6 +15,7 @@ import com.timkrest.framehud.IncidentWindow
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.ProcessStats
@@ -33,6 +35,7 @@ internal fun sessionSnapshotFixture(
     worstFrames: List<WorstFrames.Frame> = emptyList(),
     incidents: List<Incident> = emptyList(),
     process: ProcessStats = ProcessStats.EMPTY,
+    counters: List<CounterReading> = emptyList(),
 ) = SessionSnapshot(
     takenAtEpochMs = TAKEN_AT_EPOCH_MS,
     takenAtNs = TAKEN_AT_NS,
@@ -57,6 +60,7 @@ internal fun sessionSnapshotFixture(
     memory = MemoryStats.EMPTY,
     thermal = ThermalStats.EMPTY,
     process = process,
+    counters = counters,
     worstFrames = worstFrames,
     incidents = incidents,
 )
@@ -67,6 +71,8 @@ internal fun incidentFixture(
     frames: FrameHistory = FrameHistory.of(floatArrayOf(10f, 40f), floatArrayOf(16f, 16f)),
     framesBeforeTrigger: Int = 1,
     process: ProcessStats = ProcessStats.EMPTY,
+    counters: List<CounterReading> = emptyList(),
+    mainThreadBlock: MainThreadBlock = MainThreadBlock.NONE,
 ) = Incident(
     occurrences = 1,
     firstAtEpochMs = TAKEN_AT_EPOCH_MS,
@@ -80,6 +86,8 @@ internal fun incidentFixture(
         memory = MemoryStats.EMPTY,
         thermal = ThermalStats.EMPTY,
         process = process,
+        counters = counters,
+        mainThreadBlock = mainThreadBlock,
     ),
 )
 

@@ -1,12 +1,14 @@
 public final class com/timkrest/framehud/FrameHud {
 	public static final field INSTANCE Lcom/timkrest/framehud/FrameHud;
 	public final fun compareWithBaseline (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun counter (Ljava/lang/String;)Lcom/timkrest/framehud/FrameHudCounter;
 	public final fun exportSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun forgetWindow (Landroid/view/Window;)V
 	public final fun getBaselineOverride ()Lcom/timkrest/framehud/Baseline;
 	public final fun getChoreographerTicksPerSecond ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getConfig ()Lcom/timkrest/framehud/FrameHudConfig;
 	public final fun getContext ()Ljava/util/Map;
+	public final fun getCounters ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getDiagnosis ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getMark ()Ljava/lang/String;
 	public final fun getMemoryStats ()Lkotlinx/coroutines/flow/StateFlow;

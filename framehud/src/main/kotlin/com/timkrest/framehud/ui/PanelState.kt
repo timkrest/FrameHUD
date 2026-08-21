@@ -1,6 +1,7 @@
 package com.timkrest.framehud.ui
 
 import androidx.compose.runtime.Immutable
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
@@ -24,6 +25,7 @@ internal class PanelState(
     val memory: StateFlow<MemoryStats>,
     val thermal: StateFlow<ThermalStats>,
     val process: StateFlow<ProcessStats>,
+    val counters: StateFlow<List<CounterReading>>,
     val activeMark: StateFlow<String?>,
     val view: StateFlow<PanelView>,
     val screens: Flow<List<IntervalReport>>,

@@ -116,6 +116,21 @@ public sealed interface FrameHudEvent {
     ) : FrameHudEvent {
         override val summary: String get() = stats.summarize(origin())
     }
+
+    /**
+     * FrameHUD caught a failure of its own while it did [what], and went on measuring without
+     * whatever that call would have given. Emitted once per [what] until `FrameHud.reset()`; the
+     * stack trace reaches logcat every time, where it happened.
+     */
+    public data class InternalFailure(
+        val what: String,
+        val error: Throwable,
+        override val screen: String?,
+        override val mark: String?,
+        override val context: Map<String, String> = emptyMap(),
+    ) : FrameHudEvent {
+        override val summary: String get() = "${origin()}: FrameHUD failed while $what ($error)"
+    }
 }
 
 /** Every listener shares one thread with collection, so a slow [onEvent] costs readings. */

@@ -1,5 +1,6 @@
 package com.timkrest.framehud.ui
 
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
@@ -16,10 +17,13 @@ private const val LABEL_WIDTH = 8
 private const val VALUE_WIDTH = 5
 private const val MARK_WIDTH = 14
 private const val SCREEN_NAME_WIDTH = 11
+private const val COUNTER_NAME_WIDTH = 14
 
 private val HEADER_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s"
 
 private const val SCREEN_ROW_LAYOUT = "%-${SCREEN_NAME_WIDTH}s %4s %5s %5s %3s"
+
+private const val COUNTER_ROW_LAYOUT = "%-${COUNTER_NAME_WIDTH}s %6d%s"
 
 internal val CPU_COLUMNS_HEADER_LINE: String =
     formatInvariant(HEADER_LAYOUT, LABEL_CPU_SECTION, LABEL_COLUMN_NOW, LABEL_COLUMN_AVG, LABEL_COLUMN_PEAK)
@@ -60,6 +64,15 @@ internal fun formatScreenLine(screen: IntervalReport): String = formatInvariant(
 )
 
 internal fun formatMoreScreens(count: Int): String = formatInvariant("+%d more", count)
+
+internal fun formatCounterLine(counter: CounterReading): String = formatInvariant(
+    COUNTER_ROW_LAYOUT,
+    truncated(counter.name, COUNTER_NAME_WIDTH),
+    counter.value,
+    peakOf(counter.peakSinceReset.takeIf { it > counter.value }),
+)
+
+internal fun formatMoreCounters(count: Int): String = formatInvariant("+%d more counters", count)
 
 private fun truncated(text: String, width: Int): String =
     if (text.length <= width) text else text.take(width - 1) + ELLIPSIS

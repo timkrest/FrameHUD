@@ -53,6 +53,24 @@ class CommandReceiverTest {
     }
 
     @Test
+    fun aNameNoTraceCouldTellApartIsReportedBackAndLeavesTheNameAlone() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync { FrameHud.screen = "cart" }
+
+        listOf(" ", "q".repeat(TOO_LONG_FOR_A_TRACE)).forEach { name ->
+            val result = assertNotNull(
+                broadcast(
+                    Intent(FrameHudCommandReceiver.ACTION_SCREEN)
+                        .putExtra(FrameHudCommandReceiver.EXTRA_NAME, name),
+                ),
+                "the command never answered",
+            )
+
+            assertTrue(result.startsWith("failed:"), result)
+            assertEquals("cart", FrameHud.screen, "a name FrameHud refused cleared the one already set")
+        }
+    }
+
+    @Test
     fun theContextCommandTakesEveryStringExtra() {
         val result = broadcast(
             Intent(FrameHudCommandReceiver.ACTION_CONTEXT)
@@ -116,5 +134,6 @@ class CommandReceiverTest {
     private companion object {
         const val TIMEOUT_MS = 10_000L
         const val FRAMES = 30
+        const val TOO_LONG_FOR_A_TRACE = 111
     }
 }

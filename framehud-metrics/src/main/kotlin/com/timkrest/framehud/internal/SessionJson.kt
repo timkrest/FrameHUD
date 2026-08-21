@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.IntervalComparison
@@ -9,6 +10,7 @@ import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.JankCause
 import com.timkrest.framehud.JankDiagnosis
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
@@ -93,6 +95,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     putObject("memory") { putMemory(memory) }
     putObject("thermal") { putThermal(thermal) }
     putObject("process") { putProcess(process) }
+    putCounters(counters)
     putArray("incidents") {
         for (incident in incidents) {
             val worst = incident.worst
@@ -112,6 +115,8 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
                     putObject("memory") { putMemory(worst.memory) }
                     putObject("thermal") { putThermal(worst.thermal) }
                     putObject("process") { putProcess(worst.process) }
+                    putCounters(worst.counters)
+                    putObject("mainThreadBlock") { putMainThreadBlock(worst.mainThreadBlock) }
                 }
             }
         }
@@ -198,6 +203,31 @@ private fun JsonObjectScope.putMemory(memory: MemoryStats) {
 private fun JsonObjectScope.putThermal(thermal: ThermalStats) {
     put("level", thermal.level.name)
     put("headroom", thermal.headroom)
+}
+
+private fun JsonObjectScope.putMainThreadBlock(block: MainThreadBlock) {
+    put("durationMs", block.durationMs)
+    put("stacksTaken", block.stacksTaken)
+    putArray("calls") {
+        for (call in block.calls) {
+            addObject {
+                put("name", call.name)
+                put("samples", call.samples)
+            }
+        }
+    }
+}
+
+private fun JsonObjectScope.putCounters(counters: List<CounterReading>) {
+    putArray("counters") {
+        for (counter in counters) {
+            addObject {
+                put("name", counter.name)
+                put("value", counter.value)
+                put("peak", counter.peakSinceReset)
+            }
+        }
+    }
 }
 
 private fun JsonObjectScope.putProcess(process: ProcessStats) {

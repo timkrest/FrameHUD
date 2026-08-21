@@ -15,6 +15,9 @@ you down.
 - **A row per stage.** `input`, `anim`, `layout`, `draw` on the main thread, then `sync`, `command`,
   `swap` on the render thread, and `gpu`
 - **Says why frames drop.** Thermal throttling, GC pauses, too few Choreographer ticks, or a late start
+- **Keeps the case, not just the number.** A jank burst or a frozen frame is saved with the frames
+  around it and the readings of that moment, and with the stack the main thread stood in when it was
+  the one stuck
 - **Measures your app, not itself.** The panel draws in its own window
 - **Fails tests on jank.** A JUnit rule with thresholds
 - **Compares with earlier runs.** A baseline per device, so a gate checks the delta instead of a
@@ -130,8 +133,9 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
-`FrameHud.metrics`, `memoryStats`, `thermalStats`, `choreographerTicksPerSecond` and `diagnosis`
-are plain `StateFlow`s, so the numbers are readable without the panel. A reading groups into
+`FrameHud.metrics`, `memoryStats`, `thermalStats`, `processStats`, `counters`,
+`choreographerTicksPerSecond` and `diagnosis` are plain `StateFlow`s, so the numbers are readable
+without the panel. A reading groups into
 `phases` (per-stage timings), `window` (fps, jank and p95 over the sampling window, and the budget
 they were judged by), `session` (since the last reset) and `display` (refresh rate and the deadline
 the display hands out).
@@ -195,16 +199,28 @@ FrameHud.config = FrameHud.config.copy(
 
 Events arrive on the metrics thread. Don't block it and don't touch views from it.
 
+`FrameHudEvent.InternalFailure` says FrameHUD caught a failure of its own instead of taking the app
+down with it, and names the call it failed in. The stack reaches logcat every time; the event comes
+once per call until `reset`, so a listener that forwards it to your own reporting is not flooded by
+something that fails on every frame. FrameHUD ships no crash reporter and installs no
+`UncaughtExceptionHandler` of its own: what it catches, it hands to you.
+
 ## Incidents
 
 A jank burst or a frozen frame opens a short window around itself: roughly a second of frames before
 the trigger and half a second after, kept with the stats they add up to and with the memory,
-thermal and process readings of that moment. QA saves the case instead of trying to reproduce it later.
+thermal, process and counter readings of that moment. QA saves the case instead of trying to
+reproduce it later.
+
+A main thread that goes 300 ms without handling a frame is sampled from a background thread every
+100 ms until it draws again, and the incident keeps the calls those samples caught it in most often.
+A frozen frame then names the work that held the thread, not only how long it was held. A stack
+taken more than two seconds before the trigger explains nothing about it and is left out. The JSON
+has it as `mainThreadBlock`, and the HTML report lists it under the incident's chart.
 
 Occurrences that blame the same thing on the same screen under the same mark and context are one
-incident, so
-a report says layout jank happened seven times and keeps the worst of the seven windows rather than
-seven copies of it.
+incident, so a report says layout jank happened seven times and keeps the worst of the seven windows
+rather than seven copies of it.
 
 ```kotlin
 lifecycleScope.launch {
@@ -233,7 +249,8 @@ navController.addOnDestinationChangedListener { _, destination, _ ->
 Use the pattern `product/{id}`, not `product/12345`, so every product page counts as one screen.
 A new name closes the stats of the previous screen and starts the next. The name holds until the
 next assignment, so an app that names screens must name every screen it shows. `null` returns to
-activity class names.
+activity class names. A name has to stand apart [in a trace](#in-a-system-trace); a mark follows the
+same rule.
 
 ## Dialogs and second displays
 
@@ -312,9 +329,10 @@ Changing the context closes nothing; it only annotates what follows.
 
 `exportSession` writes the session since the last reset as JSON and a self-contained HTML report,
 and returns both files. Each holds the stats and the phase breakdown for the session and for the
-current screen, the frame window, the worst frames with wall-clock timestamps, every incident,
-context, device, app version, measurement state and confidence issues. They land in `framehud/` under the app's external
-files directory, so CI pulls them without root. A device that reports no external storage falls back
+current screen, the frame window, the worst frames with wall-clock timestamps, every incident, the
+process health of the run, the counters the app kept, context, device, app version, measurement
+state and confidence issues. They land in `framehud/` under the app's external files directory, so
+CI pulls them without root. A device that reports no external storage falls back
 to the app's internal directory, which `adb pull` cannot read at all;
 `adb exec-out run-as <package> cat files/framehud/<file>` gets a report out of there, and
 `shareSession` opens the system share sheet either way. Nothing is ever uploaded.
@@ -345,16 +363,24 @@ adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>
 ```
 
 `DISABLE` and `RESET` complete the set. Omitting `--es name` clears the screen or the mark, and
-`CONTEXT` without extras clears the context. `EXPORT` answers with the report's path in the
-broadcast result, and `BASELINE` with the path of the baseline it updated, so a script pulls
-whichever directory the device chose. A build that is not debuggable ignores every command.
+`CONTEXT` without extras clears the context. A name FrameHUD refuses answers `failed:` and leaves
+the one already set in place, so a script that passes an empty variable hears about it. `EXPORT`
+answers with the report's path in the broadcast result, and `BASELINE` with the path of the
+baseline it updated, so a script pulls whichever directory the device chose. A build that is not
+debuggable ignores every command.
 
 ## In a system trace
 
 While a system trace records, screens and marks show up as `framehud:screen:<name>` and
 `framehud:mark:<name>` sections, a jank burst as `framehud:jank_burst`, and jank percent, p95,
-frozen frames and heap use as `framehud.*` counters. Macrobenchmark's `TraceSectionMetric` measures
-the named sections.
+frozen frames and heap use as `framehud.*` counters. What the app keeps through `FrameHud.counter`
+joins them as `framehud:counter:<name>`. Macrobenchmark's `TraceSectionMetric` measures the named
+sections.
+
+A name FrameHUD writes there has to stand apart from every other: not blank, no longer than 110
+characters, and carrying no `|` or control character. A longer name gets cut down to one another
+name could share, and the rest end the record or split it. A screen, a mark and a counter follow the
+same rule, and FrameHUD refuses a name that breaks it rather than let a trace merge two of them.
 
 ## Lost time
 
@@ -419,6 +445,35 @@ rather than read as zero.
 
 Sampling runs on its own `framehud-process` thread, because reading PSS walks the process's mappings
 and on an older device that takes long enough to hold up frame collection.
+
+## Counters
+
+A number the frame pipeline knows nothing about can sit next to the frame data: an image decode
+queue, cache misses, items in flight.
+
+```kotlin
+private val queue = FrameHud.counter("decode queue")
+
+fun onDecodeQueued() {
+    queue.set(pending.size)
+}
+```
+
+`set` replaces the value, `add` moves it, and both are safe to call from any thread. FrameHUD reads
+the value on its own tick, so the panel, the trace and the reports show it as sampled. The peak is
+not sampled: every write raises it. A reset moves the peak down to what the counter reads then and
+leaves the value alone, because the value belongs to the app: a tally keeps counting across a reset,
+and a gauge keeps its last reading.
+
+The panel gets a row per counter, four of them with the rest counted as `+N more counters`, the
+session report lists them all, and every incident keeps what they read when it fired. In a system
+trace the counter above becomes a `framehud:counter:decode queue` track, under the name the app gave
+it, next to but never on top of the `framehud.*` tracks FrameHUD reports on itself.
+
+Sixteen names are tracked and anything past that is dropped with a warning in logcat. A name has to
+stand apart [in a trace](#in-a-system-trace), the same rule a screen and a mark follow.
+`FrameHud.counters` is the same list as a `StateFlow`, for an app that reads the numbers without the
+panel.
 
 ## Measurement confidence
 
@@ -564,8 +619,24 @@ comes up with the next resumed activity, so a call made later skips the screen a
 ./gradlew :sample:installDebug
 ```
 
-A 300-row list with five toggles: blocking the main thread, overdrawing, allocating per row, nesting
-layouts, churning garbage. Each one moves a different metric.
+Three tabs over one run.
+
+**Load** is a 300-row list with six toggles: blocking the main thread, overdrawing, allocating per
+row, nesting layouts, churning garbage, decoding in the background. Each moves a different metric,
+and whichever ones you pick travel with every event and every incident as measurement context. The
+switch above the list judges frames by a budget instead of the display deadline, 16 ms for the
+session and 8 ms while the list scrolls. Scrolling is marked. A row opens as a screen named
+`row/{index}` that reports itself usable once its data is in.
+
+**Readouts** is every reading FrameHUD keeps, taken from the flows instead of from the panel: the
+rolling window, the phases, the session, the diagnosis, memory, thermal, process health, counters.
+Two of those counters are the app's own. `rows composed` climbs while the list recomposes, and
+`decode queue` follows the background queue while that toggle is on.
+
+**Session** is what a QA run ends with. Read the intervals with the budget each one followed, the
+screens worst first, and the incidents with the readings they fired under. Save a baseline, compare
+against it, freeze the readings, toggle collection, share the report, or hand a dialog window over
+to be measured.
 
 ## Documentation
 

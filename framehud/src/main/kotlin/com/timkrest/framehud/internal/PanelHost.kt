@@ -116,6 +116,7 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
         memory = FrameHud.memoryStats,
         thermal = FrameHud.thermalStats,
         process = FrameHud.processStats,
+        counters = FrameHud.counters,
         activeMark = FrameHud.activeMark,
         view = view,
         screens = FrameHud.metrics.map { FrameHud.screens() },

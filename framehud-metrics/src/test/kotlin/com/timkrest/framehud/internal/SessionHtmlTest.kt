@@ -2,14 +2,17 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PhaseAverages
 import com.timkrest.framehud.ProcessStats
+import com.timkrest.framehud.SampledCall
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -54,6 +57,17 @@ class SessionHtmlTest {
         assertContains(html, "812.5 ms")
         assertContains(html, "class=\"janky\"")
         assertContains(html, "FrameHUD 1.2.3")
+    }
+
+    @Test
+    fun `the counters section shows what the app kept, peak included`() {
+        val html = sessionSnapshotFixture(
+            counters = listOf(CounterReading(name = "decode queue", value = 4, peakSinceReset = 31)),
+        ).toHtml()
+
+        assertContains(html, "Counters")
+        assertContains(html, "decode queue")
+        assertContains(html, "4, peak 31")
     }
 
     @Test
@@ -127,6 +141,37 @@ class SessionHtmlTest {
         ).toHtml()
 
         assertContains(html, "· cpu 180.0% · pss 240 MB")
+    }
+
+    @Test
+    fun `an incident carries the counters the app kept when it fired`() {
+        val html = sessionSnapshotFixture(
+            incidents = listOf(
+                incidentFixture(
+                    counters = listOf(CounterReading(name = "decode queue", value = 31, peakSinceReset = 31)),
+                ),
+            ),
+        ).toHtml()
+
+        assertContains(html, "· decode queue 31")
+    }
+
+    @Test
+    fun `an incident carries the stack the main thread stood in`() {
+        val html = sessionSnapshotFixture(
+            incidents = listOf(
+                incidentFixture(
+                    mainThreadBlock = MainThreadBlock(
+                        durationMs = 850,
+                        stacksTaken = 3,
+                        calls = listOf(SampledCall(name = "Repo.load(Repo.kt:12)", samples = 3)),
+                    ),
+                ),
+            ),
+        ).toHtml()
+
+        assertContains(html, "Main thread blocked 850 ms, 3 stacks taken")
+        assertContains(html, "<li>3x Repo.load(Repo.kt:12)</li>")
     }
 
     @Test

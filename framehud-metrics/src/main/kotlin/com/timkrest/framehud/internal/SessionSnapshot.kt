@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.BaselineEnvironment
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
@@ -40,6 +41,7 @@ internal class SessionSnapshot(
     val memory: MemoryStats,
     val thermal: ThermalStats,
     val process: ProcessStats,
+    val counters: List<CounterReading>,
     val worstFrames: List<WorstFrames.Frame>,
     val incidents: List<Incident>,
 ) {

@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.BlankActivity
+import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
@@ -16,6 +17,7 @@ import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.await
 import com.timkrest.framehud.awaitFrames
 import com.timkrest.framehud.postFrames
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -193,6 +195,20 @@ class MetricsEngineTest {
     }
 
     @Test
+    fun whatTheAppWritesToACounterReachesTheReadingsThePanelCollects() {
+        engine.counter(COUNTER).set(7)
+        onMainThread { engine.start(context) }
+        ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
+            scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
+
+            val readings = await { engine.counters.first { it.isNotEmpty() } }
+
+            onMainThread { engine.unbindWindow() }
+            assertEquals(listOf(CounterReading(COUNTER, value = 7, peakSinceReset = 7)), readings)
+        }
+    }
+
+    @Test
     fun anEngineConfiguredBeforeTheStartRunsNoMetricsThread() {
         engine.reset()
         onMainThread { engine.applyConfig(config) }
@@ -222,6 +238,32 @@ class MetricsEngineTest {
         return assertNotNull(intervals.firstOrNull { it.id == id }, "$id is missing from $intervals").stats.frames
     }
 
+    @Test
+    fun aFailureOfItsOwnReachesListenersOnceForEachCallItFailedIn() {
+        onMainThread { engine.start(context) }
+
+        engine.onInternalFailure(FAILED_AT, NoSuchMethodError())
+        engine.onInternalFailure(FAILED_AT, NoSuchMethodError())
+        engine.onInternalFailure(FAILED_AT_ANOTHER_CALL, IllegalStateException())
+        awaitMetricsThread()
+
+        val failures = events.filterIsInstance<FrameHudEvent.InternalFailure>()
+        assertEquals(listOf(FAILED_AT, FAILED_AT_ANOTHER_CALL), failures.map { it.what })
+    }
+
+    @Test
+    fun aResetLetsTheSameFailureBeHeardAgain() {
+        onMainThread { engine.start(context) }
+        engine.onInternalFailure(FAILED_AT, NoSuchMethodError())
+        awaitMetricsThread()
+
+        engine.reset()
+        engine.onInternalFailure(FAILED_AT, NoSuchMethodError())
+        awaitMetricsThread()
+
+        assertEquals(2, events.filterIsInstance<FrameHudEvent.InternalFailure>().size, "$events")
+    }
+
     private fun onMainThread(action: () -> Unit) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(action)
     }
@@ -247,7 +289,10 @@ class MetricsEngineTest {
         const val MARK = "scroll"
         const val SCREEN = "checkout"
         const val WINDOW = "checkout/promo"
+        const val COUNTER = "decode queue"
         const val DRAWN_FRAMES = 20
+        const val FAILED_AT = "reading frame metrics"
+        const val FAILED_AT_ANOTHER_CALL = "sampling the main thread"
         const val TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 10L
     }

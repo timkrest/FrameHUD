@@ -21,6 +21,7 @@ internal fun Panel(state: PanelState, actions: PanelActions, modifier: Modifier 
     val memory by state.memory.collectAsStateWithLifecycle()
     val thermal by state.thermal.collectAsStateWithLifecycle()
     val process by state.process.collectAsStateWithLifecycle()
+    val counters by state.counters.collectAsStateWithLifecycle()
     val activeMark by state.activeMark.collectAsStateWithLifecycle()
     val view by state.view.collectAsStateWithLifecycle()
     val isCollapsed by state.isCollapsed.collectAsStateWithLifecycle()
@@ -63,6 +64,7 @@ internal fun Panel(state: PanelState, actions: PanelActions, modifier: Modifier 
                         memory = memory,
                         thermal = thermal,
                         process = process,
+                        counters = counters,
                         isEmulator = state.isEmulator,
                         modifier = Modifier.fillMaxWidth(),
                     )
