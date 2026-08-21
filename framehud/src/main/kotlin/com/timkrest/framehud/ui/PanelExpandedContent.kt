@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
 
 @Composable
@@ -15,16 +16,22 @@ internal fun PanelExpandedContent(
     metrics: PerformanceMetrics,
     memory: MemoryStats,
     thermal: ThermalStats,
+    process: ProcessStats,
     isEmulator: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val lines = remember(metrics, memory, thermal, isEmulator) {
-        buildPanelLines(metrics = metrics, memory = memory, thermal = thermal, isEmulator = isEmulator)
+    val lines = remember(metrics, memory, thermal, process, isEmulator) {
+        buildPanelLines(
+            metrics = metrics,
+            memory = memory,
+            thermal = thermal,
+            process = process,
+            isEmulator = isEmulator,
+        )
     }
     Column(modifier = modifier) {
         FrameSparkline(
-            history = metrics.window.history,
-            display = metrics.display,
+            window = metrics.window,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(SparklineHeight),

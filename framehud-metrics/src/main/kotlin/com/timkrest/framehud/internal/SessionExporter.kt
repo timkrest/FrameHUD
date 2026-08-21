@@ -52,7 +52,9 @@ internal fun sessionSnapshot(
         display = stats.metrics.display,
         memory = stats.memory,
         thermal = stats.thermal,
+        process = stats.process,
         worstFrames = stats.worstFrames,
+        incidents = stats.incidents,
     )
 }
 

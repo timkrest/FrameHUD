@@ -8,11 +8,13 @@ import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,16 +31,19 @@ internal class MetricsEngine(
     private val aggregator = FrameAggregator(config(), clock, isEmulator = isRunningOnEmulator())
     private val eventDispatcher = EventDispatcher(clock = clock, onSlowListener = aggregator::addSlowListener)
     private val tracer = FrameHudTracer()
+    private val windows = MeasuredWindows()
     private val collector = FrameMetricsCollector(
         aggregator = aggregator,
         clock = clock,
-        display = { sampler?.display },
+        windows = windows,
         onFirstFrame = ::onFirstFrame,
+        onUsableFrame = ::onUsableFrame,
     )
     private val choreographerTickMonitor = ChoreographerTickMonitor()
     private val memoryMonitor = MemoryStatsMonitor()
     private val thermalMonitor = ThermalMonitor()
     private val batteryMonitor = BatteryMonitor()
+    private val processMonitor = ProcessStatsMonitor(clock, PROCESS_SAMPLE_INTERVAL_MS)
 
     private val measuredScreen = MeasuredScreen()
 
@@ -63,6 +68,9 @@ internal class MetricsEngine(
     @Volatile
     private var sampler: MetricsSampler? = null
 
+    @Volatile
+    private var focusedWindow: Window? = null
+
     private var isRunning = false
 
     @get:AnyThread
@@ -76,6 +84,9 @@ internal class MetricsEngine(
 
     @get:AnyThread
     val thermalStats: StateFlow<ThermalStats> get() = thermalMonitor.stats
+
+    @get:AnyThread
+    val processStats: StateFlow<ProcessStats> get() = processMonitor.stats
 
     @get:AnyThread
     val activeMark: StateFlow<String?> = _activeMark.asStateFlow()
@@ -95,25 +106,58 @@ internal class MetricsEngine(
     fun stop() {
         isRunning = false
         unbindWindow()
+        forgetAllWindows()
         sampler?.post {
             thermalMonitor.unbind()
             batteryMonitor.unbind()
+            processMonitor.stop()
         }
     }
 
-    fun bindWindow(window: Window, screen: String?, creation: ScreenCreation?) {
+    fun bindWindow(window: Window, screen: String?, start: ScreenStart?) {
         val sampler = sampler?.takeIf { isRunning } ?: return
-        if (sampler.isBoundTo(window)) return
+        if (focusedWindow === window) return
+        unbindFocusedWindow()
         val label = measuredScreen.bind(screen)
         tracer.screenChanged(label)
-        collector.expectFirstFrame(window = window, creation = creation)
-        sampler.bind(window)
+        collector.expectScreen(window = window, start = start)
+        focusedWindow = window
+        windows.add(window, label)
         sampler.post {
             memoryMonitor.startCollecting()
+            processMonitor.startCollecting()
             sampleMonitors()
             aggregator.startCollecting(label)
         }
+        sampler.bind(window)
+        sampler.startTicking()
         choreographerTickMonitor.start()
+    }
+
+    fun measureWindow(window: Window, screen: String) {
+        val sampler = sampler?.takeIf { isRunning } ?: return
+        if (windows[window] != null) return
+        windows.add(window, screen)
+        sampler.post { aggregator.beginWindow(screen) }
+        sampler.bind(window)
+    }
+
+    fun forgetWindow(window: Window) {
+        val sampler = sampler ?: return
+        if (window === focusedWindow) return
+        val screen = (windows.remove(window) ?: return).screen
+        sampler.unbind(window)
+        if (windows.stillMeasures(screen)) return
+        sampler.post { aggregator.endWindow(screen) }
+    }
+
+    private fun forgetAllWindows() {
+        val sampler = sampler ?: return
+        val forgotten = windows.clear()
+        if (forgotten.isEmpty()) return
+        forgotten.mapNotNull { it.get() }.forEach(sampler::unbind)
+        val screens = forgotten.map { it.screen }
+        sampler.post { screens.forEach(aggregator::endWindow) }
     }
 
     fun setScreen(name: String?) {
@@ -126,11 +170,14 @@ internal class MetricsEngine(
 
     private fun restartScreen(rename: MeasuredScreen.Rename.Renamed) {
         endMark(endedScreen = rename.previous)
-        val sampler = sampler?.takeIf { it.isBound } ?: return
+        val sampler = sampler ?: return
+        val measured = focusedWindow?.let(windows::get) ?: return
         tracer.screenChanged(rename.current)
+        collector.restartScreen()
         val listeners = config().eventListeners
         val endedContext = context
         sampler.post {
+            measured.screen = rename.current
             eventDispatcher.onScreenEnded(
                 listeners = listeners,
                 stats = aggregator.restartScreen(rename.current),
@@ -149,10 +196,16 @@ internal class MetricsEngine(
         onAggregates { aggregator.beginMark(name) }
     }
 
+    @AnyThread
+    fun reportUsable(start: ScreenStart? = null) {
+        collector.reportUsable(start)
+    }
+
     fun unbindWindow() {
         val sampler = sampler ?: return
-        if (sampler.unbind() == null) return
-        collector.forgetFirstFrame()
+        if (!unbindFocusedWindow()) return
+        sampler.stopTicking()
+        collector.forgetScreen()
         endMark()
         val endedScreen = measuredScreen.unbind()
         tracer.screenChanged(null)
@@ -162,6 +215,7 @@ internal class MetricsEngine(
             diagnosisReadings.update(JankDiagnosis.HEALTHY)
             aggregator.stopCollecting()
             memoryMonitor.stopCollecting()
+            processMonitor.stopCollecting()
             eventDispatcher.onScreenEnded(
                 listeners = listeners,
                 stats = aggregator.screenStats(),
@@ -188,6 +242,7 @@ internal class MetricsEngine(
         memoryMonitor.setFrozen(frozen)
         choreographerTickMonitor.setFrozen(frozen)
         thermalMonitor.setFrozen(frozen)
+        processMonitor.setFrozen(frozen)
     }
 
     @AnyThread
@@ -196,6 +251,7 @@ internal class MetricsEngine(
             sessionId++
             aggregator.reset()
             memoryMonitor.reset()
+            processMonitor.reset()
             eventDispatcher.reset()
             diagnosisReadings.reset(JankDiagnosis.HEALTHY)
         }
@@ -208,6 +264,12 @@ internal class MetricsEngine(
     suspend fun intervals(): List<IntervalReport>? = readOnMetricsThread(aggregator::intervals)
 
     @AnyThread
+    suspend fun incidents(): List<Incident>? = readOnMetricsThread(aggregator::incidents)
+
+    @AnyThread
+    suspend fun screens(): List<IntervalReport>? = readOnMetricsThread { aggregator.intervals().worstScreensFirst() }
+
+    @AnyThread
     suspend fun exportStats(): ExportStats? = readOnMetricsThread {
         ExportStats(
             session = aggregator.sessionStats(),
@@ -216,7 +278,9 @@ internal class MetricsEngine(
             metrics = aggregator.refreshMetricsIgnoringThrottle(),
             memory = memoryMonitor.liveStats,
             thermal = thermalMonitor.liveStats,
+            process = processMonitor.liveStats,
             worstFrames = aggregator.worstFrames(),
+            incidents = aggregator.incidents(),
             screenName = aggregator.screenName,
             mark = _activeMark.value,
             context = context,
@@ -272,6 +336,16 @@ internal class MetricsEngine(
         )
     }
 
+    @WorkerThread
+    private fun onUsableFrame(timeToUsableMs: Float) {
+        eventDispatcher.onUsableFrame(
+            listeners = config().eventListeners,
+            timeToUsableMs = timeToUsableMs,
+            screen = aggregator.screenName,
+            context = context,
+        )
+    }
+
     private fun startSampler(threadName: String, previousSampler: MetricsSampler? = null): MetricsSampler {
         val started = MetricsSampler(
             threadName = threadName,
@@ -288,8 +362,20 @@ internal class MetricsEngine(
         synchronized(samplerLock) {
             val previous = sampler ?: return
             val started = startSampler(threadName, previousSampler = previous)
-            previous.quit()?.let(started::bind)
+            val rebound = windows.windows()
+            rebound.forEach(previous::unbind)
+            previous.quit()
+            rebound.forEach(started::bind)
+            if (focusedWindow != null) started.startTicking()
         }
+    }
+
+    private fun unbindFocusedWindow(): Boolean {
+        val window = focusedWindow ?: return false
+        focusedWindow = null
+        windows.remove(window)
+        sampler?.unbind(window)
+        return true
     }
 
     @AnyThread
@@ -325,9 +411,10 @@ internal class MetricsEngine(
 
     @WorkerThread
     private fun onTick() {
+        windows.takeEndedScreens().forEach(aggregator::endWindow)
         aggregator.onTick()
         sampleMonitors()
-        if (sampler?.isBound != true) return
+        if (focusedWindow == null) return
         val metrics = aggregator.liveMetrics
         val memory = memoryMonitor.liveStats
         val thermal = thermalMonitor.liveStats
@@ -338,7 +425,7 @@ internal class MetricsEngine(
             choreographerTicksPerSecond = choreographerTickMonitor.liveTicksPerSecond,
         )
         diagnosisReadings.update(diagnosis)
-        eventDispatcher.onSample(
+        val trigger = eventDispatcher.onSample(
             listeners = config().eventListeners,
             diagnosis = diagnosis,
             frozenFrames = metrics.session.frozenFrames,
@@ -347,6 +434,15 @@ internal class MetricsEngine(
             mark = _activeMark.value,
             context = context,
         )
+        if (trigger != null) {
+            aggregator.armIncident(
+                trigger = trigger,
+                memory = memory,
+                thermal = thermal,
+                process = processMonitor.liveStats,
+                battery = batteryMonitor.sample,
+            )
+        }
         tracer.jankBurstChanged(eventDispatcher.isInBurst)
         tracer.publishCounters(metrics = metrics, memory = memory)
     }
@@ -355,6 +451,7 @@ internal class MetricsEngine(
 
     private companion object {
         const val MIN_TICK_INTERVAL_MS = 250L
+        const val PROCESS_SAMPLE_INTERVAL_MS = 5_000L
     }
 
     class BaselineStats(
@@ -371,7 +468,9 @@ internal class MetricsEngine(
         val metrics: PerformanceMetrics,
         val memory: MemoryStats,
         val thermal: ThermalStats,
+        val process: ProcessStats,
         val worstFrames: List<WorstFrames.Frame>,
+        val incidents: List<Incident>,
         val screenName: String?,
         val mark: String?,
         val context: Map<String, String>,

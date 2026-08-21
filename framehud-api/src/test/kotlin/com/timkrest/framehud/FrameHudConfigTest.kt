@@ -18,6 +18,15 @@ class FrameHudConfigTest {
     }
 
     @Test
+    fun `a frame budget no frame can fit into is rejected`() {
+        listOf(0, -8).forEach { budget ->
+            assertFailsWith<IllegalArgumentException>("accepted $budget ms") {
+                FrameHudConfig(frameBudgetsMs = mapOf(IntervalId.Screen("feed") to budget))
+            }
+        }
+    }
+
+    @Test
     fun `a fallback refresh rate the frame budget cannot divide by is rejected`() {
         listOf(0f, -60f, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NaN).forEach { rate ->
             assertFailsWith<IllegalArgumentException>("accepted $rate Hz") {

@@ -5,9 +5,11 @@ import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,7 +39,9 @@ internal class SessionSnapshot(
     val display: DisplayInfo,
     val memory: MemoryStats,
     val thermal: ThermalStats,
+    val process: ProcessStats,
     val worstFrames: List<WorstFrames.Frame>,
+    val incidents: List<Incident>,
 ) {
 
     fun frameEndEpochMs(endNs: Long): Long = takenAtEpochMs - (takenAtNs - endNs) / NS_PER_MS_LONG

@@ -1,6 +1,5 @@
 package com.timkrest.framehud.internal
 
-/** Hand-rolled so the export needs no serialization dependency and no Android classes in tests. */
 internal fun buildJsonObject(build: JsonObjectScope.() -> Unit): String {
     val out = StringBuilder()
     JsonObjectScope(out).writeObject(build)
@@ -101,7 +100,6 @@ internal class JsonArrayScope(private val out: StringBuilder) {
     }
 }
 
-/** Non-finite values have no JSON representation, so they export as null rather than crash. */
 private fun writeFloat(out: StringBuilder, value: Float?) {
     if (value == null || !value.isFinite()) {
         out.append("null")

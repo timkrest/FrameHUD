@@ -11,6 +11,12 @@ public data class FrameHudConfig(
     val metricsThrottleIntervalMs: Long = DEFAULT_METRICS_THROTTLE_INTERVAL_MS,
     val fallbackRefreshRateHz: Float = DisplayInfo.DEFAULT_REFRESH_RATE_HZ,
     val metricsThreadName: String = DEFAULT_METRICS_THREAD_NAME,
+    /**
+     * Milliseconds a frame may take before it counts as janky, in place of the display deadline.
+     * A budget covers everything its interval holds: the session covers every screen, a screen
+     * covers the marks made on it. An entry deeper in wins.
+     */
+    val frameBudgetsMs: Map<IntervalId, Int> = emptyMap(),
 ) {
     init {
         require(metricsSampleWindowFrames > 0) {
@@ -21,6 +27,9 @@ public data class FrameHudConfig(
         }
         require(fallbackRefreshRateHz.isFinite() && fallbackRefreshRateHz > 0f) {
             "fallbackRefreshRateHz must be finite and positive, was $fallbackRefreshRateHz"
+        }
+        require(frameBudgetsMs.values.all { it > 0 }) {
+            "A frame budget must be positive, got $frameBudgetsMs"
         }
     }
 

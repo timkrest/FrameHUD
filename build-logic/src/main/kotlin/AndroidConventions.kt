@@ -41,6 +41,10 @@ internal fun CommonExtension<*, *, *, *, *, *>.applyFrameHudDefaults(libs: Versi
     }
 }
 
+internal fun Project.checkCompilesDeviceTests() {
+    tasks.named("check") { dependsOn("compileDebugAndroidTestSources") }
+}
+
 internal fun defaultNamespace(projectPath: String): String {
     val segments = projectPath
         .split(":")

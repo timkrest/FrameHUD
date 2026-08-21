@@ -7,16 +7,18 @@ Rows read `now avg peak` in milliseconds: the current frame, the average over th
 rows, so they track no peak of their own and stop after `avg`.
 
 The frame budget is `FrameMetrics.DEADLINE` (API 31+, what the system allotted the frame) or
-`1000 / refreshRate`. At 60 Hz that is 16.7 ms. It is shown in the header.
+`1000 / refreshRate`. At 60 Hz that is 16.7 ms. A budget set in `frameBudgetsMs` takes its place.
+Whichever is in force is shown in the header.
 
 On a static screen the numbers stop moving. No frames are being produced, so there is nothing to
 report.
 
 ## Controls
 
-Drag the panel with a finger. Tap a collapsed panel to expand it. Long-press to freeze: the readings
-hold still so you can read them while collection continues. `×` resets the window, the session and
-the peaks.
+Drag the panel with a finger. Tap a collapsed panel to expand it, and tap the header of an expanded
+one to switch between the readings and the worst screens. Long-press to freeze: the readings hold
+still so you can read them while collection continues. `×` resets the window, the session and the
+peaks.
 
 ## Header
 
@@ -64,8 +66,8 @@ send.
 
 ## Footer
 
-- **jank**: a frame that missed the system deadline (`FrameMetrics.DEADLINE` on API 31+;
-  `TOTAL > budget` before that)
+- **jank**: a frame that missed the budget in force, the system deadline unless `frameBudgetsMs`
+  set one
 - **win**: jank share, p95 and worst frame over the sampling window
 - **ses**: since the last reset, p50/p95/p99, frame count and collection time (background time
   excluded), jank share, `frz` for frozen frames (TOTAL > 700 ms, as in Play Vitals), `run` for the
@@ -80,6 +82,11 @@ send.
   top. Rising in step with jank means memory pressure is costing you frames
 - **therm**: `PowerManager` throttling status and headroom, where 1.0 is the throttling threshold
   and higher means already throttled. Hidden until the platform reports it
+- **cpu** and **pss**: this process's CPU time as a share of one core, so two busy cores read 200%,
+  and its proportional set size, both with peaks since the last reset. Sampled every few seconds on
+  a thread of its own, and each is hidden on a device that does not report it
+- **thr** and **fd**: threads and open file descriptors, sockets and pipes included, with their
+  peaks. Counts that only grow are a leak the frame numbers will not show you
 
 ## Marks
 

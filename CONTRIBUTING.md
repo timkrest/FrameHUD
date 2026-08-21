@@ -8,9 +8,9 @@ Bug reports, ideas and pull requests are all welcome.
 ./gradlew build
 ```
 
-That compiles every module, runs the unit tests, applies ktlint, checks the public API against the
-dumps under `api/`, and shrinks the sample's release build with R8. It needs JDK 21 and an Android
-SDK.
+That compiles every module, runs the unit tests, compiles the instrumentation tests without running
+them, applies ktlint, checks the public API against the dumps under `api/`, and shrinks the sample's
+release build with R8. It needs JDK 21 and an Android SDK.
 
 Thread and window behaviour is covered by instrumentation tests, which need a device or emulator:
 

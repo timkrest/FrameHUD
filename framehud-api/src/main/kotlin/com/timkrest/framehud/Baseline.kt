@@ -2,6 +2,7 @@ package com.timkrest.framehud
 
 import android.os.Build
 import androidx.compose.runtime.Immutable
+import com.timkrest.framehud.internal.PERCENT
 import kotlin.math.min
 
 /**
@@ -280,8 +281,6 @@ public data class Baseline(
         )
     }
 }
-
-internal const val PERCENT: Float = 100f
 
 private fun List<IntervalReport>.withFrames(): List<IntervalReport> = filter { it.stats.frames > 0 }
 

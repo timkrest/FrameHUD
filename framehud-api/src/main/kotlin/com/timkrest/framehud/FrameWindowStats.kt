@@ -11,8 +11,14 @@ public data class FrameWindowStats(
     val jankPercent: Float = 0f,
     val p95FrameMs: Float = 0f,
     val worstFrameMs: Float = 0f,
+    /** What judged the latest frame in the window, or what is in force while it holds none. */
+    val frameBudgetMs: Float = DisplayInfo.DEFAULT.frameBudgetMs,
     val history: FrameHistory = FrameHistory.EMPTY,
 ) {
+    init {
+        require(frameBudgetMs > 0f) { "frameBudgetMs must be positive, was $frameBudgetMs" }
+    }
+
     public companion object {
         public val EMPTY: FrameWindowStats = FrameWindowStats()
     }

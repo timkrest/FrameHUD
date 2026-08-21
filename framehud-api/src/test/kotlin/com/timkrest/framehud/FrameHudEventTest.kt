@@ -14,6 +14,12 @@ class FrameHudEventTest {
     }
 
     @Test
+    fun `a usable frame names the screen and time to usable`() {
+        val event = FrameHudEvent.UsableFrame(timeToUsableMs = 850.54f, screen = "checkout")
+        assertEquals("checkout: usable in 850.5 ms", event.summary)
+    }
+
+    @Test
     fun `a finished screen is summed up in one line`() {
         val event = FrameHudEvent.ScreenEnded(stats = stats(), screen = "MainActivity")
         assertEquals(

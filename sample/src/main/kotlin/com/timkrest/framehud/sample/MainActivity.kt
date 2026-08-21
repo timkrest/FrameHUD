@@ -3,6 +3,7 @@ package com.timkrest.framehud.sample
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.ReportDrawn
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         SampleEvents.register()
         setContent {
+            ReportDrawn()
             MaterialTheme {
                 SampleScreen(
                     title = "FrameHUD sample",

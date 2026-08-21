@@ -20,7 +20,9 @@ internal fun Panel(state: PanelState, actions: PanelActions, modifier: Modifier 
     val choreographerTicksPerSecond by state.choreographerTicksPerSecond.collectAsStateWithLifecycle()
     val memory by state.memory.collectAsStateWithLifecycle()
     val thermal by state.thermal.collectAsStateWithLifecycle()
+    val process by state.process.collectAsStateWithLifecycle()
     val activeMark by state.activeMark.collectAsStateWithLifecycle()
+    val view by state.view.collectAsStateWithLifecycle()
     val isCollapsed by state.isCollapsed.collectAsStateWithLifecycle()
     val isFrozen by state.isFrozen.collectAsStateWithLifecycle()
 
@@ -42,25 +44,34 @@ internal fun Panel(state: PanelState, actions: PanelActions, modifier: Modifier 
             Column(modifier = Modifier.width(PanelWidth)) {
                 PanelHeader(
                     metrics = metrics,
-                    status = remember(isFrozen, activeMark, choreographerTicksPerSecond, metrics.display) {
+                    status = remember(isFrozen, view, activeMark, choreographerTicksPerSecond, metrics.window.frameBudgetMs) {
                         HeaderStatus.of(
                             isFrozen = isFrozen,
+                            view = view,
                             activeMark = activeMark,
                             choreographerTicksPerSecond = choreographerTicksPerSecond,
-                            frameBudgetMs = metrics.display.frameBudgetMs,
+                            frameBudgetMs = metrics.window.frameBudgetMs,
                         )
                     },
                     canRequestOverlayPermission = state.canRequestOverlayPermission,
                     isEmulator = state.isEmulator,
                     actions = actions,
                 )
-                PanelExpandedContent(
-                    metrics = metrics,
-                    memory = memory,
-                    thermal = thermal,
-                    isEmulator = state.isEmulator,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                when (view) {
+                    PanelView.METRICS -> PanelExpandedContent(
+                        metrics = metrics,
+                        memory = memory,
+                        thermal = thermal,
+                        process = process,
+                        isEmulator = state.isEmulator,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    PanelView.SCREENS -> PanelScreensContent(
+                        screens = state.screens,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }

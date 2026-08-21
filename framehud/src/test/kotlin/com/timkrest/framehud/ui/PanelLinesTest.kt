@@ -1,13 +1,13 @@
 package com.timkrest.framehud.ui
 
 import androidx.compose.ui.graphics.Color
-import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FramePhases
 import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PerformanceMetrics
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
 import org.junit.Test
@@ -25,6 +25,15 @@ class PanelLinesTest {
 
         val withGpu = lines(metrics(gpuMs = 4f)).gpuRow()
         assertTrue(withGpu.contains("4.0"), withGpu)
+    }
+
+    @Test
+    fun `the process rows wait for a reading and leave out what the platform withheld`() {
+        assertFalse(lines(metrics()).any { it.startsWith(LABEL_PROCESS_CPU) || it.startsWith(LABEL_THREADS) })
+
+        val sampled = lines(metrics(), process = ProcessStats(cpuPercent = 42f, peakCpuPercent = 61f, threads = 38))
+        assertTrue(sampled.any { it == "$LABEL_PROCESS_CPU 42% ▲61" }, sampled.toString())
+        assertTrue(sampled.any { it == "$LABEL_THREADS 38" }, sampled.toString())
     }
 
     @Test
@@ -131,7 +140,13 @@ class PanelLinesTest {
         metrics: PerformanceMetrics,
         memory: MemoryStats = MemoryStats.EMPTY,
         thermal: ThermalStats = ThermalStats.EMPTY,
-    ): List<String> = buildPanelLines(metrics = metrics, memory = memory, thermal = thermal).values.map { it.text }
+        process: ProcessStats = ProcessStats.EMPTY,
+    ): List<String> = buildPanelLines(
+        metrics = metrics,
+        memory = memory,
+        thermal = thermal,
+        process = process,
+    ).values.map { it.text }
 
     private fun List<String>.gpuRow(): String = single { it.startsWith(LABEL_GPU) }
 
@@ -149,7 +164,6 @@ class PanelLinesTest {
         ),
         window = FrameWindowStats(jankPercent = jankPercent),
         session = IntervalStats.EMPTY.copy(droppedReports = droppedReports),
-        display = DisplayInfo(frameBudgetMs = 16.7f),
     )
 
     private companion object {

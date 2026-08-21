@@ -33,12 +33,16 @@ drops the panel and keeps the rest, which is the closest FrameHUD gets to JankSt
   quantities.
 - FrameHUD measures a manual pass, Macrobenchmark measures repeated iterations, and Play Vitals
   combines many devices and sessions.
-- Frame budget depends on refresh rate: 16.7 ms at 60 Hz and 8.3 ms at 120 Hz.
+- Frame budget depends on refresh rate: 16.7 ms at 60 Hz and 8.3 ms at 120 Hz. `frameBudgetsMs`
+  replaces it with a number you pick, which no other tool knows about.
 - “First frame” also differs: Macrobenchmark measures process startup; FrameHUD measures a new
   Activity instance, including screen recreation.
+- Time to usable is the closer pair: on a launch it ends on the same `reportFullyDrawn` signal as
+  Macrobenchmark's time to full display, but during a manual pass instead of a repeated cold start.
+  On every other screen the app calls `FrameHud.reportUsable()`, and where it calls it is up to it.
 
-Do not directly compare FrameHUD P95 with Macrobenchmark P95. A reliable comparison tracks a change
-in the same metric, captured by the same tool under the same conditions.
+Do not directly compare FrameHUD P95 with Macrobenchmark P95. Watch how one metric moves in one
+tool under the same conditions.
 
 ## How they work together
 
@@ -50,6 +54,6 @@ in the same metric, captured by the same tool under the same conditions.
 
 JankStats sits outside this sequence: use it when the app needs custom performance telemetry.
 
-FrameHUD does not invent new timings. Android supplies most of them through `FrameMetrics`. It makes
-them convenient during everyday development. Precise benchmarks, system-level investigation and
-production statistics remain separate jobs.
+FrameHUD invents no timings. Android reports most of them through `FrameMetrics`, and FrameHUD puts
+them where you look while you work. Precise benchmarks, system-level investigation and production
+statistics stay separate jobs.

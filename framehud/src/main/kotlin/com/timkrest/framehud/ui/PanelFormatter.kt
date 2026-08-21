@@ -1,10 +1,12 @@
 package com.timkrest.framehud.ui
 
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PipelineStage
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
 import com.timkrest.framehud.internal.MS_PER_SECOND
 import com.timkrest.framehud.internal.formatInvariant
@@ -13,8 +15,11 @@ import java.util.Locale
 private const val LABEL_WIDTH = 8
 private const val VALUE_WIDTH = 5
 private const val MARK_WIDTH = 14
+private const val SCREEN_NAME_WIDTH = 11
 
 private val HEADER_LAYOUT = "%-${LABEL_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s %${VALUE_WIDTH}s"
+
+private const val SCREEN_ROW_LAYOUT = "%-${SCREEN_NAME_WIDTH}s %4s %5s %5s %3s"
 
 internal val CPU_COLUMNS_HEADER_LINE: String =
     formatInvariant(HEADER_LAYOUT, LABEL_CPU_SECTION, LABEL_COLUMN_NOW, LABEL_COLUMN_AVG, LABEL_COLUMN_PEAK)
@@ -34,10 +39,30 @@ private fun formatColumn(valueMs: Float): String {
 
 internal fun formatFps(fps: Int): String = if (fps == 0) LABEL_IDLE else formatInvariant("%d FPS", fps)
 
-internal fun formatMark(mark: String): String {
-    val label = if (mark.length <= MARK_WIDTH) mark else mark.take(MARK_WIDTH - 1) + ELLIPSIS
-    return MARK_PREFIX + label
-}
+internal fun formatMark(mark: String): String = MARK_PREFIX + truncated(mark, MARK_WIDTH)
+
+internal val SCREEN_COLUMNS_HEADER_LINE: String = formatInvariant(
+    SCREEN_ROW_LAYOUT,
+    LABEL_COLUMN_SCREEN,
+    LABEL_COLUMN_FRAMES,
+    LABEL_COLUMN_JANK,
+    LABEL_COLUMN_P95,
+    LABEL_COLUMN_FROZEN,
+)
+
+internal fun formatScreenLine(screen: IntervalReport): String = formatInvariant(
+    SCREEN_ROW_LAYOUT,
+    truncated(screen.id.name, SCREEN_NAME_WIDTH),
+    screen.stats.frames.toString(),
+    formatInvariant("%.1f", screen.stats.jankPercent),
+    formatInvariant("%.1f", screen.stats.p95FrameMs),
+    screen.stats.frozenFrames.toString(),
+)
+
+internal fun formatMoreScreens(count: Int): String = formatInvariant("+%d more", count)
+
+private fun truncated(text: String, width: Int): String =
+    if (text.length <= width) text else text.take(width - 1) + ELLIPSIS
 
 internal fun formatTiming(choreographerTicksPerSecond: Int, frameBudgetMs: Float): String =
     formatInvariant("ui %d/s · %.1fms", choreographerTicksPerSecond, frameBudgetMs)
@@ -74,12 +99,12 @@ internal fun formatLostTime(lostTimeMs: Float): String = if (lostTimeMs < MS_PER
 }
 
 internal fun formatMemory(memory: MemoryStats): String = formatInvariant(
-    "$LABEL_MEMORY %d/%d ▲%d · nat %d ▲%d MB",
+    "$LABEL_MEMORY %d/%d%s · nat %d%s MB",
     memory.usedHeapMb,
     memory.maxHeapMb,
-    memory.peakUsedHeapMb,
+    peakOf(memory.peakUsedHeapMb),
     memory.nativeHeapMb,
-    memory.peakNativeHeapMb,
+    peakOf(memory.peakNativeHeapMb),
 )
 
 internal fun formatGc(memory: MemoryStats): String =
@@ -92,6 +117,24 @@ internal fun formatThermal(thermal: ThermalStats): String {
     val headroom = thermal.headroom ?: return formatInvariant("$LABEL_THERMAL %s", level)
     return formatInvariant("$LABEL_THERMAL %s · hr %.2f", level, headroom)
 }
+
+internal fun formatProcessLines(process: ProcessStats): List<String> = listOfNotNull(
+    joinParts(
+        process.cpuPercent?.let { formatInvariant("$LABEL_PROCESS_CPU %.0f%%%s", it, peakOf(process.peakCpuPercent)) },
+        process.pssMb?.let { formatInvariant("$LABEL_PSS %d%s MB", it, peakOf(process.peakPssMb)) },
+    ),
+    joinParts(
+        process.threads?.let { formatInvariant("$LABEL_THREADS %d%s", it, peakOf(process.peakThreads)) },
+        process.openFiles?.let { formatInvariant("$LABEL_OPEN_FILES %d%s", it, peakOf(process.peakOpenFiles)) },
+    ),
+)
+
+private fun peakOf(value: Float?): String = value?.let { formatInvariant(" ▲%.0f", it) }.orEmpty()
+
+private fun peakOf(value: Int?): String = value?.let { formatInvariant(" ▲%d", it) }.orEmpty()
+
+private fun joinParts(vararg parts: String?): String? =
+    parts.filterNotNull().takeIf { it.isNotEmpty() }?.joinToString(PART_SEPARATOR)
 
 internal fun formatVerdict(verdict: PanelVerdict): String = when (verdict) {
     PanelVerdict.Ok -> LABEL_VERDICT_OK

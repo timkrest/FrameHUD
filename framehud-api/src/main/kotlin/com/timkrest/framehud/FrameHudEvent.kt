@@ -37,13 +37,34 @@ public sealed interface FrameHudEvent {
         override val summary: String get() = formatInvariant("%s: first frame in %.1f ms", origin(), timeToDisplayMs)
     }
 
+    /**
+     * Emitted at most once per measured screen, after the app reported it usable and the next
+     * frame was displayed. [timeToUsableMs] spans the start of that screen and the end of that
+     * frame: a new Activity starts at its creation, before `onCreate` on API 29+ and at
+     * `super.onCreate` below, any other screen when its measurement began. The frame counts in
+     * rolling and session stats unless it is also the first draw, which does not.
+     */
+    public data class UsableFrame(
+        val timeToUsableMs: Float,
+        override val screen: String?,
+        override val context: Map<String, String> = emptyMap(),
+    ) : FrameHudEvent {
+
+        /** Always null. */
+        override val mark: String? get() = null
+
+        override val summary: String get() = formatInvariant("%s: usable in %.1f ms", origin(), timeToUsableMs)
+    }
+
+    public sealed interface IncidentTrigger : FrameHudEvent
+
     /** The rolling window crossed [JankSeverity.WARNING]. Sent once per burst, not per frame. */
     public data class JankBurst(
         val diagnosis: JankDiagnosis,
         override val screen: String?,
         override val mark: String?,
         override val context: Map<String, String> = emptyMap(),
-    ) : FrameHudEvent {
+    ) : IncidentTrigger {
         override val summary: String get() = "${origin()}: ${diagnosis.summary}"
     }
 
@@ -53,7 +74,7 @@ public sealed interface FrameHudEvent {
         override val screen: String?,
         override val mark: String?,
         override val context: Map<String, String> = emptyMap(),
-    ) : FrameHudEvent {
+    ) : IncidentTrigger {
         override val summary: String get() = "${origin()}: $count frozen frame(s)"
     }
 

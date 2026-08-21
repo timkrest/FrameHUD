@@ -15,6 +15,7 @@ import com.timkrest.framehud.ThermalStats
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class EventDispatcherTest {
@@ -58,6 +59,13 @@ class EventDispatcherTest {
     fun `throttling on the first reading is reported`() {
         sample(thermal = ThermalStats(level = ThermalLevel.SEVERE, headroom = null))
         assertIs<FrameHudEvent.ThermalChanged>(events.single())
+    }
+
+    @Test
+    fun `the sample that starts a burst or freezes frames opens an incident`() {
+        assertIs<FrameHudEvent.JankBurst>(sample(jankPercent = 30f, frozenFrames = 1))
+        assertNull(sample(jankPercent = 30f))
+        assertIs<FrameHudEvent.FrozenFrames>(sample(frozenFrames = 2))
     }
 
     @Test
@@ -105,14 +113,14 @@ class EventDispatcherTest {
         thermal: ThermalStats = ThermalStats.EMPTY,
         choreographerTicksPerSecond: Int = 60,
         mark: String? = null,
-    ) {
+    ): FrameHudEvent.IncidentTrigger? {
         val metrics = PerformanceMetrics(
             phases = FramePhases(draw = MetricValue(average = 12f)),
             window = FrameWindowStats(jankPercent = jankPercent),
             session = IntervalStats.EMPTY.copy(frames = 100, durationMs = 1_000L, frozenFrames = frozenFrames),
             display = DisplayInfo(refreshRateHz = 60f),
         )
-        dispatcher.onSample(
+        return dispatcher.onSample(
             listeners = listeners,
             diagnosis = JankDiagnosis.of(
                 metrics = metrics,

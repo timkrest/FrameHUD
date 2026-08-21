@@ -25,7 +25,7 @@ public data class FramePhases(
     /** Null until `FrameMetrics` reports GPU time: it needs API 31+ and a driver that supports it. */
     val gpu: MetricValue? = null,
     val total: MetricValue = MetricValue.ZERO,
-    /** [total] minus [DisplayInfo.frameBudgetMs]. Negative means the frame finished with headroom. */
+    /** [total] minus [FrameWindowStats.frameBudgetMs]. Negative means the frame finished with headroom. */
     val overrun: MetricValue = MetricValue.ZERO,
 ) {
     public val cpu: MetricValue = input + animation + layout + draw

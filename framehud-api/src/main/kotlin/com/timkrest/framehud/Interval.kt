@@ -4,14 +4,18 @@ import androidx.compose.runtime.Immutable
 
 public sealed interface IntervalId {
 
+    /** The screen or the mark this covers, or `session`. */
+    public val name: String
+
     public val label: String
 
     public data object Session : IntervalId {
-        override val label: String get() = "session"
+        override val name: String get() = "session"
+        override val label: String get() = name
     }
 
     /** Every visit to the screen, added up. */
-    public data class Screen(val name: String) : IntervalId {
+    public data class Screen(override val name: String) : IntervalId {
         init {
             require(name.isNotBlank()) { "A screen name must not be blank" }
         }
@@ -20,7 +24,7 @@ public sealed interface IntervalId {
     }
 
     /** Every stretch the mark covered, added up. */
-    public data class Mark(val name: String) : IntervalId {
+    public data class Mark(override val name: String) : IntervalId {
         init {
             require(name.isNotBlank()) { "A mark name must not be blank" }
         }

@@ -2,13 +2,20 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.FrameHistory
+import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.IntervalComparison
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.JankCause
+import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.MeasurementConfidence
+import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
+import com.timkrest.framehud.ProcessStats
+import com.timkrest.framehud.ThermalStats
 
-internal const val EXPORT_SCHEMA_VERSION = 5
+internal const val EXPORT_SCHEMA_VERSION = 6
 
 internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     put("schema", EXPORT_SCHEMA_VERSION)
@@ -30,9 +37,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
         put("frozen", isFrozen)
         put("screen", screenName)
         put("mark", mark)
-        putObject("context") {
-            for ((key, value) in context) put(key, value)
-        }
+        putObject("context") { putContext(context) }
     }
     putObject("session") {
         sessionBudgetMs()?.let { put("frameBudgetMs", it) }
@@ -58,6 +63,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
         put("jankPercent", window.jankPercent)
         put("p95FrameMs", window.p95FrameMs)
         put("worstFrameMs", window.worstFrameMs)
+        put("frameBudgetMs", window.frameBudgetMs)
         putObject("phases") {
             put("bottleneckStage", phases.bottleneckStage.name)
             putPhase("unknownDelay", phases.unknownDelay)
@@ -72,38 +78,137 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
             putPhase("total", phases.total)
             putPhase("overrun", phases.overrun)
         }
-        putArray("frames") {
-            val history = window.history
-            for (index in 0 until history.size) {
-                addObject {
-                    put("totalMs", history.totalMsAt(index))
-                    put("deadlineMs", history.deadlineMsAt(index))
+        putFrames(window.history)
+    }
+    putArray("worstFrames") {
+        for (frame in worstFrames) {
+            val endedAtEpochMs = frameEndEpochMs(frame.endNs)
+            addObject {
+                put("totalMs", frame.totalMs)
+                put("at", formatTimestamp(endedAtEpochMs))
+                put("atMs", endedAtEpochMs)
+            }
+        }
+    }
+    putObject("memory") { putMemory(memory) }
+    putObject("thermal") { putThermal(thermal) }
+    putObject("process") { putProcess(process) }
+    putArray("incidents") {
+        for (incident in incidents) {
+            val worst = incident.worst
+            addObject {
+                put("occurrences", incident.occurrences)
+                put("firstAt", formatTimestamp(incident.firstAtEpochMs))
+                put("firstAtMs", incident.firstAtEpochMs)
+                put("lastAt", formatTimestamp(incident.lastAtEpochMs))
+                put("lastAtMs", incident.lastAtEpochMs)
+                putObject("trigger") { putTrigger(worst.trigger) }
+                putObject("worst") {
+                    put("at", formatTimestamp(worst.triggeredAtEpochMs))
+                    put("atMs", worst.triggeredAtEpochMs)
+                    put("framesBeforeTrigger", worst.framesBeforeTrigger)
+                    putObject("stats") { putStats(worst.stats) }
+                    putFrames(worst.frames)
+                    putObject("memory") { putMemory(worst.memory) }
+                    putObject("thermal") { putThermal(worst.thermal) }
+                    putObject("process") { putProcess(worst.process) }
                 }
             }
         }
     }
-    putArray("worstFrames") {
-        for (frame in worstFrames) {
+}
+
+private fun JsonObjectScope.putTrigger(trigger: FrameHudEvent.IncidentTrigger) {
+    when (trigger) {
+        is FrameHudEvent.JankBurst -> {
+            put("type", "jankBurst")
+            putObject("diagnosis") { putDiagnosis(trigger.diagnosis) }
+        }
+        is FrameHudEvent.FrozenFrames -> {
+            put("type", "frozenFrames")
+            put("count", trigger.count)
+        }
+    }
+    put("screen", trigger.screen)
+    put("mark", trigger.mark)
+    putObject("context") { putContext(trigger.context) }
+}
+
+private fun JsonObjectScope.putDiagnosis(diagnosis: JankDiagnosis) {
+    put("severity", diagnosis.severity.name)
+    put("jankPercent", diagnosis.jankPercent)
+    put("worstFrameMs", diagnosis.worstFrameMs)
+    put("frameBudgetMs", diagnosis.frameBudgetMs)
+    putObject("cause") { putCause(diagnosis.cause) }
+}
+
+private fun JsonObjectScope.putCause(cause: JankCause) {
+    when (cause) {
+        JankCause.None -> put("type", "none")
+        is JankCause.Thermal -> {
+            put("type", "thermal")
+            put("level", cause.level.name)
+        }
+        is JankCause.Gc -> {
+            put("type", "gc")
+            put("timeShare", cause.timeShare)
+        }
+        is JankCause.VsyncStarvation -> {
+            put("type", "vsyncStarvation")
+            put("ticksPerSecond", cause.ticksPerSecond)
+            put("refreshRateHz", cause.refreshRateHz)
+        }
+        is JankCause.LateStart -> {
+            put("type", "lateStart")
+            put("delayMs", cause.delayMs)
+        }
+        is JankCause.Stage -> {
+            put("type", "stage")
+            put("stage", cause.stage.name)
+            put("averageMs", cause.averageMs)
+        }
+    }
+}
+
+private fun JsonObjectScope.putContext(context: Map<String, String>) {
+    for ((key, value) in context) put(key, value)
+}
+
+private fun JsonObjectScope.putFrames(history: FrameHistory) {
+    putArray("frames") {
+        for (index in 0 until history.size) {
             addObject {
-                put("totalMs", frame.totalMs)
-                put("at", formatTimestamp(frameEndEpochMs(frame.endNs)))
-                put("atMs", frameEndEpochMs(frame.endNs))
+                put("totalMs", history.totalMsAt(index))
+                put("deadlineMs", history.deadlineMsAt(index))
             }
         }
     }
-    putObject("memory") {
-        put("usedHeapMb", memory.usedHeapMb)
-        put("maxHeapMb", memory.maxHeapMb)
-        put("nativeHeapMb", memory.nativeHeapMb)
-        put("peakUsedHeapMb", memory.peakUsedHeapMb)
-        put("peakNativeHeapMb", memory.peakNativeHeapMb)
-        put("gcCount", memory.gcCount)
-        put("gcTimeMs", memory.gcTimeMs)
-    }
-    putObject("thermal") {
-        put("level", thermal.level.name)
-        put("headroom", thermal.headroom)
-    }
+}
+
+private fun JsonObjectScope.putMemory(memory: MemoryStats) {
+    put("usedHeapMb", memory.usedHeapMb)
+    put("maxHeapMb", memory.maxHeapMb)
+    put("nativeHeapMb", memory.nativeHeapMb)
+    put("peakUsedHeapMb", memory.peakUsedHeapMb)
+    put("peakNativeHeapMb", memory.peakNativeHeapMb)
+    put("gcCount", memory.gcCount)
+    put("gcTimeMs", memory.gcTimeMs)
+}
+
+private fun JsonObjectScope.putThermal(thermal: ThermalStats) {
+    put("level", thermal.level.name)
+    put("headroom", thermal.headroom)
+}
+
+private fun JsonObjectScope.putProcess(process: ProcessStats) {
+    put("cpuPercent", process.cpuPercent)
+    put("peakCpuPercent", process.peakCpuPercent)
+    put("pssMb", process.pssMb)
+    put("peakPssMb", process.peakPssMb)
+    put("threads", process.threads)
+    put("peakThreads", process.peakThreads)
+    put("openFiles", process.openFiles)
+    put("peakOpenFiles", process.peakOpenFiles)
 }
 
 private fun SessionSnapshot.sessionBudgetMs(): Int? =

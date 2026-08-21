@@ -8,22 +8,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
+import com.timkrest.framehud.FrameWindowStats
 import kotlin.math.max
 
 @Composable
-internal fun FrameSparkline(
-    history: FrameHistory,
-    display: DisplayInfo,
-    modifier: Modifier = Modifier,
-) {
+internal fun FrameSparkline(window: FrameWindowStats, modifier: Modifier = Modifier) {
     Canvas(
         modifier = modifier
             .clip(SparklineShape)
             .background(SparklineBackground),
     ) {
-        drawFrameHistory(history = history, frameBudgetMs = display.frameBudgetMs)
+        drawFrameHistory(history = window.history, frameBudgetMs = window.frameBudgetMs)
     }
 }
 

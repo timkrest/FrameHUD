@@ -84,8 +84,9 @@ internal class ThermalMonitor {
     }
 
     private companion object {
-        /** The platform allows about one call a second. Ask more often and it answers NaN. */
-        const val MIN_HEADROOM_INTERVAL_MS = 2_000L
+        const val PLATFORM_HEADROOM_RATE_LIMIT_MS = 1_000L
+
+        const val MIN_HEADROOM_INTERVAL_MS = 2 * PLATFORM_HEADROOM_RATE_LIMIT_MS
 
         const val HEADROOM_FORECAST_SECONDS = 0
     }

@@ -19,6 +19,7 @@ android {
 dependencies {
     api(project(":framehud-api"))
     api(libs.coroutines.core)
+    implementation(libs.androidx.activity)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.core)
     implementation(libs.androidx.tracing)

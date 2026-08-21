@@ -1,6 +1,7 @@
 package com.timkrest.framehud
 
 import androidx.compose.runtime.Immutable
+import com.timkrest.framehud.internal.PERCENT
 import com.timkrest.framehud.internal.format
 import com.timkrest.framehud.internal.formatChangePercent
 import com.timkrest.framehud.internal.label

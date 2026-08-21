@@ -5,6 +5,8 @@ import android.app.Application
 import android.content.Intent
 import android.os.Looper
 import android.util.Log
+import android.view.Window
+import androidx.activity.ComponentActivity
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
@@ -12,6 +14,7 @@ import androidx.core.content.FileProvider
 import com.timkrest.framehud.internal.ActivityTracker
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
+import com.timkrest.framehud.internal.ScreenStart
 import com.timkrest.framehud.internal.baselineFile
 import com.timkrest.framehud.internal.exportAuthority
 import com.timkrest.framehud.internal.exportDirectory
@@ -76,6 +79,10 @@ public object FrameHud {
     @get:AnyThread
     public val thermalStats: StateFlow<ThermalStats> get() = engine.thermalStats
 
+    /** Sampled every few seconds while a screen draws. */
+    @get:AnyThread
+    public val processStats: StateFlow<ProcessStats> get() = engine.processStats
+
     /** What the rolling window says about jank, and what it blames. Healthy while no screen draws. */
     @get:AnyThread
     public val diagnosis: StateFlow<JankDiagnosis> get() = engine.diagnosis
@@ -114,7 +121,45 @@ public object FrameHud {
             engine.setContext(value)
         }
 
-    /** Attributes frames to an interaction rather than to the activity in focus. Must not be blank. */
+    /**
+     * Reports that the measured screen is showing its data. The measurement ends at the end of the
+     * next displayed frame, which [FrameHudEvent.UsableFrame] reports as time to usable. The first
+     * screen of a [ComponentActivity] created while FrameHud collects needs no call, because its
+     * `FullyDrawnReporter` reports for it and the `ReportDrawnWhen` an app already has for
+     * Macrobenchmark covers the launch. Every other screen needs this call: a screen renamed
+     * through [screen], an Activity returned to, an Activity without the reporter. Repeating a
+     * report for the same screen changes nothing, and a new screen measures again.
+     */
+    @AnyThread
+    public fun reportUsable() {
+        engine.reportUsable()
+    }
+
+    /**
+     * Measures a window FrameHUD cannot find on its own — a dialog, a popup, a presentation on a
+     * second display — as a screen of its own named [screen], next to the activity in focus. Its
+     * frames count towards the session and towards that screen; the live readings, marks and events
+     * stay with the activity. Call once the window is showing, so the refresh rate of its display is
+     * known, and [forgetWindow] before it goes away. Measuring the same window twice, or measuring
+     * while FrameHUD is hidden, does nothing. [screen] must not be blank.
+     */
+    public fun measureWindow(window: Window, screen: String) {
+        checkMainThread()
+        require(screen.isNotBlank()) { "A screen name must not be blank" }
+        engine.measureWindow(window, screen)
+    }
+
+    /** Stops measuring a window given to [measureWindow]. Hiding FrameHUD stops measuring them all. */
+    public fun forgetWindow(window: Window) {
+        checkMainThread()
+        engine.forgetWindow(window)
+    }
+
+    /**
+     * Attributes frames to an interaction rather than to the activity in focus. Holds until it is
+     * cleared or the screen changes, so an interaction that ends without clearing keeps taking the
+     * frames after it. Must not be blank.
+     */
     @get:AnyThread
     @set:MainThread
     public var mark: String?
@@ -198,10 +243,28 @@ public object FrameHud {
     public suspend fun intervals(): List<IntervalReport> = engine.intervals().orEmpty()
 
     /**
-     * Writes the session since [reset] into `framehud/` under the app's external files directory —
-     * `adb pull`-able without root — and returns both files. Null when nothing was collecting.
-     * Throws on an I/O failure, and never uploads anything. The app may put its own diagnostic
-     * files next to the returned ones.
+     * What the run measured per screen since [reset], worst first: most frozen frames, then most
+     * jank, then the slowest p95. A screen with too few frames to judge its p95 comes last however
+     * bad it reads.
+     */
+    @AnyThread
+    public suspend fun screens(): List<IntervalReport> = engine.screens().orEmpty()
+
+    /**
+     * What each jank burst and frozen frame since [reset] was drawn around, worst case first.
+     * Occurrences that blame the same thing on the same screen under the same mark and context fold
+     * into one incident. Only the worst cases are kept, and a window still filling closes with the
+     * frames it has.
+     */
+    @AnyThread
+    public suspend fun incidents(): List<Incident> = engine.incidents().orEmpty()
+
+    /**
+     * Writes the session since [reset] into `framehud/` and returns both files, or null when
+     * nothing was collecting. The directory is the app's external files one, where `adb pull`
+     * reaches it without root, or its internal one when the device reports no external storage,
+     * which `adb pull` cannot read at all. Throws on an I/O failure, and never uploads anything.
+     * The app may put its own diagnostic files next to the returned ones.
      */
     @AnyThread
     public suspend fun exportSession(): SessionExport? {
@@ -313,15 +376,17 @@ public object FrameHud {
         panel?.onConfigChanged()
     }
 
-    private fun startCollecting() {
+    private fun startCollecting(start: ScreenStart? = null) {
         val application = application ?: return
         engine.start(application)
         val activity = activityTracker.focusedActivity ?: return
-        engine.bindWindow(
-            window = activity.window,
-            screen = activity.javaClass.simpleName,
-            creation = activityTracker.takeScreenCreation(activity),
-        )
+        engine.bindWindow(window = activity.window, screen = activity.javaClass.simpleName, start = start)
+        if (start != null) reportUsableWhenFullyDrawn(activity, start)
+    }
+
+    private fun reportUsableWhenFullyDrawn(activity: Activity, start: ScreenStart) {
+        if (activity !is ComponentActivity) return
+        activity.fullyDrawnReporter.addOnReportDrawnListener { engine.reportUsable(start) }
     }
 
     private fun stopCollecting() {
@@ -331,7 +396,8 @@ public object FrameHud {
 
     private fun onActivityFocused(activity: Activity, previous: Activity?) {
         if (previous !== activity) engine.unbindWindow()
-        if (currentConfig.enabled) startCollecting()
+        val start = activityTracker.takeScreenStart(activity)
+        if (currentConfig.enabled) startCollecting(start)
         panel?.onScreenFocused()
     }
 

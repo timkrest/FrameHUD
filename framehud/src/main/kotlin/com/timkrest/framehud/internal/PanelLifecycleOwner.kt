@@ -23,7 +23,6 @@ internal class PanelLifecycleOwner :
         lifecycleRegistry.currentState = Lifecycle.State.RESUMED
     }
 
-    /** A hidden panel stays below `STARTED`, suspending lifecycle-aware collection. */
     fun setVisible(visible: Boolean) {
         if (lifecycleRegistry.currentState == Lifecycle.State.DESTROYED) return
         lifecycleRegistry.currentState = if (visible) Lifecycle.State.RESUMED else Lifecycle.State.CREATED

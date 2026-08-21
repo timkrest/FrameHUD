@@ -7,10 +7,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import com.timkrest.framehud.FramePhases
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.PipelineStage
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalLevel
 import com.timkrest.framehud.ThermalStats
 
@@ -44,6 +46,7 @@ internal fun buildPanelLines(
     metrics: PerformanceMetrics,
     memory: MemoryStats,
     thermal: ThermalStats,
+    process: ProcessStats = ProcessStats.EMPTY,
     isEmulator: Boolean = false,
 ): PanelLines {
     val phases = metrics.phases
@@ -51,7 +54,7 @@ internal fun buildPanelLines(
     val session = metrics.session
     val verdict = panelVerdict(phases = phases, jankPercent = window.jankPercent, isEmulator = isEmulator)
     val rowContext = MetricRowContext(
-        frameBudgetMs = metrics.display.frameBudgetMs,
+        frameBudgetMs = window.frameBudgetMs,
         attentionLabel = (verdict as? PanelVerdict.Attention)?.phaseLabel,
     )
     return buildList {
@@ -94,8 +97,22 @@ internal fun buildPanelLines(
         if (thermal.level != ThermalLevel.UNKNOWN) {
             addText(formatThermal(thermal), thermalColor(thermal.level))
         }
+        formatProcessLines(process).forEach { addText(it, TextHeader) }
     }.let(::PanelLines)
 }
+
+internal fun buildScreenLines(screens: List<IntervalReport>): PanelLines = buildList {
+    addText(SCREEN_COLUMNS_HEADER_LINE, TextHeader)
+    if (screens.isEmpty()) {
+        addText(LABEL_NO_SCREENS, TextHeader)
+        return@buildList
+    }
+    screens.take(LISTED_SCREENS).forEach { screen ->
+        addText(formatScreenLine(screen), jankColor(screen.stats.jankPercent))
+    }
+    val hidden = screens.size - LISTED_SCREENS
+    if (hidden > 0) addText(formatMoreScreens(hidden), TextHeader)
+}.let(::PanelLines)
 
 internal fun buildCollapsedLine(
     metrics: PerformanceMetrics,
@@ -177,3 +194,5 @@ private fun MutableList<PanelLine>.addText(text: String, color: Color) {
 private fun MutableList<PanelLine>.separateFromRowsAbove() {
     this[lastIndex] = last().copy(hasSeparatorAbove = true)
 }
+
+private const val LISTED_SCREENS = 8

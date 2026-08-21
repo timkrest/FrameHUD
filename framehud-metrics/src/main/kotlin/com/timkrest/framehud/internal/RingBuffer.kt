@@ -19,8 +19,7 @@ internal class RingBuffer(capacity: Int) {
     var size = 0
         private set
 
-    /** Highest value since [clear], including samples no longer in the ring. */
-    val peak: Float? get() = if (hasPeak) peakValue else null
+    val peakSinceClear: Float? get() = if (hasPeak) peakValue else null
 
     fun add(value: Float) {
         if (size == capacity) {

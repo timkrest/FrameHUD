@@ -14,30 +14,39 @@ internal class IntervalTotals(
 
     private val byName = LinkedHashMap<String, SessionAccumulator>()
 
-    private var currentName: String? = null
+    private val collectingByName = LinkedHashMap<String, SessionAccumulator?>()
 
-    private var isCollecting = false
+    private var isPaused = false
 
     private var hasWarnedAboutNames = false
 
-    var current: SessionAccumulator? = null
-        private set
-
     fun begin(name: String?): SessionAccumulator? {
-        current?.stopCollecting()
-        currentName = name
-        isCollecting = name != null
-        current = name?.let(::accumulatorFor)?.apply { startCollecting() }
-        return current
+        if (name == null) return null
+        val accumulator = accumulatorFor(name)
+        collectingByName[name] = accumulator
+        if (!isPaused) accumulator?.startCollecting()
+        return accumulator
     }
 
-    fun end() {
-        begin(null)
+    fun end(name: String?) {
+        if (name == null) return
+        collectingByName.remove(name)?.stopCollecting()
     }
 
     fun pause() {
-        isCollecting = false
-        current?.stopCollecting()
+        isPaused = true
+        forEachCollecting(SessionAccumulator::stopCollecting)
+    }
+
+    fun resume() {
+        isPaused = false
+        forEachCollecting(SessionAccumulator::startCollecting)
+    }
+
+    fun collecting(name: String?): SessionAccumulator? = if (name == null) null else collectingByName[name]
+
+    fun forEachCollecting(action: (SessionAccumulator) -> Unit) {
+        for (accumulator in collectingByName.values) accumulator?.let(action)
     }
 
     fun intervals(): List<IntervalReport> =
@@ -46,10 +55,10 @@ internal class IntervalTotals(
         }
 
     fun clear() {
-        val name = currentName
+        val names = collectingByName.keys.toList()
         byName.clear()
-        current = name?.let(::accumulatorFor)
-        if (isCollecting) current?.startCollecting()
+        collectingByName.clear()
+        names.forEach(::begin)
     }
 
     private fun accumulatorFor(name: String): SessionAccumulator? {

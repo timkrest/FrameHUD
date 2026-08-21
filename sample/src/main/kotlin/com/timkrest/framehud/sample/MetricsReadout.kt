@@ -44,7 +44,7 @@ private fun formatMetricsSummary(metrics: PerformanceMetrics): String = String.f
     Locale.US,
     "%d FPS · budget %.1f ms · %s bound %.1f ms",
     metrics.window.fps,
-    metrics.display.frameBudgetMs,
+    metrics.window.frameBudgetMs,
     metrics.phases.bottleneckStage.name.lowercase(Locale.US),
     metrics.phases.bottleneck.average,
 )

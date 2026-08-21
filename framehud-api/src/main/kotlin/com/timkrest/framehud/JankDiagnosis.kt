@@ -117,7 +117,7 @@ public data class JankDiagnosis(
                 severity = severity,
                 jankPercent = metrics.window.jankPercent,
                 worstFrameMs = metrics.window.worstFrameMs,
-                frameBudgetMs = metrics.display.frameBudgetMs,
+                frameBudgetMs = metrics.window.frameBudgetMs,
             )
         }
 

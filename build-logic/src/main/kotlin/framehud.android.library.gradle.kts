@@ -9,7 +9,12 @@ plugins {
 
 android {
     applyFrameHudDefaults(libs)
+    testOptions {
+        targetSdk = libs.int("androidCompileSdk")
+    }
 }
+
+checkCompilesDeviceTests()
 
 extensions.configure<LibraryAndroidComponentsExtension> {
     finalizeDsl { android ->

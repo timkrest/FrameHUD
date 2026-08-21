@@ -1,7 +1,9 @@
 package com.timkrest.framehud.internal
 
+import android.app.Dialog
 import android.content.Context
 import android.os.SystemClock
+import android.view.Window
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -10,11 +12,15 @@ import com.timkrest.framehud.BlankActivity
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
+import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.await
+import com.timkrest.framehud.awaitFrames
+import com.timkrest.framehud.postFrames
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -101,7 +107,7 @@ class MetricsEngineTest {
     fun onceTheScreenIsGoneItNamesTheNumbersItLeftBehindAndNothingElse() {
         onMainThread { engine.start(context) }
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
-            scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, creation = null) }
+            scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
             onMainThread { engine.unbindWindow() }
         }
         onMainThread { engine.setMark(MARK) }
@@ -119,7 +125,7 @@ class MetricsEngineTest {
         onMainThread { engine.start(context) }
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             onMainThread { engine.setScreen(SCREEN) }
-            scenario.onActivity { engine.bindWindow(it.window, screen = "BlankActivity", creation = null) }
+            scenario.onActivity { engine.bindWindow(it.window, screen = "BlankActivity", start = null) }
             onMainThread { engine.unbindWindow() }
         }
         onMainThread { engine.setMark(MARK) }
@@ -129,6 +135,61 @@ class MetricsEngineTest {
         val ended = events.filterIsInstance<FrameHudEvent.MarkEnded>().single()
         assertNull(ended.screen, "a screen the app named outlived the window it was named for")
         assertEquals(SCREEN, engine.screenOverride, "the name the app set has to hold until it sets another")
+    }
+
+    @Test
+    fun aWindowTheAppHandsOverIsMeasuredAsAScreenOfItsOwn() {
+        onMainThread { engine.start(context) }
+        ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
+            scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
+            lateinit var dialog: Dialog
+            lateinit var drawn: CountDownLatch
+            scenario.onActivity { activity ->
+                dialog = Dialog(activity).apply { show() }
+                val window = assertNotNull(dialog.window, "the dialog has no window to measure")
+                engine.measureWindow(window, WINDOW)
+                drawn = window.postFrames(DRAWN_FRAMES)
+            }
+            awaitFrames(drawn, DRAWN_FRAMES)
+            awaitMetricsThread()
+            val intervals = assertNotNull(await { engine.intervals() }, "the metrics thread never answered")
+            onMainThread { dialog.dismiss() }
+
+            val measured = assertNotNull(
+                intervals.firstOrNull { it.id == IntervalId.Screen(WINDOW) },
+                "the window the app handed over is missing from $intervals",
+            )
+            assertTrue(measured.stats.frames > 0, "the window the app handed over drew nothing FrameHud saw")
+        }
+    }
+
+    @Test
+    fun aWindowTheAppTakesBackStopsCounting() {
+        onMainThread { engine.start(context) }
+        ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
+            scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
+            lateinit var window: Window
+            lateinit var dialog: Dialog
+            lateinit var drawn: CountDownLatch
+            scenario.onActivity { activity ->
+                dialog = Dialog(activity).apply { show() }
+                window = assertNotNull(dialog.window, "the dialog has no window to measure")
+                engine.measureWindow(window, WINDOW)
+                drawn = window.postFrames(DRAWN_FRAMES)
+            }
+            awaitFrames(drawn, DRAWN_FRAMES)
+            onMainThread { engine.forgetWindow(window) }
+            awaitMetricsThread()
+            val measured = framesOn(IntervalId.Screen(WINDOW))
+            assertTrue(measured > 0, "the window the app handed over drew nothing FrameHud saw")
+
+            scenario.onActivity { drawn = window.postFrames(DRAWN_FRAMES) }
+            awaitFrames(drawn, DRAWN_FRAMES)
+            awaitMetricsThread()
+            onMainThread { dialog.dismiss() }
+
+            assertEquals(measured, framesOn(IntervalId.Screen(WINDOW)), "a window the app took back kept counting")
+        }
     }
 
     @Test
@@ -156,6 +217,11 @@ class MetricsEngineTest {
         assertTrue(awaitThreadGone(threadName), "the retired metrics thread is still running")
     }
 
+    private fun framesOn(id: IntervalId): Int {
+        val intervals = assertNotNull(await { engine.intervals() }, "the metrics thread never answered")
+        return assertNotNull(intervals.firstOrNull { it.id == id }, "$id is missing from $intervals").stats.frames
+    }
+
     private fun onMainThread(action: () -> Unit) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(action)
     }
@@ -180,6 +246,8 @@ class MetricsEngineTest {
 
         const val MARK = "scroll"
         const val SCREEN = "checkout"
+        const val WINDOW = "checkout/promo"
+        const val DRAWN_FRAMES = 20
         const val TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 10L
     }

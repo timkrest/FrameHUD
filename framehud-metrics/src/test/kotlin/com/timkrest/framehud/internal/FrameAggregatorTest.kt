@@ -2,11 +2,16 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalLevel
+import com.timkrest.framehud.ThermalStats
 import org.junit.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -111,7 +116,7 @@ class FrameAggregatorTest {
         advance(PAST_FPS_WINDOW_MS)
         aggregator.onTick()
 
-        aggregator.addDroppedReports(3)
+        aggregator.addDroppedReports(screen = aggregator.screenName, count = 3)
         advance(PAST_FPS_WINDOW_MS)
         aggregator.onTick()
 
@@ -134,7 +139,7 @@ class FrameAggregatorTest {
     @Test
     fun `dropped reports are counted for the session and for the screen`() {
         aggregator.startCollecting()
-        aggregator.addDroppedReports(2)
+        aggregator.addDroppedReports(screen = aggregator.screenName, count = 2)
         aggregator.addFrame(totalMs = 10f)
 
         assertEquals(2, aggregator.sessionStats().droppedReports)
@@ -335,6 +340,18 @@ class FrameAggregatorTest {
     }
 
     @Test
+    fun `a reset keeps the display the run measured, so the budget it leaves behind matches it`() {
+        aggregator.startCollecting()
+        aggregator.addFrame(totalMs = 10f, refreshRateHz = 120f)
+
+        aggregator.reset()
+
+        val metrics = aggregator.metrics.value
+        assertEquals(120f, metrics.display.refreshRateHz, TOLERANCE)
+        assertEquals(metrics.display.frameBudgetMs, metrics.window.frameBudgetMs, TOLERANCE)
+    }
+
+    @Test
     fun `a second visit to a screen adds to the interval the first one started`() {
         aggregator.startCollecting("Home")
         aggregator.addFrame(totalMs = 10f)
@@ -371,6 +388,111 @@ class FrameAggregatorTest {
         aggregator.addFrame(totalMs = 10f)
 
         assertEquals(2, aggregator.interval(IntervalId.Mark("scroll")).frames)
+    }
+
+    @Test
+    fun `a frame another window drew counts there and in the session, not on the screen in view`() {
+        aggregator.startCollecting("Home")
+        aggregator.beginWindow("promo")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.addFrame(totalMs = 40f, screen = "promo")
+
+        assertEquals(1, aggregator.interval(IntervalId.Screen("Home")).frames)
+        assertEquals(1, aggregator.interval(IntervalId.Screen("promo")).frames)
+        assertEquals(2, aggregator.interval(IntervalId.Session).frames)
+        assertEquals(1, aggregator.screenStats().frames)
+    }
+
+    @Test
+    fun `a frame another window drew stays out of the incident window`() {
+        aggregator.startCollecting("Home")
+        aggregator.beginWindow("promo")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.armIncident(
+            trigger = FrameHudEvent.FrozenFrames(count = 1, screen = "Home", mark = null),
+            memory = MemoryStats.EMPTY,
+            thermal = ThermalStats.EMPTY,
+            process = ProcessStats.EMPTY,
+            battery = BatterySample.UNKNOWN,
+        )
+        aggregator.addFrame(totalMs = 400f, screen = "promo")
+        aggregator.addFrame(totalMs = 20f)
+
+        val frames = aggregator.incidents().single().worst.frames
+        assertContentEquals(listOf(10f, 20f), List(frames.size) { frames.totalMsAt(it) })
+    }
+
+    @Test
+    fun `a frame another window drew stays out of the rolling window`() {
+        aggregator.startCollecting("Home")
+        aggregator.beginWindow("promo")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.addFrame(totalMs = 400f, screen = "promo")
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(2, aggregator.metrics.value.window.history.size)
+        assertEquals(10f, aggregator.metrics.value.window.worstFrameMs, TOLERANCE)
+    }
+
+    @Test
+    fun `a mark leaves out what another window drew while it ran`() {
+        aggregator.startCollecting("Home")
+        aggregator.beginWindow("promo")
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.addFrame(totalMs = 10f, screen = "promo")
+
+        assertEquals(1, aggregator.interval(IntervalId.Mark("scroll")).frames)
+    }
+
+    @Test
+    fun `a window counts the time it was measured, not the time the screen was`() {
+        aggregator.startCollecting("Home")
+        advance(100)
+        aggregator.beginWindow("promo")
+        advance(400)
+        aggregator.addFrame(totalMs = 10f, screen = "promo")
+        aggregator.endWindow("promo")
+        advance(100)
+
+        assertEquals(400L, aggregator.interval(IntervalId.Screen("promo")).durationMs)
+        assertEquals(600L, aggregator.interval(IntervalId.Screen("Home")).durationMs)
+    }
+
+    @Test
+    fun `a forgotten window keeps what it drew and counts nothing after`() {
+        aggregator.startCollecting("Home")
+        aggregator.beginWindow("promo")
+        aggregator.addFrame(totalMs = 10f, screen = "promo")
+        aggregator.endWindow("promo")
+        aggregator.addFrame(totalMs = 10f, screen = "promo")
+
+        assertEquals(1, aggregator.interval(IntervalId.Screen("promo")).frames)
+        assertEquals(2, aggregator.interval(IntervalId.Session).frames)
+    }
+
+    @Test
+    fun `a window named like the screen in view cannot end that screen`() {
+        aggregator.startCollecting("Home")
+        aggregator.endWindow("Home")
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(1, aggregator.interval(IntervalId.Screen("Home")).frames)
+    }
+
+    @Test
+    fun `a window measured across the background skips the time the app spent there`() {
+        aggregator.startCollecting("Home")
+        aggregator.beginWindow("promo")
+        aggregator.addFrame(totalMs = 10f, screen = "promo")
+        aggregator.stopCollecting()
+        advance(1_000)
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f, screen = "promo")
+
+        assertEquals(2, aggregator.interval(IntervalId.Screen("promo")).frames)
+        assertEquals(0L, aggregator.interval(IntervalId.Screen("promo")).durationMs)
     }
 
     @Test
@@ -425,6 +547,117 @@ class FrameAggregatorTest {
     }
 
     @Test
+    fun `a screen with a budget of its own is judged by it while the session keeps the display's`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Screen("Home") to 8)
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+
+        val home = aggregator.interval(IntervalId.Screen("Home"))
+        assertEquals(100f, home.jankPercent, TOLERANCE)
+        assertEquals(2f, home.lostTimeMs, TOLERANCE)
+        assertEquals(0f, aggregator.interval(IntervalId.Session).jankPercent, TOLERANCE)
+    }
+
+    @Test
+    fun `the rolling window is judged by the budget of the screen drawing it`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Screen("Home") to 8)
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+
+        val window = aggregator.metrics.value.window
+        assertEquals(8f, window.frameBudgetMs, TOLERANCE)
+        assertEquals(100f, window.jankPercent, TOLERANCE)
+    }
+
+    @Test
+    fun `a mark judges its frames by its own budget, not by the one its screen carries`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Screen("Home") to 20, IntervalId.Mark("scroll") to 8)
+        aggregator.startCollecting("Home")
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(100f, aggregator.interval(IntervalId.Mark("scroll")).jankPercent, TOLERANCE)
+        assertEquals(0f, aggregator.interval(IntervalId.Screen("Home")).jankPercent, TOLERANCE)
+        assertEquals(8f, aggregator.metrics.value.window.frameBudgetMs, TOLERANCE)
+    }
+
+    @Test
+    fun `the rolling window keeps the budget its frames were judged by until newer ones arrive`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Screen("Home") to 20, IntervalId.Mark("scroll") to 8)
+        aggregator.startCollecting("Home")
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.endMark()
+
+        assertEquals(8f, aggregator.refreshMetricsIgnoringThrottle().window.frameBudgetMs, TOLERANCE)
+
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(20f, aggregator.metrics.value.window.frameBudgetMs, TOLERANCE)
+    }
+
+    @Test
+    fun `a budget set while a screen draws judges the frames that follow it`() {
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+        aggregator.updateConfig(FrameHudConfig(frameBudgetsMs = mapOf(IntervalId.Screen("Home") to 8)))
+        advancePastThrottle()
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(50f, aggregator.interval(IntervalId.Screen("Home")).jankPercent, TOLERANCE)
+        assertNull(aggregator.intervals().first { it.id == IntervalId.Screen("Home") }.frameBudgetMs)
+        assertEquals(8f, aggregator.metrics.value.window.frameBudgetMs, TOLERANCE)
+    }
+
+    @Test
+    fun `a session budget judges the screens that carry none of their own`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Session to 8)
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(100f, aggregator.interval(IntervalId.Session).jankPercent, TOLERANCE)
+        assertEquals(100f, aggregator.interval(IntervalId.Screen("Home")).jankPercent, TOLERANCE)
+    }
+
+    @Test
+    fun `a mark without a budget of its own is judged by the screen it runs on`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Screen("Home") to 8)
+        aggregator.startCollecting("Home")
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 10f)
+
+        assertEquals(100f, aggregator.interval(IntervalId.Mark("scroll")).jankPercent, TOLERANCE)
+        assertEquals(8, aggregator.intervals().first { it.id == IntervalId.Mark("scroll") }.frameBudgetMs)
+    }
+
+    @Test
+    fun `a mark that ran under two budgets names neither`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Screen("Home") to 8)
+        aggregator.startCollecting("Home")
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 5f)
+        aggregator.endMark()
+        aggregator.restartScreen("Checkout")
+        aggregator.beginMark("scroll")
+        aggregator.addFrame(totalMs = 5f)
+
+        assertNull(aggregator.intervals().first { it.id == IntervalId.Mark("scroll") }.frameBudgetMs)
+    }
+
+    @Test
+    fun `a reset leaves behind the budget the next frame will be judged by`() {
+        val aggregator = aggregatorBudgeting(IntervalId.Screen("Home") to 8)
+        aggregator.startCollecting("Home")
+        aggregator.addFrame(totalMs = 10f)
+
+        aggregator.reset()
+
+        assertEquals(8f, aggregator.metrics.value.window.frameBudgetMs, TOLERANCE)
+        assertEquals(0, aggregator.metrics.value.window.history.size)
+    }
+
+    @Test
     fun `screens past the tracked limit are dropped rather than remembered`() {
         aggregator.startCollecting("Home")
         repeat(40) { index ->
@@ -460,6 +693,9 @@ class FrameAggregatorTest {
         assertEquals(0L, aggregator.interval(IntervalId.Screen("Home")).durationMs)
     }
 
+    private fun aggregatorBudgeting(vararg budgets: Pair<IntervalId, Int>) =
+        FrameAggregator(FrameHudConfig(frameBudgetsMs = budgets.toMap()), clock, isEmulator = false)
+
     private fun FrameAggregator.interval(id: IntervalId): IntervalStats =
         assertNotNull(intervals().firstOrNull { it.id == id }, "no interval for $id").stats
 
@@ -476,11 +712,13 @@ class FrameAggregatorTest {
 
     private fun FrameAggregator.addFrame(
         totalMs: Float,
+        screen: String? = screenName,
         deadlineNs: Long? = null,
         totalDurationNs: Long = (totalMs * NS_PER_MS).toLong(),
         refreshRateHz: Float? = 60f,
     ) {
         addFrame(
+            screen = screen,
             durationsMs = phaseDurationsMs(totalMs),
             totalDurationNs = totalDurationNs,
             deadlineNs = deadlineNs,
@@ -493,7 +731,6 @@ class FrameAggregatorTest {
         const val FIRST_SAMPLE_TIME_MS = FrameHudConfig.DEFAULT_METRICS_THROTTLE_INTERVAL_MS
         const val DEADLINE_60HZ_NS = 16_666_666L
         const val TOLERANCE = 0.001f
-        const val NS_PER_MS_LONG = 1_000_000L
 
         const val PAST_FPS_WINDOW_MS = 1_500L
     }

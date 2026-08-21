@@ -3,10 +3,13 @@ package com.timkrest.framehud.internal
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FramePhases
+import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.PhaseAverages
+import com.timkrest.framehud.ProcessStats
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -54,6 +57,35 @@ class SessionHtmlTest {
     }
 
     @Test
+    fun `the screens section ranks what the run measured`() {
+        val html = sessionSnapshotFixture(
+            intervals = listOf(
+                IntervalReport(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 600)),
+                IntervalReport(
+                    IntervalId.Screen("checkout"),
+                    IntervalStats.EMPTY.copy(frames = 600, frozenFrames = 2),
+                ),
+                IntervalReport(IntervalId.Mark("scroll"), IntervalStats.EMPTY.copy(frames = 600)),
+            ),
+        ).toHtml()
+
+        val screens = html.substringAfter("Screens").substringBefore("</section>")
+        assertTrue(screens.indexOf("checkout") < screens.indexOf("cart"), screens)
+        assertFalse(screens.contains("scroll"), "marks are not screens")
+    }
+
+    @Test
+    fun `the environment section reports the process next to the heap`() {
+        val html = sessionSnapshotFixture(
+            process = ProcessStats(cpuPercent = 42f, peakCpuPercent = 61f, pssMb = 210, peakPssMb = 228),
+        ).toHtml()
+
+        assertContains(html, "42.0%, peak 61.0%")
+        assertContains(html, "210 MB, peak 228 MB")
+        assertFalse(html.contains("Open files"), "a figure the platform withheld has no row")
+    }
+
+    @Test
     fun `the stylesheet and the markup name the same classes`() {
         val html = everyStyledElement().toHtml()
         val styles = html.substringAfter("<style>").substringBefore("</style>")
@@ -71,7 +103,42 @@ class SessionHtmlTest {
         session = IntervalStats.EMPTY.copy(droppedReports = 2),
         window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
         worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS)),
+        incidents = listOf(incidentFixture()),
     )
+
+    @Test
+    fun `an incident names its trigger, sizes its window and marks where the trigger fell`() {
+        val html = sessionSnapshotFixture(
+            incidents = listOf(
+                incidentFixture(stats = IntervalStats.EMPTY.copy(frames = 2, jankPercent = 50f, p95FrameMs = 40f)),
+            ),
+        ).toHtml()
+
+        assertContains(html, "Incidents")
+        assertContains(html, "cart: 1 frozen frame(s) · at 22:13:20.000")
+        assertContains(html, "2 frames, 1 before the trigger · jank 50.0% · p95 40.0 ms")
+        assertContains(html, "class=\"trigger\"")
+    }
+
+    @Test
+    fun `an incident carries the process reading it was drawn under`() {
+        val html = sessionSnapshotFixture(
+            incidents = listOf(incidentFixture(process = ProcessStats(cpuPercent = 180f, pssMb = 240))),
+        ).toHtml()
+
+        assertContains(html, "· cpu 180.0% · pss 240 MB")
+    }
+
+    @Test
+    fun `a case that happened more than once says how often and over what stretch`() {
+        val html = sessionSnapshotFixture(
+            incidents = listOf(
+                incidentFixture().copy(occurrences = 7, lastAtEpochMs = TAKEN_AT_EPOCH_MS + 45_000L),
+            ),
+        ).toHtml()
+
+        assertContains(html, "7 times between 22:13:20.000 and 22:14:05.000, worst at 22:13:20.000")
+    }
 
     @Test
     fun `screen names, marks and context are escaped`() {

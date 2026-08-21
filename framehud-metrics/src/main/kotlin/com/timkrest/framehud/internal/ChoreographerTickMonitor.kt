@@ -6,10 +6,6 @@ import androidx.annotation.MainThread
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.roundToInt
 
-/**
- * Counts main-thread Choreographer callbacks while a window is bound. They continue on a still
- * screen, so a low count distinguishes a blocked main thread from an idle renderer.
- */
 internal class ChoreographerTickMonitor {
 
     private val readings = FreezableReading(0)

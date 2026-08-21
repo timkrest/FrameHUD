@@ -8,7 +8,6 @@ internal fun <T> await(timeoutMs: Long = AWAIT_TIMEOUT_MS, read: suspend () -> T
 
 internal const val AWAIT_TIMEOUT_MS: Long = 5_000L
 
-/** Blocks until the metrics thread answers, so what follows sees a started collector. */
-internal fun awaitCollector() {
+internal fun awaitCollectorStarted() {
     await { FrameHud.sessionStats() }
 }

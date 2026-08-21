@@ -21,8 +21,7 @@ internal fun PanelCollapsedContent(metrics: PerformanceMetrics, isEmulator: Bool
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FrameSparkline(
-            history = metrics.window.history,
-            display = metrics.display,
+            window = metrics.window,
             modifier = Modifier
                 .width(SparklineMiniWidth)
                 .height(SparklineMiniHeight),

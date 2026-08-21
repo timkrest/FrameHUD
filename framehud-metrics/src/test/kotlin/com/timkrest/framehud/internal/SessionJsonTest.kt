@@ -2,11 +2,16 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.JankCause
+import com.timkrest.framehud.JankDiagnosis
+import com.timkrest.framehud.JankSeverity
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
+import com.timkrest.framehud.PipelineStage
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertContains
@@ -26,7 +31,7 @@ class SessionJsonTest {
             """"jankPercent":0.0,"lostTimeMs":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
             """"phases":{$averages},"confidence":{"suspect":false,"issues":[]}"""
         val zeroPhase = """{"averageMs":0.0,"peakSinceResetMs":null}"""
-        val expected = """{"schema":5,""" +
+        val expected = """{"schema":6,""" +
             """"generatedAt":"2023-11-14T22:13:20.000Z","generatedAtMs":1700000000000,""" +
             """"frameHudVersion":"1.2.3",""" +
             """"app":{"packageName":"com.example.app","versionName":"9.9","versionCode":42},""" +
@@ -37,6 +42,7 @@ class SessionJsonTest {
             """"screen":{"name":null,$stats},""" +
             """"intervals":[],"baseline":null,""" +
             """"window":{"fps":0,"jankPercent":0.0,"p95FrameMs":0.0,"worstFrameMs":0.0,""" +
+            """"frameBudgetMs":16.6,""" +
             """"phases":{"bottleneckStage":"CPU","unknownDelay":$zeroPhase,"input":$zeroPhase,""" +
             """"animation":$zeroPhase,"layout":$zeroPhase,"draw":$zeroPhase,"sync":$zeroPhase,""" +
             """"commandIssue":$zeroPhase,"swapBuffers":$zeroPhase,"gpu":null,"total":$zeroPhase,""" +
@@ -44,7 +50,10 @@ class SessionJsonTest {
             """"worstFrames":[],""" +
             """"memory":{"usedHeapMb":0,"maxHeapMb":0,"nativeHeapMb":0,"peakUsedHeapMb":0,""" +
             """"peakNativeHeapMb":0,"gcCount":0,"gcTimeMs":0},""" +
-            """"thermal":{"level":"UNKNOWN","headroom":null}}"""
+            """"thermal":{"level":"UNKNOWN","headroom":null},""" +
+            """"process":{"cpuPercent":null,"peakCpuPercent":null,"pssMb":null,"peakPssMb":null,""" +
+            """"threads":null,"peakThreads":null,"openFiles":null,"peakOpenFiles":null},""" +
+            """"incidents":[]}"""
         assertEquals(expected, json)
     }
 
@@ -63,6 +72,50 @@ class SessionJsonTest {
         assertContains(json, """"frames":120""")
         assertContains(json, """"jankPercent":7.5""")
         assertContains(json, """"frames":[{"totalMs":10.0,"deadlineMs":16.0},{"totalMs":40.0,"deadlineMs":16.0}]""")
+    }
+
+    @Test
+    fun `an incident carries the diagnosis that opened it, its window and where the trigger fell`() {
+        val diagnosis = JankDiagnosis(
+            cause = JankCause.Stage(stage = PipelineStage.CPU, averageMs = 12.5f),
+            severity = JankSeverity.SEVERE,
+            jankPercent = 40f,
+            worstFrameMs = 51f,
+            frameBudgetMs = 16.6f,
+        )
+        val burst = FrameHudEvent.JankBurst(
+            diagnosis = diagnosis,
+            screen = "cart",
+            mark = "scroll",
+            context = mapOf("variant" to "b"),
+        )
+        val json = sessionSnapshotFixture(
+            incidents = listOf(
+                incidentFixture(trigger = burst, stats = IntervalStats.EMPTY.copy(frames = 2, frozenFrames = 1)),
+            ),
+        ).toJson()
+
+        assertContains(json, """"occurrences":1,"firstAt":"2023-11-14T22:13:20.000Z","firstAtMs":1700000000000""")
+        assertContains(
+            json,
+            """"trigger":{"type":"jankBurst","diagnosis":{"severity":"SEVERE","jankPercent":40.0,""" +
+                """"worstFrameMs":51.0,"frameBudgetMs":16.6,""" +
+                """"cause":{"type":"stage","stage":"CPU","averageMs":12.5}},""" +
+                """"screen":"cart","mark":"scroll","context":{"variant":"b"}}""",
+        )
+        assertContains(
+            json,
+            """"worst":{"at":"2023-11-14T22:13:20.000Z","atMs":1700000000000,""" +
+                """"framesBeforeTrigger":1,"stats":{"frames":2,""",
+        )
+        assertContains(json, """"frames":[{"totalMs":10.0,"deadlineMs":16.0},{"totalMs":40.0,"deadlineMs":16.0}]""")
+    }
+
+    @Test
+    fun `a frozen frame incident names the count that opened it`() {
+        val json = sessionSnapshotFixture(incidents = listOf(incidentFixture())).toJson()
+
+        assertContains(json, """"trigger":{"type":"frozenFrames","count":1,"screen":"cart","mark":null,"context":{}}""")
     }
 
     @Test

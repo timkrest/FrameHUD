@@ -1,9 +1,5 @@
 package com.timkrest.framehud.internal
 
-/**
- * Hand-rolled so the export needs no templating dependency. Every string a caller passes is escaped;
- * markup the report builds itself goes through [HtmlScope.markup].
- */
 internal fun buildHtmlBody(build: HtmlScope.() -> Unit): String {
     val out = StringBuilder()
     HtmlScope(out).build()

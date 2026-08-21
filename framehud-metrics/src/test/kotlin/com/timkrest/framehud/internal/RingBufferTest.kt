@@ -14,7 +14,7 @@ class RingBufferTest {
         assertEquals(0f, buffer.windowMax(), TOLERANCE)
         assertEquals(0f, buffer.percentile(50f), TOLERANCE)
         assertEquals(0, buffer.snapshot().size)
-        assertNull(buffer.peak)
+        assertNull(buffer.peakSinceClear)
     }
 
     @Test
@@ -38,14 +38,14 @@ class RingBufferTest {
         buffer.add(1f)
         buffer.add(2f)
         assertEquals(2f, buffer.windowMax(), TOLERANCE)
-        assertEquals(10f, buffer.peak)
+        assertEquals(10f, buffer.peakSinceClear)
     }
 
     @Test
     fun `a peak stays the highest sample even when every sample is negative`() {
         val buffer = RingBuffer(capacity = 4)
         listOf(-8f, -2f, -5f).forEach(buffer::add)
-        assertEquals(-2f, buffer.peak)
+        assertEquals(-2f, buffer.peakSinceClear)
         assertEquals(-2f, buffer.windowMax(), TOLERANCE)
         assertEquals(-5f, buffer.percentile(50f), TOLERANCE)
     }
@@ -87,7 +87,7 @@ class RingBufferTest {
         buffer.clear()
         assertEquals(0, buffer.size)
         assertEquals(0f, buffer.average(), TOLERANCE)
-        assertNull(buffer.peak)
+        assertNull(buffer.peakSinceClear)
     }
 
     private companion object {

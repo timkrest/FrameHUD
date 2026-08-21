@@ -6,10 +6,15 @@ import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameWindowStats
+import com.timkrest.framehud.IntervalId
+import com.timkrest.framehud.IntervalReport
+import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
+import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 
 @Preview(name = "Expanded", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
@@ -41,8 +46,15 @@ private fun PanelMarkedPreview() {
     Panel(state = previewState(activeMark = "scroll"), actions = previewActions())
 }
 
+@Preview(name = "Screens", showBackground = true, backgroundColor = 0xFF202020)
+@Composable
+private fun PanelScreensPreview() {
+    Panel(state = previewState(view = PanelView.SCREENS), actions = previewActions())
+}
+
 private fun previewState(
     activeMark: String? = null,
+    view: PanelView = PanelView.METRICS,
     isCollapsed: Boolean = false,
     isFrozen: Boolean = false,
     isEmulator: Boolean = false,
@@ -51,7 +63,10 @@ private fun previewState(
     choreographerTicksPerSecond = MutableStateFlow(PREVIEW_CHOREOGRAPHER_TICKS_PER_SECOND),
     memory = MutableStateFlow(PREVIEW_MEMORY),
     thermal = MutableStateFlow(ThermalStats.EMPTY),
+    process = MutableStateFlow(PREVIEW_PROCESS),
     activeMark = MutableStateFlow(activeMark),
+    view = MutableStateFlow(view),
+    screens = flowOf(PREVIEW_SCREENS),
     isCollapsed = MutableStateFlow(isCollapsed),
     isFrozen = MutableStateFlow(isFrozen),
     canRequestOverlayPermission = true,
@@ -60,6 +75,7 @@ private fun previewState(
 
 private fun previewActions() = PanelActions(
     toggleCollapsed = {},
+    toggleView = {},
     toggleFrozen = {},
     reset = {},
     drag = { _, _ -> },
@@ -67,6 +83,39 @@ private fun previewActions() = PanelActions(
 )
 
 private const val PREVIEW_CHOREOGRAPHER_TICKS_PER_SECOND = 120
+
+private val PREVIEW_PROCESS = ProcessStats(
+    cpuPercent = 42f,
+    peakCpuPercent = 61f,
+    pssMb = 210,
+    peakPssMb = 228,
+    threads = 38,
+    peakThreads = 41,
+    openFiles = 129,
+    peakOpenFiles = 140,
+)
+
+private val PREVIEW_SCREENS = listOf(
+    previewScreen(name = "checkout", frames = 640, jankPercent = 18.4f, p95FrameMs = 31.2f, frozenFrames = 2),
+    previewScreen(name = "product/{id}", frames = 1_820, jankPercent = 6.1f, p95FrameMs = 19.7f, frozenFrames = 0),
+    previewScreen(name = "cart", frames = 90, jankPercent = 2.2f, p95FrameMs = 13.4f, frozenFrames = 0),
+)
+
+private fun previewScreen(
+    name: String,
+    frames: Int,
+    jankPercent: Float,
+    p95FrameMs: Float,
+    frozenFrames: Int,
+) = IntervalReport(
+    id = IntervalId.Screen(name),
+    stats = IntervalStats(
+        frames = frames,
+        jankPercent = jankPercent,
+        p95FrameMs = p95FrameMs,
+        frozenFrames = frozenFrames,
+    ),
+)
 
 private val PREVIEW_FRAME_PATTERN_MS = floatArrayOf(11f, 14f, 12f, 23f, 13f, 17f, 11f, 57f, 12f, 15f, 20f, 13f)
 

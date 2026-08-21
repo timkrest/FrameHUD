@@ -2,6 +2,7 @@ public final class com/timkrest/framehud/FrameHud {
 	public static final field INSTANCE Lcom/timkrest/framehud/FrameHud;
 	public final fun compareWithBaseline (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun exportSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun forgetWindow (Landroid/view/Window;)V
 	public final fun getBaselineOverride ()Lcom/timkrest/framehud/Baseline;
 	public final fun getChoreographerTicksPerSecond ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getConfig ()Lcom/timkrest/framehud/FrameHudConfig;
@@ -10,14 +11,19 @@ public final class com/timkrest/framehud/FrameHud {
 	public final fun getMark ()Ljava/lang/String;
 	public final fun getMemoryStats ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getMetrics ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun getProcessStats ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getScreen ()Ljava/lang/String;
 	public final fun getThermalStats ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun hide ()V
+	public final fun incidents (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun install (Landroid/app/Application;)V
 	public final fun intervals (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun isFrozen ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun measureWindow (Landroid/view/Window;Ljava/lang/String;)V
+	public final fun reportUsable ()V
 	public final fun reset ()V
 	public final fun saveBaseline (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun screens (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sessionStats (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setBaselineOverride (Lcom/timkrest/framehud/Baseline;)V
 	public final fun setConfig (Lcom/timkrest/framehud/FrameHudConfig;)V

@@ -16,7 +16,9 @@ import com.timkrest.framehud.OverlayMode
 import com.timkrest.framehud.ui.Panel
 import com.timkrest.framehud.ui.PanelActions
 import com.timkrest.framehud.ui.PanelState
+import com.timkrest.framehud.ui.PanelView
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
 @MainThread
 internal class PanelHost(private val application: Application) : FrameHudPanel {
@@ -29,6 +31,8 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
     private var hasLoggedAppWindowFallback = false
 
     private val isCollapsed = MutableStateFlow(false)
+
+    private val view = MutableStateFlow(PanelView.METRICS)
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -111,7 +115,10 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
         choreographerTicksPerSecond = FrameHud.choreographerTicksPerSecond,
         memory = FrameHud.memoryStats,
         thermal = FrameHud.thermalStats,
+        process = FrameHud.processStats,
         activeMark = FrameHud.activeMark,
+        view = view,
+        screens = FrameHud.metrics.map { FrameHud.screens() },
         isCollapsed = isCollapsed,
         isFrozen = FrameHud.isFrozen,
         canRequestOverlayPermission = canRequestOverlayPermission,
@@ -120,6 +127,7 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
 
     private fun panelActions(onDrag: (dx: Float, dy: Float) -> Unit) = PanelActions(
         toggleCollapsed = { isCollapsed.value = !isCollapsed.value },
+        toggleView = { view.value = view.value.next() },
         toggleFrozen = FrameHud::toggleFreeze,
         reset = FrameHud::reset,
         drag = onDrag,

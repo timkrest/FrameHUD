@@ -15,8 +15,15 @@ import com.timkrest.framehud.PerformanceMetrics
 internal class HeaderStatus private constructor(val text: String, val color: Color) {
 
     companion object {
-        fun of(isFrozen: Boolean, activeMark: String?, choreographerTicksPerSecond: Int, frameBudgetMs: Float) = when {
+        fun of(
+            isFrozen: Boolean,
+            view: PanelView,
+            activeMark: String?,
+            choreographerTicksPerSecond: Int,
+            frameBudgetMs: Float,
+        ) = when {
             isFrozen -> HeaderStatus(LABEL_HEADER_FROZEN, TextFrozen)
+            view == PanelView.SCREENS -> HeaderStatus(LABEL_HEADER_SCREENS, TextHeader)
             activeMark != null -> HeaderStatus(formatMark(activeMark), TextNormal)
             else -> HeaderStatus(formatTiming(choreographerTicksPerSecond, frameBudgetMs), TextHeader)
         }
@@ -34,7 +41,7 @@ internal fun PanelHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .tapAndHold(onTap = {}, onHold = actions.toggleFrozen),
+            .tapAndHold(onTap = actions.toggleView, onHold = actions.toggleFrozen),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (isEmulator) {

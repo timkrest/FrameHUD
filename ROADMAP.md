@@ -13,26 +13,7 @@ deprecated for a release first.
 
 ## Next
 
-- **First usable frame**: the app says when its data is ready and measurement ends on the next
-  displayed frame, so a quickly drawn skeleton no longer counts as a ready screen. On startup the
-  signal comes from `FullyDrawnReporter`: the `ReportDrawnWhen` an app already has for
-  Macrobenchmark is enough. Screens after that need their own call, since `reportFullyDrawn` only
-  covers the launch.
-
-## Later
-
-- **Incident snapshot**: on a jank burst or frozen frame, keep a short window of frames around the
-  event, together with context, memory, GC, thermal state and dropped reports. QA saves the actual
-  case instead of trying to reproduce it from memory.
-- **Incident grouping**: combine matching snapshots by screen, mark, diagnosis and environment. A
-  report says “layout jank happened 7 times” and keeps the worst case instead of seven duplicates.
-- **Screen history**: the last reports kept in memory, ranked by frozen frames, jank, p95 and sample
-  size, and opened from the panel. Walk through the app first, then inspect the worst screens instead
-  of reading each one live.
-- **Process health**: occasional samples of app CPU, PSS, thread count and open files, with peaks.
-  Steady growth shows up in the incident snapshot; the panel does not turn into a system monitor.
-- **More than one window**: dialogs and secondary displays measured on their own, not just the
-  resumed activity.
+Nothing queued. What lands next comes out of the list below and out of what people ask for.
 
 ## Considering
 
@@ -45,8 +26,6 @@ Nothing designed yet. Whether these happen depends on feedback.
   the standard JSON and trace, but no home-grown benchmark runner
 - App-defined counters next to frame data and in Perfetto, such as an image decode queue or cache
   misses
-- Different budgets per screen and mark: a scroll, a transition and a heavy debug screen need not
-  share one global threshold
 - A blocked-main-thread stack: a watchdog starts occasional samples only after a delay and attaches
   recurring stack frames to the incident snapshot
 - Recomposition counts next to the frame phases: with `FrameMetrics` alone a screen that recomposes
@@ -61,8 +40,9 @@ Nothing designed yet. Whether these happen depends on feedback.
 - FPS in a notification. An app in the background draws no frames, so there is nothing to show. When
   the panel covers what you are testing, collapse it or read logcat.
 - Uploading anything anywhere. Measurements stay on the device.
-- Startup timing and production aggregates. Macrobenchmark measures a cold start, Play Vitals and
-  Firebase Performance report on an installed base; FrameHUD measures the session in front of you.
+- Process startup and production aggregates. FrameHUD times the screen in front of you, first frame
+  and usable frame included; a cold start belongs to Macrobenchmark, and an installed base to Play
+  Vitals and Firebase Performance.
 - A system profiler or trace viewer of its own. FrameHUD leaves markers and may signal an event, but
   Perfetto records and analyzes the trace.
 - Rendering outside the View and Canvas pipeline. `FrameMetrics` reports nothing for Vulkan, OpenGL or

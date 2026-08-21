@@ -68,10 +68,13 @@ lost 2.1s
 mem 84/256 ▲96 · nat 37 ▲41 MB
 gc x3 · 18 ms
 therm none · hr 0.68
+cpu 62% ▲140 · pss 214 ▲240 MB
+thr 38 ▲44 · fd 210 ▲260
 ```
 
 The header shows the main thread's Choreographer tick rate, the frame budget and FPS. The verdict
-under it names the row to look at, and `◀` marks that row.
+under it names the row to look at, and `◀` marks that row. Tapping the header switches to
+[the worst screens](#screen-history) and back; holding it freezes the readings.
 
 Columns read `now avg peak`: the current frame, the average over the window, and the peak since the
 last reset. Rows summed from other rows stop after `avg`.
@@ -118,18 +121,20 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | --- | --- | --- |
 | `enabled` | `true` | While false, no window is added and no frames are collected. |
 | `overlayMode` | `PREFER_SYSTEM` | `APP_WINDOW` keeps the panel inside the app window and never uses the permission. |
-| `eventListeners` | `[LogcatEventListener]` | Who receives first-frame, jank, frozen-frame, thermal, screen and interaction events. |
+| `eventListeners` | `[LogcatEventListener]` | Who receives first-frame, usable-frame, jank, frozen-frame, thermal, screen and interaction events. |
 | `metricsSampleWindowFrames` | `120` | How much history `avg` and the percentiles cover. |
 | `metricsThrottleIntervalMs` | `400` | How often the panel may redraw. Lower values cost more to render. |
 | `fallbackRefreshRateHz` | `60` | Refresh rate assumed when the display reports none. |
+| `frameBudgetsMs` | `{}` | Milliseconds a frame may take on an interval, in place of the display deadline. |
 | `metricsThreadName` | `framehud-metrics` | Name of the collecting thread, as it shows up in traces. |
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
 `FrameHud.metrics`, `memoryStats`, `thermalStats`, `choreographerTicksPerSecond` and `diagnosis`
 are plain `StateFlow`s, so the numbers are readable without the panel. A reading groups into
-`phases` (per-stage timings), `window` (fps, jank and p95 over the sampling window), `session`
-(since the last reset) and `display` (refresh rate and frame budget).
+`phases` (per-stage timings), `window` (fps, jank and p95 over the sampling window, and the budget
+they were judged by), `session` (since the last reset) and `display` (refresh rate and the deadline
+the display hands out).
 
 `sessionStats()` and `intervals()` suspend until the metrics thread answers. The first covers the
 session since the last reset; the second adds every screen and every mark, each with the frame
@@ -148,6 +153,32 @@ to an existing Activity is not.
 The start timestamp comes from `onActivityPreCreated`, so the event needs API 29. On older versions
 first draws stay out of jank statistics, but no `FirstFrame` event is sent.
 
+## Usable frame
+
+A skeleton draws fast, so the first frame says little about when the screen became useful.
+`FrameHudEvent.UsableFrame` reports when the app itself says the screen is ready. The measurement
+ends at the end of the next displayed frame. The default listener writes
+`MainActivity: usable in 456.7 ms` to logcat.
+
+The first screen of a `ComponentActivity` created while FrameHUD collects needs no call. FrameHUD
+listens to its `FullyDrawnReporter`, so the `ReportDrawnWhen` or `reportFullyDrawn()` an app
+already has for Macrobenchmark covers the launch.
+
+Every other screen reports for itself: a screen renamed through `FrameHud.screen`, an Activity
+returned to, an Activity without the reporter.
+
+```kotlin
+adapter.submitList(rows) { FrameHud.reportUsable() }
+```
+
+Time to usable counts from the start of the screen. A new Activity counts from its creation: before
+`onCreate` on API 29+, from the `super.onCreate` call below. A renamed screen counts from the
+rename. Repeating a report changes nothing, and a new screen measures again.
+
+The usable frame stays in the jank statistics. The exception is a launch that was already usable at
+its first frame: that frame is a first draw, which Android marks as expectedly slow, so it stays
+out.
+
 ## Jank events
 
 You get one event per jank burst, not one per frame, with the cause already worked out. The default
@@ -163,6 +194,30 @@ FrameHud.config = FrameHud.config.copy(
 ```
 
 Events arrive on the metrics thread. Don't block it and don't touch views from it.
+
+## Incidents
+
+A jank burst or a frozen frame opens a short window around itself: roughly a second of frames before
+the trigger and half a second after, kept with the stats they add up to and with the memory,
+thermal and process readings of that moment. QA saves the case instead of trying to reproduce it later.
+
+Occurrences that blame the same thing on the same screen under the same mark and context are one
+incident, so
+a report says layout jank happened seven times and keeps the worst of the seven windows rather than
+seven copies of it.
+
+```kotlin
+lifecycleScope.launch {
+    for (incident in FrameHud.incidents()) {
+        Log.w("app", "${incident.worst.trigger.summary}, ${incident.occurrences} time(s)")
+    }
+}
+```
+
+Incidents also land in the session export, worst case first: the HTML report draws each kept window
+with the trigger marked on the chart, and the JSON carries the diagnosis, how often the case
+happened, the window stats and every frame in it. Only the worst cases are kept, and `reset` clears
+them.
 
 ## Naming screens
 
@@ -180,15 +235,59 @@ A new name closes the stats of the previous screen and starts the next. The name
 next assignment, so an app that names screens must name every screen it shows. `null` returns to
 activity class names.
 
+## Dialogs and second displays
+
+A dialog, a popup and a `Presentation` each draw in a window of their own, and FrameHUD only finds
+the one the activity in focus owns. Hand over the rest and each becomes a screen of its own:
+
+```kotlin
+dialog.setOnShowListener { FrameHud.measureWindow(dialog.window!!, "checkout/promo") }
+dialog.setOnDismissListener { FrameHud.forgetWindow(dialog.window!!) }
+```
+
+Its frames count towards the session and towards that screen, so it stands next to the activity
+screens in `screens()`, in both reports and in the baseline comparison. The live panel readings,
+marks and jank events stay with the activity, because that is the window the panel draws over.
+
+## Screen history
+
+Walk through the app first, then look at which screens were worst instead of reading each one live.
+Tap the panel header to switch between the metrics and the screens, and tap it again to switch back.
+
+```
+SCREENS                  118 FPS
+screen       frm  jank   p95 frz
+checkout     640  18.4  31.2   2
+product/{i… 1820   6.1  19.7   0
+cart          90   2.2  13.4   0
+```
+
+```kotlin
+lifecycleScope.launch {
+    val worst = FrameHud.screens().firstOrNull() ?: return@launch
+    Log.w("app", "${worst.id.name} is the worst screen so far")
+}
+```
+
+Worst first means most frozen frames, then most jank, then the slowest p95. A screen with fewer than
+60 frames cannot be judged on its p95, so it comes last however bad it reads. The session report has
+the same table.
+
 ## Marking an interaction
 
 A screen summary tells you which screen is slow; a mark narrows that down to one interaction.
 
 ```kotlin
 FrameHud.mark = "scroll"
-// the gesture runs
-FrameHud.mark = null
+try {
+    listState.animateScrollToItem(lastIndex)
+} finally {
+    FrameHud.mark = null
+}
 ```
+
+Clear it in a `finally`: a mark left behind keeps taking the frames after the interaction, and a
+scroll that is cancelled halfway never reaches the line below it.
 
 Frames drawn while the mark is set belong to it. The header reads `▸ scroll` instead of the timing
 and every event fired meanwhile carries the name; clearing the mark reports a `MarkEnded` whose
@@ -213,10 +312,12 @@ Changing the context closes nothing; it only annotates what follows.
 
 `exportSession` writes the session since the last reset as JSON and a self-contained HTML report,
 and returns both files. Each holds the stats and the phase breakdown for the session and for the
-current screen, the frame window, the worst frames with wall-clock timestamps, context, device, app
-version, measurement state and confidence issues. They land in `framehud/` under the app's external
-files directory, so CI pulls them without root; `shareSession` opens the system share sheet with
-them. Nothing is ever uploaded.
+current screen, the frame window, the worst frames with wall-clock timestamps, every incident,
+context, device, app version, measurement state and confidence issues. They land in `framehud/` under the app's external
+files directory, so CI pulls them without root. A device that reports no external storage falls back
+to the app's internal directory, which `adb pull` cannot read at all;
+`adb exec-out run-as <package> cat files/framehud/<file>` gets a report out of there, and
+`shareSession` opens the system share sheet either way. Nothing is ever uploaded.
 
 ```kotlin
 lifecycleScope.launch {
@@ -245,8 +346,8 @@ adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>
 
 `DISABLE` and `RESET` complete the set. Omitting `--es name` clears the screen or the mark, and
 `CONTEXT` without extras clears the context. `EXPORT` answers with the report's path in the
-broadcast result, ready for `adb pull`, and `BASELINE` with the path of the baseline it updated. A
-build that is not debuggable ignores every command.
+broadcast result, and `BASELINE` with the path of the baseline it updated, so a script pulls
+whichever directory the device chose. A build that is not debuggable ignores every command.
 
 ## In a system trace
 
@@ -264,6 +365,30 @@ them, so two screens at the same 5% jank stop looking alike.
 The panel adds a line for it once it is above zero, both reports have it per session and per screen,
 and `JankThresholds(maxLostTimeMs = 500f)` fails a test on it.
 
+## Frame budgets
+
+A frame is janky when it runs past the deadline the display gave it: 16.7 ms at 60 Hz, 8.3 ms at
+120 Hz. A screen that has to hold 120 Hz on a 60 Hz test device, or one you already know is heavy,
+can be judged against a number you pick instead.
+
+```kotlin
+FrameHud.config = FrameHud.config.copy(
+    frameBudgetsMs = mapOf(
+        IntervalId.Screen("feed") to 8,
+        IntervalId.Mark("scroll") to 8,
+    ),
+)
+```
+
+A budget covers everything its interval holds. `IntervalId.Session` covers every screen, and a
+screen covers the marks made on it. An entry deeper in wins. Everything that interval reports
+follows the budget: jank percent, lost time, the longest jank streak, the incidents it opens and
+the baseline it is compared against.
+
+While such a screen is in focus the panel follows the same budget: the number in the header and the
+line across the sparkline. `IntervalReport.frameBudgetMs` says which budget judged a row, and both
+reports print it. An interval whose budget changed halfway through reports none.
+
 ## Where the time went
 
 `IntervalStats.phases` breaks a session, a screen or a mark down by pipeline phase, as
@@ -276,6 +401,24 @@ frame of the interval. Both reports carry the breakdown per session and per scre
 report puts the two side by side.
 
 `PhaseAverages.gpu` is null until the driver reports GPU time, which needs API 31+.
+
+## Process health
+
+Every few seconds FrameHUD samples the process behind the frames: CPU, PSS, thread count and open
+file descriptors, each with the peak since the last reset.
+
+```
+cpu 42%▲61 · pss 210▲228 MB
+thr 38▲41 · fd 129▲140
+```
+
+CPU is a share of one core, so eight busy cores read 800%. Steady growth is the point: a screen that
+leaks threads or file descriptors shows it here long before it janks. The figures land in the
+session report and in every incident, and one the platform will not report on a device is left out
+rather than read as zero.
+
+Sampling runs on its own `framehud-process` thread, because reading PSS walks the process's mappings
+and on an older device that takes long enough to hold up frame collection.
 
 ## Measurement confidence
 
@@ -305,8 +448,17 @@ adb pull /sdcard/Android/data/<package>/files/framehud/baseline.json
 adb push baseline.json /sdcard/Android/data/<package>/files/framehud/baseline.json
 ```
 
-The command averages the session into `framehud/baseline.json` and answers with its path. Calling it
-twice without a `RESET` in between changes nothing, so a repeated command cannot weigh one run twice.
+The command averages the session into `framehud/baseline.json` and answers with its path, which is
+the one to use. A device with no external storage keeps the file inside the app, where `adb pull`
+and `adb push` are refused and the round trip goes through `run-as` instead:
+
+```
+adb exec-out run-as <package> cat files/framehud/baseline.json > baseline.json
+adb shell -T "run-as <package> sh -c 'cat > files/framehud/baseline.json'" < baseline.json
+```
+
+Calling the command twice without a `RESET` in between changes nothing, so a repeated command cannot
+weigh one run twice.
 With the file in place, both reports carry the delta per session, per screen and per mark, and name
 the phase that grew the most.
 

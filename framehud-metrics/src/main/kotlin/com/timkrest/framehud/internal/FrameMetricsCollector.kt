@@ -1,7 +1,6 @@
 package com.timkrest.framehud.internal
 
 import android.os.Build
-import android.view.Display
 import android.view.FrameMetrics
 import android.view.Window
 import androidx.annotation.AnyThread
@@ -13,8 +12,9 @@ import java.util.concurrent.atomic.AtomicReference
 internal class FrameMetricsCollector(
     private val aggregator: FrameAggregator,
     private val clock: MetricsClock,
-    private val display: () -> Display?,
+    private val windows: MeasuredWindows,
     private val onFirstFrame: (timeToDisplayMs: Float) -> Unit,
+    private val onUsableFrame: (timeToUsableMs: Float) -> Unit,
 ) : Window.OnFrameMetricsAvailableListener {
 
     @field:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
@@ -27,14 +27,29 @@ internal class FrameMetricsCollector(
 
     private val pendingFirstFrame = AtomicReference<PendingFirstFrame?>()
 
+    private val usableWatch = UsableFrameWatch(clock)
+
     @AnyThread
-    fun expectFirstFrame(window: Window, creation: ScreenCreation?) {
+    fun expectScreen(window: Window, start: ScreenStart?) {
+        val creation = start?.takeIf { it.precedesCreation }
         pendingFirstFrame.set(creation?.let { PendingFirstFrame(window = window, creation = it) })
+        usableWatch.expectScreen(window = window, start = start ?: ScreenStart(clock.nanoTime()))
     }
 
     @AnyThread
-    fun forgetFirstFrame() {
+    fun restartScreen() {
+        usableWatch.restartScreen()
+    }
+
+    @AnyThread
+    fun forgetScreen() {
         pendingFirstFrame.set(null)
+        usableWatch.forgetScreen()
+    }
+
+    @AnyThread
+    fun reportUsable(start: ScreenStart?) {
+        usableWatch.reportUsable(start)
     }
 
     @WorkerThread
@@ -44,20 +59,24 @@ internal class FrameMetricsCollector(
         dropCountSinceLastInvocation: Int,
     ) {
         guarded("reading frame metrics") {
-            aggregator.addDroppedReports(dropCountSinceLastInvocation)
+            val measured = windows[window] ?: return@guarded
+            val screen = measured.screen
+            aggregator.addDroppedReports(screen = screen, count = dropCountSinceLastInvocation)
+            val frameEndNs = frameEndTimestampNs(frameMetrics)
             val expected = takeExpectedFirstFrame(window)
-            if (frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) != 0L) {
-                expected?.let { reportFirstFrame(it, frameEndTimestampNs(frameMetrics)) }
-                return@guarded
-            }
+            val isFirstDraw = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) != 0L
+            if (isFirstDraw) expected?.creation?.elapsedMs(frameEndNs)?.let(onFirstFrame)
+            usableWatch.onFrame(window = window, frameEndNs = frameEndNs)?.let(onUsableFrame)
+            if (isFirstDraw) return@guarded
 
             frameMetrics.readPhaseDurationsMs(scratchDurationsMs)
             aggregator.addFrame(
+                screen = screen,
                 durationsMs = scratchDurationsMs,
                 totalDurationNs = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION),
                 deadlineNs = frameDeadlineNs(frameMetrics),
-                frameEndNs = frameEndTimestampNs(frameMetrics),
-                refreshRateHz = display()?.refreshRate?.takeIf { it.isFinite() && it > 0f },
+                frameEndNs = frameEndNs,
+                refreshRateHz = measured.display?.refreshRate?.takeIf { it.isFinite() && it > 0f },
             )
         }
     }
@@ -66,10 +85,6 @@ internal class FrameMetricsCollector(
         val expected = pendingFirstFrame.get() ?: return null
         if (expected.window !== window) return null
         return if (pendingFirstFrame.compareAndSet(expected, null)) expected else null
-    }
-
-    private fun reportFirstFrame(expected: PendingFirstFrame, frameEndNs: Long) {
-        expected.creation.timeToDisplayMs(frameEndNs)?.let(onFirstFrame)
     }
 
     private fun frameDeadlineNs(frameMetrics: FrameMetrics): Long? =
@@ -82,5 +97,5 @@ internal class FrameMetricsCollector(
         clock.nanoTime()
     }
 
-    private class PendingFirstFrame(val window: Window, val creation: ScreenCreation)
+    private class PendingFirstFrame(val window: Window, val creation: ScreenStart)
 }

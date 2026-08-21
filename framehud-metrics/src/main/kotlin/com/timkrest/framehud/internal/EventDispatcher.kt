@@ -27,6 +27,15 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
         listeners.emit(FrameHudEvent.FirstFrame(timeToDisplayMs = timeToDisplayMs, screen = screen, context = context))
     }
 
+    fun onUsableFrame(
+        listeners: List<FrameHudEventListener>,
+        timeToUsableMs: Float,
+        screen: String?,
+        context: Map<String, String>,
+    ) {
+        listeners.emit(FrameHudEvent.UsableFrame(timeToUsableMs = timeToUsableMs, screen = screen, context = context))
+    }
+
     fun onSample(
         listeners: List<FrameHudEventListener>,
         diagnosis: JankDiagnosis,
@@ -35,36 +44,49 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
         screen: String?,
         mark: String?,
         context: Map<String, String>,
-    ) {
+    ): FrameHudEvent.IncidentTrigger? {
+        val burst = takeBurst(diagnosis, screen, mark, context)?.also { listeners.emit(it) }
+        val frozen = takeFrozenFrames(frozenFrames, screen, mark, context)?.also { listeners.emit(it) }
+        takeThermalChange(thermalLevel, screen, mark, context)?.also { listeners.emit(it) }
+        return burst ?: frozen
+    }
+
+    private fun takeBurst(
+        diagnosis: JankDiagnosis,
+        screen: String?,
+        mark: String?,
+        context: Map<String, String>,
+    ): FrameHudEvent.JankBurst? {
         val burst = diagnosis.severity != JankSeverity.NONE
-        if (burst && !isInBurst) {
-            listeners.emit(
-                FrameHudEvent.JankBurst(diagnosis = diagnosis, screen = screen, mark = mark, context = context),
-            )
-        }
+        val started = burst && !isInBurst
         isInBurst = burst
+        if (!started) return null
+        return FrameHudEvent.JankBurst(diagnosis = diagnosis, screen = screen, mark = mark, context = context)
+    }
 
-        if (frozenFrames > lastFrozenFrames) {
-            listeners.emit(
-                FrameHudEvent.FrozenFrames(
-                    count = frozenFrames - lastFrozenFrames,
-                    screen = screen,
-                    mark = mark,
-                    context = context,
-                ),
-            )
-        }
+    private fun takeFrozenFrames(
+        frozenFrames: Int,
+        screen: String?,
+        mark: String?,
+        context: Map<String, String>,
+    ): FrameHudEvent.FrozenFrames? {
+        val added = frozenFrames - lastFrozenFrames
         lastFrozenFrames = frozenFrames
+        if (added <= 0) return null
+        return FrameHudEvent.FrozenFrames(count = added, screen = screen, mark = mark, context = context)
+    }
 
-        if (thermalLevel != lastThermalLevel) {
-            val isFirstReading = lastThermalLevel == ThermalLevel.UNKNOWN
-            if (!isFirstReading || thermalLevel.isThrottling) {
-                listeners.emit(
-                    FrameHudEvent.ThermalChanged(level = thermalLevel, screen = screen, mark = mark, context = context),
-                )
-            }
-            lastThermalLevel = thermalLevel
-        }
+    private fun takeThermalChange(
+        thermalLevel: ThermalLevel,
+        screen: String?,
+        mark: String?,
+        context: Map<String, String>,
+    ): FrameHudEvent.ThermalChanged? {
+        if (thermalLevel == lastThermalLevel) return null
+        val isFirstReading = lastThermalLevel == ThermalLevel.UNKNOWN
+        lastThermalLevel = thermalLevel
+        if (isFirstReading && !thermalLevel.isThrottling) return null
+        return FrameHudEvent.ThermalChanged(level = thermalLevel, screen = screen, mark = mark, context = context)
     }
 
     fun onScreenEnded(

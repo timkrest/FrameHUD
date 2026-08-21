@@ -5,7 +5,6 @@ import kotlin.math.ln
 import kotlin.math.min
 import kotlin.math.pow
 
-/** Bucketed rather than kept raw, so a session of any length costs a fixed amount of memory. */
 internal class LatencyHistogram {
 
     private val fineBuckets = IntArray(FINE_BUCKET_COUNT)

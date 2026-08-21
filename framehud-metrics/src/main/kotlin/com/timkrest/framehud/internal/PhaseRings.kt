@@ -27,5 +27,5 @@ internal class PhaseRings(capacity: Int) {
 internal fun RingBuffer.toMetricValue(): MetricValue = MetricValue(
     current = last(),
     average = average(),
-    peak = peak,
+    peak = peakSinceClear,
 )

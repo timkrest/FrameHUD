@@ -21,18 +21,18 @@ internal class ActivityTracker(
 
     private val focusWatchers = WeakHashMap<Activity, ViewTreeObserver.OnWindowFocusChangeListener>()
 
-    private val screenCreations = WeakHashMap<Activity, ScreenCreation>()
+    private val screenStarts = WeakHashMap<Activity, ScreenStart>()
 
     val focusedActivity: Activity? get() = focusedRef?.get()
 
-    fun takeScreenCreation(activity: Activity): ScreenCreation? = screenCreations.remove(activity)
+    fun takeScreenStart(activity: Activity): ScreenStart? = screenStarts.remove(activity)
 
     override fun onActivityResumed(activity: Activity) {
         watchWindowFocus(activity)
         if (focusedActivity?.hasWindowFocus() != true) {
             focus(activity)
         } else {
-            screenCreations.remove(activity)
+            screenStarts.remove(activity)
         }
     }
 
@@ -45,10 +45,12 @@ internal class ActivityTracker(
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        screenCreations[activity] = ScreenCreation(System.nanoTime())
+        screenStarts[activity] = ScreenStart(System.nanoTime(), precedesCreation = true)
     }
 
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) screenStarts[activity] = ScreenStart(System.nanoTime())
+    }
 
     override fun onActivityStarted(activity: Activity) = Unit
 

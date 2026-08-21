@@ -15,6 +15,8 @@ android {
     }
 }
 
+checkCompilesDeviceTests()
+
 extensions.configure<ApplicationAndroidComponentsExtension> {
     finalizeDsl { android ->
         if (android.namespace == null) android.namespace = defaultNamespace(path)

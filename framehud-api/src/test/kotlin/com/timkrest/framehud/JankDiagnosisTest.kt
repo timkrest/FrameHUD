@@ -20,6 +20,13 @@ class JankDiagnosisTest {
     }
 
     @Test
+    fun `the diagnosis quotes the budget the window was judged by, not the display's`() {
+        val diagnosis = diagnose(metrics = metrics(jankPercent = 30f, frameBudgetMs = 8f))
+
+        assertEquals(8f, diagnosis.frameBudgetMs, TOLERANCE)
+    }
+
+    @Test
     fun `throttling outranks every other cause`() {
         val diagnosis = diagnose(
             metrics = metrics(jankPercent = 30f, unknownDelayMs = 20f),
@@ -98,6 +105,7 @@ class JankDiagnosisTest {
         busiestStageMs: Float = 0f,
         bottleneckStage: PipelineStage = PipelineStage.CPU,
         sessionDurationMs: Long = 1_000L,
+        frameBudgetMs: Float = 16.7f,
     ): PerformanceMetrics {
         val busiestStage = MetricValue(average = busiestStageMs)
         val unknownDelay = MetricValue(average = unknownDelayMs)
@@ -107,9 +115,9 @@ class JankDiagnosisTest {
                 PipelineStage.RENDER -> FramePhases(unknownDelay = unknownDelay, sync = busiestStage)
                 PipelineStage.GPU -> FramePhases(unknownDelay = unknownDelay, gpu = busiestStage)
             },
-            window = FrameWindowStats(jankPercent = jankPercent),
+            window = FrameWindowStats(jankPercent = jankPercent, frameBudgetMs = frameBudgetMs),
             session = IntervalStats.EMPTY.copy(durationMs = sessionDurationMs),
-            display = DisplayInfo(refreshRateHz = 60f, frameBudgetMs = 16.7f),
+            display = DisplayInfo(refreshRateHz = 60f),
         )
     }
 

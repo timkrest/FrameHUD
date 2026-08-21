@@ -8,20 +8,65 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `FrameHudEvent.UsableFrame` reports when the app itself says the screen is ready, so a quickly
+  drawn skeleton no longer counts as a ready screen. The measurement ends at the end of the next
+  displayed frame. On the first screen of a `ComponentActivity` created while FrameHud collects,
+  the `FullyDrawnReporter` reports on its own, so the `ReportDrawnWhen` already in place for
+  Macrobenchmark is enough. Every other screen calls the new `FrameHud.reportUsable()`.
+- `FrameHud.measureWindow` and `FrameHud.forgetWindow` measure a window FrameHUD cannot find on its
+  own — a dialog, a popup, a `Presentation` on a second display — as a screen of its own, next to
+  the activity in focus. Its frames count towards the session and towards that screen, so it reaches
+  `screens()`, both reports and the baseline comparison; the live readings, marks and events stay
+  with the activity the panel draws over.
+- `FrameHud.processStats`, a `StateFlow<ProcessStats>` sampled every few seconds while a screen
+  draws: CPU as a share of one core, PSS, thread count and open file descriptors, each with its peak
+  since the last reset. The panel reads two rows from it, the session report writes it out, and
+  every incident keeps the reading it was drawn under, so steady growth shows up next to the frames
+  it eventually costs. Sampling runs on its own `framehud-process` thread, because reading PSS is
+  slow enough on an older device to hold up frame collection.
+- `FrameHud.screens()` answers with what the run measured per screen, worst first: most frozen
+  frames, then most jank, then the slowest p95, with a sample too short to judge a p95 last. The
+  panel shows the same list when its header is tapped, and the HTML report has it as a `Screens`
+  section. `IntervalId.name` reads the screen or mark an interval covers without matching on the
+  type.
+- `FrameHud.incidents()` answers with what each jank burst and frozen frame was drawn around: the
+  frames on either side of the trigger, the stats those frames add up to, and the memory, thermal
+  and process readings of that moment. Occurrences that blame the same thing on the same screen
+  under the same mark and context are one `Incident` that counts them and keeps the worst
+  `IncidentWindow`, so a report says layout jank happened seven times instead of showing seven
+  copies of it.
+  `FrameHudEvent.IncidentTrigger` names the events a window opens on. Both reports carry the
+  incidents, worst case first, and the HTML report marks the trigger on each window's chart.
+- `FrameHudConfig.frameBudgetsMs` gives a screen, a mark or the session a frame budget of its own,
+  in place of the deadline the display hands out, so a scroll that has to hold 120 Hz no longer
+  shares a threshold with a debug screen that never will. A budget covers everything its interval
+  holds, and an entry deeper in wins: a screen follows the session, a mark follows its screen. Jank
+  percent, lost time, the longest jank streak, the incidents an interval opens and the baseline it
+  is compared against all follow the budget that judged its frames; `IntervalReport.frameBudgetMs`
+  says which one that was, and the HTML report has it as a `Budget` column. The panel follows
+  whichever budget is in force.
+- `FrameWindowStats.frameBudgetMs` is the budget the rolling window was judged by. The panel reads
+  it in place of `DisplayInfo.frameBudgetMs`, which stays what the display asked for.
 - `FrameHud.diagnosis`, a `StateFlow<JankDiagnosis>` that says what the rolling window is bound by
   and what it blames. Reading it no longer means collecting four flows and calling `JankDiagnosis.of`
   yourself, which is why that factory is now internal. It reads healthy while no screen draws, and
   freezes with the other readings.
 - `FrameHud.intervals()` answers with what the run measured per interval: the session, every screen
-  and every mark, each with the frame budget that judged it, including the ones that drew no frame. `IntervalReport` was public and
-  `Baseline.updatedWith` and `Baseline.compare` took it, but nothing handed one out, so a baseline of
-  your own could only be built for the session and only without a budget.
+  and every mark, each with the frame budget that judged it, including the ones that drew no frame.
+  `IntervalReport` was public and `Baseline.updatedWith` and `Baseline.compare` took it, but nothing
+  handed one out, so a baseline of your own could only be built for the session and only without a
+  budget.
 - `FramePhases.get(FramePhase)` reads one phase of the last frames, the way `PhaseAverages.get`
   already read one phase of an interval.
 - `BaselineEntry.of` takes the number of runs the stats already average.
 
 ### Changed
 
+- The export schema is 6: a `process` object holds the process health of the run and of each
+  incident, and an `incidents` array holds the trigger with its diagnosis, how often the
+  case happened, and the `worst` window with its stats, frames and readings. The `window` object
+  carries the `frameBudgetMs` its numbers were judged by.
+- `framehud-metrics` depends on `androidx.activity`, which it reads the `FullyDrawnReporter` from.
 - `SessionStats` is now `IntervalStats`, and the type that names it and carries its frame budget is
   now `IntervalReport`. Both types describe a session, a screen or a mark; only the old names said
   otherwise.

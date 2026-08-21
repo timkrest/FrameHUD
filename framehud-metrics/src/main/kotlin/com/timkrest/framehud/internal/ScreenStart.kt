@@ -1,8 +1,8 @@
 package com.timkrest.framehud.internal
 
-internal class ScreenCreation(private val startedAtNs: Long) {
+internal class ScreenStart(private val startedAtNs: Long, val precedesCreation: Boolean = false) {
 
-    fun timeToDisplayMs(frameEndNs: Long): Float? {
+    fun elapsedMs(frameEndNs: Long): Float? {
         val elapsedNs = frameEndNs - startedAtNs
         return if (elapsedNs < 0L) null else elapsedNs / NS_PER_MS
     }

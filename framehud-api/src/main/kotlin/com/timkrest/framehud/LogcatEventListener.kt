@@ -12,6 +12,7 @@ public object LogcatEventListener : FrameHudEventListener {
 
     private fun FrameHudEvent.isSevere(): Boolean = when (this) {
         is FrameHudEvent.FirstFrame -> false
+        is FrameHudEvent.UsableFrame -> false
         is FrameHudEvent.JankBurst -> diagnosis.severity == JankSeverity.SEVERE
         is FrameHudEvent.FrozenFrames -> true
         is FrameHudEvent.ThermalChanged -> level.isThrottling
