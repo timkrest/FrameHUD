@@ -45,7 +45,7 @@ class ScreenEventsTest {
 
     @Test
     fun framesAreCollectedWhileAnActivityIsResumed() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
 
             val stats = await { FrameHud.sessionStats() }
@@ -56,9 +56,9 @@ class ScreenEventsTest {
     @Test
     fun theFirstFrameCarriesTheScreenAndTimeToDisplay() {
         assumeFirstFramesAreReported()
-        ActivityScenario.launch(MainActivity::class.java).use {
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use {
             val firstFrame = awaitEvents<FrameHudEvent.FirstFrame>(count = 1).single()
-            assertEquals(MainActivity::class.java.simpleName, firstFrame.screen)
+            assertEquals(ReportingProbeActivity::class.java.simpleName, firstFrame.screen)
             assertTrue(firstFrame.timeToDisplayMs > 0f, "first frame took ${firstFrame.timeToDisplayMs} ms")
         }
     }
@@ -66,7 +66,7 @@ class ScreenEventsTest {
     @Test
     fun returningToAScreenDoesNotMeasureItAgain() {
         assumeFirstFramesAreReported()
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
             awaitEvents<FrameHudEvent.FirstFrame>(count = 1)
 
@@ -81,11 +81,11 @@ class ScreenEventsTest {
 
     @Test
     fun eachScreenSummaryCarriesTheScreenThatEnded() {
-        ActivityScenario.launch(MainActivity::class.java).use { main ->
-            main.renderFrames()
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { first ->
+            first.renderFrames()
 
-            ActivityScenario.launch(DetailsActivity::class.java).use { details ->
-                details.renderFrames()
+            ActivityScenario.launch(SilentProbeActivity::class.java).use { second ->
+                second.renderFrames()
             }
         }
 
@@ -97,16 +97,16 @@ class ScreenEventsTest {
     @Test
     fun namingScreensSplitsStatsWithoutTouchingTheWindow() {
         runOnMain { FrameHud.screen = "cart" }
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
+            scenario.renderCollectedFrames()
             runOnMain { FrameHud.screen = "checkout" }
-            scenario.renderFrames()
+            scenario.renderCollectedFrames()
             runOnMain { FrameHud.screen = null }
-            scenario.renderFrames()
+            scenario.renderCollectedFrames()
         }
 
         val ended = awaitEvents<FrameHudEvent.ScreenEnded>(count = 3)
-        assertEquals(listOf("cart", "checkout", MainActivity::class.java.simpleName), ended.map { it.screen })
+        assertEquals(listOf("cart", "checkout", ReportingProbeActivity::class.java.simpleName), ended.map { it.screen })
         assertTrue(ended.all { it.stats.frames > 0 }, "a named screen reported no frames")
     }
 
@@ -114,7 +114,7 @@ class ScreenEventsTest {
     fun theFirstFrameCarriesTheScreenNameSetBeforeLaunch() {
         assumeFirstFramesAreReported()
         runOnMain { FrameHud.screen = "home" }
-        ActivityScenario.launch(MainActivity::class.java).use {
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use {
             val firstFrame = awaitEvents<FrameHudEvent.FirstFrame>(count = 1).single()
             assertEquals("home", firstFrame.screen)
         }
@@ -123,7 +123,7 @@ class ScreenEventsTest {
     @Test
     fun aScreenSummaryCarriesTheMeasurementContext() {
         runOnMain { FrameHud.context = mapOf("variant" to "b") }
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
         }
 
@@ -133,7 +133,7 @@ class ScreenEventsTest {
 
     @Test
     fun renamingTheScreenEndsTheActiveMark() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
             runOnMain { FrameHud.mark = "scroll" }
             scenario.renderFrames()
@@ -141,7 +141,7 @@ class ScreenEventsTest {
 
             val ended = awaitEvents<FrameHudEvent.MarkEnded>(count = 1).single()
             assertEquals("scroll", ended.mark)
-            assertEquals(MainActivity::class.java.simpleName, ended.screen)
+            assertEquals(ReportingProbeActivity::class.java.simpleName, ended.screen)
             assertNull(FrameHud.mark, "the mark survived a screen change")
         }
     }
@@ -165,8 +165,8 @@ class ScreenEventsTest {
 
     private companion object {
         val screens = listOf<String?>(
-            MainActivity::class.java.simpleName,
-            DetailsActivity::class.java.simpleName,
+            ReportingProbeActivity::class.java.simpleName,
+            SilentProbeActivity::class.java.simpleName,
         )
         const val EVENT_TIMEOUT_MS = 5_000L
         const val POLL_INTERVAL_MS = 50L

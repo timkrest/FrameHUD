@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -31,12 +32,18 @@ class MarkEventsTest {
 
     @Before
     fun resetCollector() {
+        clearScreenName()
         FrameHud.reset()
+    }
+
+    @After
+    fun clearScreenName() {
+        runOnMain { FrameHud.screen = null }
     }
 
     @Test
     fun aMarkLeftOpenEndsWithTheScreenItRanOn() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
             runOnMain { FrameHud.mark = MARK }
             scenario.renderFrames()
@@ -44,7 +51,7 @@ class MarkEventsTest {
 
         val ended = awaitMarkEnded()
         assertEquals(MARK, ended.mark)
-        assertEquals(MainActivity::class.java.simpleName, ended.screen)
+        assertEquals(ReportingProbeActivity::class.java.simpleName, ended.screen)
         assertTrue(ended.stats.frames > 0, "the mark reported no frames")
 
         val intervals = events.filter { it is FrameHudEvent.MarkEnded || it is FrameHudEvent.ScreenEnded }

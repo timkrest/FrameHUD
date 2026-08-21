@@ -38,30 +38,30 @@ class UsableFrameEventsTest {
 
     @Test
     fun theLaunchReportsUsableThroughTheFullyDrawnReporter() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
 
             val usable = awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
-            assertEquals(MainActivity::class.java.simpleName, usable.screen)
+            assertEquals(ReportingProbeActivity::class.java.simpleName, usable.screen)
             assertTrue(usable.timeToUsableMs > 0f, "usable in ${usable.timeToUsableMs} ms")
         }
     }
 
     @Test
     fun reportUsableEndsTheMeasurementOnTheNextFrame() {
-        ActivityScenario.launch(DetailsActivity::class.java).use { scenario ->
+        ActivityScenario.launch(SilentProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
             FrameHud.reportUsable()
             scenario.renderFrames()
 
             val usable = awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
-            assertEquals(DetailsActivity::class.java.simpleName, usable.screen)
+            assertEquals(SilentProbeActivity::class.java.simpleName, usable.screen)
         }
     }
 
     @Test
     fun aScreenMeasuresUsableOnce() {
-        ActivityScenario.launch(DetailsActivity::class.java).use { scenario ->
+        ActivityScenario.launch(SilentProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
             FrameHud.reportUsable()
             scenario.renderFrames()
@@ -77,7 +77,7 @@ class UsableFrameEventsTest {
 
     @Test
     fun aRenamedScreenMeasuresUsableAgain() {
-        ActivityScenario.launch(DetailsActivity::class.java).use { scenario ->
+        ActivityScenario.launch(SilentProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
             FrameHud.reportUsable()
             scenario.renderFrames()
@@ -94,18 +94,18 @@ class UsableFrameEventsTest {
 
     @Test
     fun aLaunchReportAfterARenameDoesNotEndTheRenamedScreen() {
-        ActivityScenario.launch(DetailsActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+        ActivityScenario.launch(SilentProbeActivity::class.java).use { scenario ->
+            scenario.renderCollectedFrames()
             runOnMain { FrameHud.screen = "checkout" }
             scenario.onActivity { it.reportFullyDrawn() }
-            scenario.renderFrames()
+            scenario.renderCollectedFrames()
             assertTrue(
                 events.filterIsInstance<FrameHudEvent.UsableFrame>().isEmpty(),
                 "the launch report ended a renamed screen",
             )
 
             FrameHud.reportUsable()
-            scenario.renderFrames()
+            scenario.renderCollectedFrames()
 
             val usable = awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
             assertEquals("checkout", usable.screen)

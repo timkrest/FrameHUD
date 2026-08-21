@@ -1,6 +1,7 @@
-package com.timkrest.framehud.sample
+package com.timkrest.framehud.sample.load
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun RowCard(index: Int, active: ActiveLoads) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+fun RowCard(index: Int, active: ActiveLoads, onOpen: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -45,7 +46,7 @@ fun RowCard(index: Int, active: ActiveLoads) {
             Column {
                 Text(text = "Row $index", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "Tap the chips above to make this list stutter",
+                    text = "Tap to open it as its own measured screen",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

@@ -1,4 +1,4 @@
-package com.timkrest.framehud.sample
+package com.timkrest.framehud.sample.load
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow

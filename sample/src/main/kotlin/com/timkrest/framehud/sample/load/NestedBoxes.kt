@@ -1,4 +1,4 @@
-package com.timkrest.framehud.sample
+package com.timkrest.framehud.sample.load
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
