@@ -32,7 +32,7 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.11.0")
+    debugImplementation("com.timkrest:framehud:0.12.0")
 }
 ```
 
@@ -92,7 +92,7 @@ thr 38 ▲44 · fd 210 ▲260
 `FrameHud` вне `src/debug`: релизной сборке всё равно надо скомпилировать эти строки.
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.11.0")
+releaseImplementation("com.timkrest:framehud-noop:0.12.0")
 ```
 
 Он повторяет API с пустыми телами: вызовы компилируются, ничего не измеряется, окно не добавляется.
@@ -104,7 +104,7 @@ releaseImplementation("com.timkrest:framehud-noop:0.11.0")
 объединённый манифест.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.11.0")
+qaImplementation("com.timkrest:framehud-metrics:0.12.0")
 ```
 
 `FrameHud` — тот же объект, так что код вокруг остаётся прежним. `enabled` включает только сбор, а
@@ -614,7 +614,7 @@ adb shell -T "run-as <package> sh -c 'cat > files/framehud/baseline.json'" < bas
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.11.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.12.0")
 ```
 
 ```kotlin

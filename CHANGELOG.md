@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-22
+
 ### Added
 
 - A Perfetto flight recorder. `FrameHudConfig.perfettoTrigger` names a trigger, and every incident
@@ -506,7 +508,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.12.0
 [0.11.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.11.0
 [0.10.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.10.0
 [0.9.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.9.0
