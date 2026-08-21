@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class FlightRecorderTest {
 
@@ -26,7 +27,6 @@ class FlightRecorderTest {
         }
 
         assertEquals(1, asked.size)
-        assertEquals(1, recorder.timesAsked)
     }
 
     @Test
@@ -37,7 +37,7 @@ class FlightRecorderTest {
         recorder.retainTrace("framehud_incident")
 
         assertEquals(2, asked.size)
-        assertEquals(2, recorder.timesAsked)
+        assertEquals(2, recorder.recordingFor(null)?.timesAsked)
     }
 
     @Test
@@ -48,6 +48,49 @@ class FlightRecorderTest {
         recorder.retainTrace("framehud_incident")
 
         assertEquals(2, asked.size)
-        assertEquals(1, recorder.timesAsked)
+        assertEquals(1, recorder.recordingFor(null)?.timesAsked)
+    }
+
+    @Test
+    fun `another trace is asked at once rather than waiting out the one before it`() {
+        recorder.retainTrace("framehud_incident")
+
+        recorder.retainTrace("framehud_scroll")
+
+        assertEquals(listOf("framehud_incident", "framehud_scroll"), asked)
+    }
+
+    @Test
+    fun `a report counts the asks against the trace they were made to`() {
+        recorder.retainTrace("framehud_incident")
+        recorder.retainTrace("framehud_scroll")
+
+        val recording = recorder.recordingFor("framehud_incident")
+
+        assertEquals("framehud_scroll", recording?.trigger)
+        assertEquals(1, recording?.timesAsked)
+    }
+
+    @Test
+    fun `a trigger switched off after an incident still says the trace was asked`() {
+        recorder.retainTrace("framehud_incident")
+
+        val recording = recorder.recordingFor(null)
+
+        assertEquals("framehud_incident", recording?.trigger)
+        assertEquals(1, recording?.timesAsked)
+    }
+
+    @Test
+    fun `a trigger nothing has reached yet is named with nothing to its account`() {
+        val recording = recorder.recordingFor("framehud_incident")
+
+        assertEquals("framehud_incident", recording?.trigger)
+        assertEquals(0, recording?.timesAsked)
+    }
+
+    @Test
+    fun `a run with no trigger and no ask records nothing`() {
+        assertNull(recorder.recordingFor(null))
     }
 }

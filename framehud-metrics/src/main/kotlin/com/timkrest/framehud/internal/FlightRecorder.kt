@@ -8,24 +8,26 @@ internal class FlightRecorder(
     private val trigger: PerfettoTrigger = SystemPerfettoTrigger,
 ) {
 
-    private var askedAtMs: Long? = null
-
-    var timesAsked: Int = 0
-        private set
+    private var asked: Asked? = null
 
     fun retainTrace(name: String) {
         val nowMs = clock.elapsedRealtimeMs()
-        val asked = askedAtMs
-        if (asked != null && nowMs - asked < ASK_AGAIN_AFTER_MS) return
-        askedAtMs = nowMs
-        timesAsked++
+        val standing = asked?.takeIf { it.name == name }
+        if (standing != null && nowMs - standing.atMs < ASK_AGAIN_AFTER_MS) return
+        asked = Asked(name = name, atMs = nowMs, times = (standing?.times ?: 0) + 1)
         trigger.activate(name)
     }
 
-    fun reset() {
-        askedAtMs = null
-        timesAsked = 0
+    fun recordingFor(configured: String?): FlightRecording? {
+        asked?.let { return FlightRecording(trigger = it.name, timesAsked = it.times) }
+        return configured?.let { FlightRecording(trigger = it, timesAsked = 0) }
     }
+
+    fun reset() {
+        asked = null
+    }
+
+    private class Asked(val name: String, val atMs: Long, val times: Int)
 
     private companion object {
         const val ASK_AGAIN_AFTER_MS = 5_000L

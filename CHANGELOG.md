@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- A session export counted the Perfetto asks against whatever trigger the config named when the
+  report was written. Switching the trigger off after an incident hid the ask entirely, and
+  switching to another name credited that name with asks made to the one before it. The count now
+  belongs to the trigger it was made to, and a trigger switched off still says what it retained.
+- Asking a different Perfetto trigger no longer waits out the five seconds of the one before it.
+  They are different traces, and the second one heard nothing.
+
 ## [0.12.0] - 2026-08-22
 
 ### Added
