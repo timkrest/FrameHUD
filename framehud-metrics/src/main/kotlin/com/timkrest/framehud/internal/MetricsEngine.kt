@@ -436,11 +436,6 @@ internal class MetricsEngine(
         synchronized(samplerLock) { postOrWarn(requireSampler(), action) }
     }
 
-    @WorkerThread
-    private fun askForTheTrace() {
-        config().perfettoTrigger?.let(flightRecorder::retainTrace)
-    }
-
     @AnyThread
     private fun onAggregates(action: () -> Unit) {
         synchronized(samplerLock) {
@@ -451,6 +446,11 @@ internal class MetricsEngine(
 
     private fun postOrWarn(sampler: MetricsSampler, action: () -> Unit) {
         if (!sampler.post(action)) Log.w(LOG_TAG, "The metrics thread is gone, dropped a metrics task")
+    }
+
+    @WorkerThread
+    private fun askForTheTrace() {
+        config().perfettoTrigger?.let(flightRecorder::retainTrace)
     }
 
     @WorkerThread
