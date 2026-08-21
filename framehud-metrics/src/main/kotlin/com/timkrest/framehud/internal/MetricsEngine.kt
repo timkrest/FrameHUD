@@ -120,11 +120,11 @@ internal class MetricsEngine(
         isRunning = false
         unbindWindow()
         forgetAllWindows()
+        mainThreadWatchdog.stop()
         sampler?.post {
             thermalMonitor.unbind()
             batteryMonitor.unbind()
             processMonitor.stop()
-            mainThreadWatchdog.stop()
         }
     }
 

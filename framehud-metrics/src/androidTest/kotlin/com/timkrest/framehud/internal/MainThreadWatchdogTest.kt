@@ -122,6 +122,20 @@ class MainThreadWatchdogTest {
         error("the watch still explains jank with the block it took before it stopped")
     }
 
+    @Test
+    fun aWatchdogThatGaveUpItsThreadTakesStacksAgainOnceItStartsOver() {
+        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
+        watchdog.startWatching()
+        awaitStackTakenHere()
+
+        watchdog.stop()
+        SystemClock.sleep(BLOCK_GOES_STALE_AFTER_MS)
+        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
+        watchdog.startWatching()
+
+        awaitStackTakenHere()
+    }
+
     private fun awaitBlockOtherThan(block: MainThreadBlock): MainThreadBlock {
         val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
         while (SystemClock.uptimeMillis() < deadlineMs) {

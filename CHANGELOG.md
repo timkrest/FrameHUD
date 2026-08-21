@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Hiding FrameHUD and showing it again could leave the main thread watchdog off, so every incident
+  on the screen that followed carried no stack. The watchdog is started and stopped where a window
+  binds, on the main thread, but it was retired on the metrics thread, and the retirement could land
+  after the next screen had already started it.
+
 ## [0.11.0] - 2026-08-22
 
 ### Added
