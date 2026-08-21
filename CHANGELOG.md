@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A Perfetto flight recorder. `FrameHudConfig.perfettoTrigger` names a trigger, and every incident
+  activates it, so a trace already recording into a ring buffer keeps the seconds around the jank
+  rather than the whole run. QA starts and configures that trace over adb; FrameHUD runs
+  `/system/bin/trigger_perfetto`, which any app may do, and neither starts, configures nor reads the
+  trace itself. An app asks at a moment of its own with `FrameHud.retainTrace()`, and a script asks
+  with `adb shell am broadcast -a com.timkrest.framehud.RETAIN <package>`. Asking again within five
+  seconds changes nothing, so a burst of incidents costs one ask rather than one per frame. Where
+  the binary is missing the failure arrives once as a `FrameHudEvent.InternalFailure`. The sample
+  switches it on from its Session tab.
+
+### Changed
+
+- The export schema is 7: a `perfetto` object names the trigger the run asked for and counts the
+  asks, so a run that had nothing to retain reads apart from one that was never wired up.
+
 ### Fixed
 
 - Hiding FrameHUD and showing it again could leave the main thread watchdog off, so every incident

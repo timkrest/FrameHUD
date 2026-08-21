@@ -277,8 +277,8 @@ public final class com/timkrest/framehud/FrameHudConfig {
 	public static final field DEFAULT_METRICS_THREAD_NAME Ljava/lang/String;
 	public static final field DEFAULT_METRICS_THROTTLE_INTERVAL_MS J
 	public fun <init> ()V
-	public fun <init> (ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;Ljava/lang/String;)V
+	public synthetic fun <init> (ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z
 	public final fun component2 ()Lcom/timkrest/framehud/OverlayMode;
 	public final fun component3 ()Ljava/util/List;
@@ -287,8 +287,9 @@ public final class com/timkrest/framehud/FrameHudConfig {
 	public final fun component6 ()F
 	public final fun component7 ()Ljava/lang/String;
 	public final fun component8 ()Ljava/util/Map;
-	public final fun copy (ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudConfig;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudConfig;ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudConfig;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;Ljava/lang/String;)Lcom/timkrest/framehud/FrameHudConfig;
+	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudConfig;ZLcom/timkrest/framehud/OverlayMode;Ljava/util/List;IJFLjava/lang/String;Ljava/util/Map;Ljava/lang/String;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudConfig;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEnabled ()Z
 	public final fun getEventListeners ()Ljava/util/List;
@@ -298,6 +299,7 @@ public final class com/timkrest/framehud/FrameHudConfig {
 	public final fun getMetricsThreadName ()Ljava/lang/String;
 	public final fun getMetricsThrottleIntervalMs ()J
 	public final fun getOverlayMode ()Lcom/timkrest/framehud/OverlayMode;
+	public final fun getPerfettoTrigger ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

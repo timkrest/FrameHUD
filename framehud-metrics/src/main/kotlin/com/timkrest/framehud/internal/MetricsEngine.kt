@@ -48,6 +48,7 @@ internal class MetricsEngine(
     private val batteryMonitor = BatteryMonitor()
     private val processMonitor = ProcessStatsMonitor(clock, PROCESS_SAMPLE_INTERVAL_MS)
     private val counterRegistry = CounterRegistry()
+    private val flightRecorder = FlightRecorder(clock)
     private val mainThreadWatchdog = MainThreadWatchdog(
         mainThread = Looper.getMainLooper().thread,
         lastTickMs = choreographerTickMonitor::lastTickUptimeMs,
@@ -219,6 +220,11 @@ internal class MetricsEngine(
         collector.reportUsable(start)
     }
 
+    @AnyThread
+    fun retainTrace() {
+        onAggregates(::askForTheTrace)
+    }
+
     fun unbindWindow() {
         val sampler = sampler ?: return
         if (!unbindFocusedWindow()) return
@@ -274,6 +280,7 @@ internal class MetricsEngine(
             processMonitor.reset()
             eventDispatcher.reset()
             counterRegistry.reset()
+            flightRecorder.reset()
             reportedFailures.clear()
             diagnosisReadings.reset(JankDiagnosis.HEALTHY)
         }
@@ -307,6 +314,9 @@ internal class MetricsEngine(
             screenName = aggregator.screenName,
             mark = _activeMark.value,
             context = context,
+            flightRecording = config().perfettoTrigger?.let {
+                FlightRecording(trigger = it, timesAsked = flightRecorder.timesAsked)
+            },
         )
     }
 
@@ -426,6 +436,11 @@ internal class MetricsEngine(
         synchronized(samplerLock) { postOrWarn(requireSampler(), action) }
     }
 
+    @WorkerThread
+    private fun askForTheTrace() {
+        config().perfettoTrigger?.let(flightRecorder::retainTrace)
+    }
+
     @AnyThread
     private fun onAggregates(action: () -> Unit) {
         synchronized(samplerLock) {
@@ -484,6 +499,7 @@ internal class MetricsEngine(
                 counters = counters,
                 mainThreadBlock = mainThreadWatchdog.latestBlock,
             )
+            askForTheTrace()
         }
         tracer.jankBurstChanged(eventDispatcher.isInBurst)
         tracer.publishCounters(metrics = metrics, memory = memory, counters = counters)
@@ -517,5 +533,6 @@ internal class MetricsEngine(
         val screenName: String?,
         val mark: String?,
         val context: Map<String, String>,
+        val flightRecording: FlightRecording?,
     )
 }

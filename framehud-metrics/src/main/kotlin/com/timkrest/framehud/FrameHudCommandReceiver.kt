@@ -47,6 +47,10 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
             ACTION_EXPORT -> respondAsync("export") {
                 FrameHud.exportSession()?.json?.absolutePath ?: "nothing collected"
             }
+            ACTION_RETAIN -> {
+                FrameHud.retainTrace()
+                resultData = FrameHud.config.perfettoTrigger?.let { "asked $it" } ?: "no Perfetto trigger configured"
+            }
             ACTION_BASELINE -> {
                 val file = (context.applicationContext as? Application)?.let(::baselineFile)
                 respondAsync("baseline") {
@@ -114,6 +118,7 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         const val ACTION_CONTEXT = "com.timkrest.framehud.CONTEXT"
         const val ACTION_EXPORT = "com.timkrest.framehud.EXPORT"
         const val ACTION_BASELINE = "com.timkrest.framehud.BASELINE"
+        const val ACTION_RETAIN = "com.timkrest.framehud.RETAIN"
         const val EXTRA_NAME = "name"
         const val COMMAND_TIMEOUT_MS = 5_000L
     }

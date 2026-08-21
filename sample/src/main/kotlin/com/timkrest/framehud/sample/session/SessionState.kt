@@ -63,6 +63,16 @@ class SessionState(private val scope: CoroutineScope) {
         }
     }
 
+    fun retainTrace() {
+        val trigger = FrameHud.config.perfettoTrigger
+        if (trigger == null) {
+            message = "Switch the flight recorder on first, then a trace has something to hear from."
+            return
+        }
+        FrameHud.retainTrace()
+        message = "Asked the $trigger trace to keep what it holds."
+    }
+
     fun showDialog() {
         dialogShown = true
     }

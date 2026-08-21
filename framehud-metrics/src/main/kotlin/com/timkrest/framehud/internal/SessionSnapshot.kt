@@ -44,6 +44,7 @@ internal class SessionSnapshot(
     val counters: List<CounterReading>,
     val worstFrames: List<WorstFrames.Frame>,
     val incidents: List<Incident>,
+    val flightRecording: FlightRecording?,
 ) {
 
     fun frameEndEpochMs(endNs: Long): Long = takenAtEpochMs - (takenAtNs - endNs) / NS_PER_MS_LONG

@@ -36,6 +36,7 @@ internal fun sessionSnapshotFixture(
     incidents: List<Incident> = emptyList(),
     process: ProcessStats = ProcessStats.EMPTY,
     counters: List<CounterReading> = emptyList(),
+    flightRecording: FlightRecording? = null,
 ) = SessionSnapshot(
     takenAtEpochMs = TAKEN_AT_EPOCH_MS,
     takenAtNs = TAKEN_AT_NS,
@@ -63,6 +64,7 @@ internal fun sessionSnapshotFixture(
     counters = counters,
     worstFrames = worstFrames,
     incidents = incidents,
+    flightRecording = flightRecording,
 )
 
 internal fun incidentFixture(

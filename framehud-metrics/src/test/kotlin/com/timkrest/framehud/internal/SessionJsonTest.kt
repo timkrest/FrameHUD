@@ -34,7 +34,7 @@ class SessionJsonTest {
             """"jankPercent":0.0,"lostTimeMs":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
             """"phases":{$averages},"confidence":{"suspect":false,"issues":[]}"""
         val zeroPhase = """{"averageMs":0.0,"peakSinceResetMs":null}"""
-        val expected = """{"schema":6,""" +
+        val expected = """{"schema":7,""" +
             """"generatedAt":"2023-11-14T22:13:20.000Z","generatedAtMs":1700000000000,""" +
             """"frameHudVersion":"1.2.3",""" +
             """"app":{"packageName":"com.example.app","versionName":"9.9","versionCode":42},""" +
@@ -180,6 +180,22 @@ class SessionJsonTest {
         ).toJson()
 
         assertContains(json, """"counters":[{"name":"decode queue","value":4,"peak":31}]""")
+    }
+
+    @Test
+    fun `a report says which trace was asked to keep itself and how often`() {
+        val json = sessionSnapshotFixture(
+            flightRecording = FlightRecording(trigger = "framehud_incident", timesAsked = 2),
+        ).toJson()
+
+        assertContains(json, """"perfetto":{"trigger":"framehud_incident","timesAsked":2}""")
+    }
+
+    @Test
+    fun `a run recording no trace writes no trigger of its own`() {
+        val json = sessionSnapshotFixture().toJson()
+
+        assertFalse(json.contains("perfetto"), "a run without a trigger named one anyway")
     }
 
     @Test

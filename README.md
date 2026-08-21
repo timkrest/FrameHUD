@@ -130,6 +130,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | `fallbackRefreshRateHz` | `60` | Refresh rate assumed when the display reports none. |
 | `frameBudgetsMs` | `{}` | Milliseconds a frame may take on an interval, in place of the display deadline. |
 | `metricsThreadName` | `framehud-metrics` | Name of the collecting thread, as it shows up in traces. |
+| `perfettoTrigger` | `null` | Perfetto trigger an incident activates, so a ring-buffer trace keeps the seconds around it. |
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
@@ -235,6 +236,73 @@ with the trigger marked on the chart, and the JSON carries the diagnosis, how of
 happened, the window stats and every frame in it. Only the worst cases are kept, and `reset` clears
 them.
 
+## Perfetto flight recorder
+
+A trace explains the jank that `FrameMetrics` can only report, but it has to be recording before the
+jank happens, and nobody records for an hour on the chance that it will.
+
+Perfetto records into a ring buffer and keeps what it holds only when something asks. QA starts that
+trace over adb, FrameHUD asks when an incident opens, and what lands on disk is the seconds around
+the jank rather than the whole run.
+
+Name a trigger, and every incident asks for it:
+
+```kotlin
+FrameHud.config = FrameHud.config.copy(perfettoTrigger = "framehud_incident")
+```
+
+Record with a config that waits for that name. `atrace_apps` puts the app's own sections in the
+trace, FrameHUD's `framehud:*` among them:
+
+```protobuf
+buffers {
+  size_kb: 65536
+  fill_policy: RING_BUFFER
+}
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_apps: "com.example.app"
+    }
+  }
+}
+trigger_config {
+  trigger_mode: STOP_TRACING
+  trigger_timeout_ms: 1800000
+  triggers {
+    name: "framehud_incident"
+    stop_delay_ms: 2000
+  }
+}
+```
+
+```
+cat flight.txtpb | adb shell perfetto --txt -c - \
+  -o /data/misc/perfetto-traces/flight.pftrace --background
+```
+
+`stop_delay_ms` is how much of the run after the incident the trace keeps, and `trigger_timeout_ms`
+how long the recording waits for one. A trace nothing ever asks for writes nothing at all.
+
+An app can ask at a moment of its own with `FrameHud.retainTrace()`, and QA can ask from adb:
+
+```
+adb shell am broadcast -a com.timkrest.framehud.RETAIN <package>
+```
+
+Asking again within five seconds changes nothing, so a burst of incidents costs one ask rather than
+one per frame. The session report names the trigger and counts the asks, which tells a run that
+retained nothing apart from one that was never wired up.
+
+FrameHUD neither starts, configures nor reads the trace. It runs `/system/bin/trigger_perfetto`,
+which any app may do, and the rest is Perfetto's. Where that binary is missing the failure arrives
+once as a `FrameHudEvent.InternalFailure` rather than on every incident.
+
 ## Naming screens
 
 Stats split by screen, and a screen is its activity class by default. In a single-activity app that
@@ -330,10 +398,10 @@ Changing the context closes nothing; it only annotates what follows.
 `exportSession` writes the session since the last reset as JSON and a self-contained HTML report,
 and returns both files. Each holds the stats and the phase breakdown for the session and for the
 current screen, the frame window, the worst frames with wall-clock timestamps, every incident, the
-process health of the run, the counters the app kept, context, device, app version, measurement
-state and confidence issues. They land in `framehud/` under the app's external files directory, so
-CI pulls them without root. A device that reports no external storage falls back
-to the app's internal directory, which `adb pull` cannot read at all;
+process health of the run, the counters the app kept, the Perfetto trigger it asked for, context,
+device, app version, measurement state and confidence issues. They land in `framehud/` under the
+app's external files directory, so CI pulls them without root. A device that reports no external
+storage falls back to the app's internal directory, which `adb pull` cannot read at all;
 `adb exec-out run-as <package> cat files/framehud/<file>` gets a report out of there, and
 `shareSession` opens the system share sheet either way. Nothing is ever uploaded.
 
@@ -360,14 +428,16 @@ adb shell am broadcast -a com.timkrest.framehud.MARK --es name checkout <package
 adb shell am broadcast -a com.timkrest.framehud.CONTEXT --es scenario smoke <package>
 adb shell am broadcast -a com.timkrest.framehud.EXPORT <package>
 adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>
+adb shell am broadcast -a com.timkrest.framehud.RETAIN <package>
 ```
 
 `DISABLE` and `RESET` complete the set. Omitting `--es name` clears the screen or the mark, and
 `CONTEXT` without extras clears the context. A name FrameHUD refuses answers `failed:` and leaves
 the one already set in place, so a script that passes an empty variable hears about it. `EXPORT`
 answers with the report's path in the broadcast result, and `BASELINE` with the path of the
-baseline it updated, so a script pulls whichever directory the device chose. A build that is not
-debuggable ignores every command.
+baseline it updated, so a script pulls whichever directory the device chose. `RETAIN` asks the
+[flight recorder](#perfetto-flight-recorder) to keep the trace. A build that is not debuggable
+ignores every command.
 
 ## In a system trace
 
@@ -375,7 +445,8 @@ While a system trace records, screens and marks show up as `framehud:screen:<nam
 `framehud:mark:<name>` sections, a jank burst as `framehud:jank_burst`, and jank percent, p95,
 frozen frames and heap use as `framehud.*` counters. What the app keeps through `FrameHud.counter`
 joins them as `framehud:counter:<name>`. Macrobenchmark's `TraceSectionMetric` measures the named
-sections.
+sections, and all of it reaches the trace a [flight recorder](#perfetto-flight-recorder) keeps
+around an incident.
 
 A name FrameHUD writes there has to stand apart from every other: not blank, no longer than 110
 characters, and carrying no `|` or control character. A longer name gets cut down to one another
@@ -635,8 +706,8 @@ Two of those counters are the app's own. `rows composed` climbs while the list r
 
 **Session** is what a QA run ends with. Read the intervals with the budget each one followed, the
 screens worst first, and the incidents with the readings they fired under. Save a baseline, compare
-against it, freeze the readings, toggle collection, share the report, or hand a dialog window over
-to be measured.
+against it, freeze the readings, toggle collection, share the report, hand a dialog window over to
+be measured, or switch the flight recorder on and ask a Perfetto trace to keep what it holds.
 
 ## Documentation
 

@@ -24,6 +24,7 @@ public final class com/timkrest/framehud/FrameHud {
 	public final fun measureWindow (Landroid/view/Window;Ljava/lang/String;)V
 	public final fun reportUsable ()V
 	public final fun reset ()V
+	public final fun retainTrace ()V
 	public final fun saveBaseline (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun screens (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sessionStats (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

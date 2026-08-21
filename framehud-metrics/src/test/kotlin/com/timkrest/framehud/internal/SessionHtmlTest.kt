@@ -36,6 +36,24 @@ class SessionHtmlTest {
     }
 
     @Test
+    fun `the report names the trace it asked to keep itself`() {
+        val html = sessionSnapshotFixture(
+            flightRecording = FlightRecording(trigger = "framehud_incident", timesAsked = 2),
+        ).toHtml()
+
+        assertContains(html, "framehud_incident, asked to retain the trace 2 times")
+    }
+
+    @Test
+    fun `a trigger nothing ever reached says so rather than reading as a retained trace`() {
+        val html = sessionSnapshotFixture(
+            flightRecording = FlightRecording(trigger = "framehud_incident", timesAsked = 0),
+        ).toHtml()
+
+        assertContains(html, "never asked to retain the trace")
+    }
+
+    @Test
     fun `the report is a self-contained page with the session on it`() {
         val html = sessionSnapshotFixture(
             screenName = "cart",

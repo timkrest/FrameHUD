@@ -83,6 +83,9 @@ public object FrameHud {
     public fun reportUsable(): Unit = Unit
 
     @AnyThread
+    public fun retainTrace(): Unit = Unit
+
+    @AnyThread
     public fun reset(): Unit = Unit
 
     @AnyThread

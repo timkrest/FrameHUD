@@ -17,6 +17,11 @@ public data class FrameHudConfig(
      * covers the marks made on it. An entry deeper in wins.
      */
     val frameBudgetsMs: Map<IntervalId, Int> = emptyMap(),
+    /**
+     * Name of a Perfetto trigger an incident activates, in a trace already recording into a ring
+     * buffer. FrameHUD neither starts nor configures that trace. Null activates none.
+     */
+    val perfettoTrigger: String? = null,
 ) {
     init {
         require(metricsSampleWindowFrames > 0) {
@@ -30,6 +35,9 @@ public data class FrameHudConfig(
         }
         require(frameBudgetsMs.values.all { it > 0 }) {
             "A frame budget must be positive, got $frameBudgetsMs"
+        }
+        require(perfettoTrigger == null || perfettoTrigger.isNotBlank()) {
+            "A Perfetto trigger must be named, or left null"
         }
     }
 

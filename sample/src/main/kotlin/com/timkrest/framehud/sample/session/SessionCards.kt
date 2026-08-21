@@ -25,6 +25,7 @@ fun SessionActions(
     onSaveBaseline: () -> Unit,
     onToggleCollecting: () -> Unit,
     onMeasureDialog: () -> Unit,
+    onRetainTrace: () -> Unit,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -35,6 +36,7 @@ fun SessionActions(
         OutlinedButton(onClick = onSaveBaseline) { Text(text = "Save baseline", maxLines = 1) }
         OutlinedButton(onClick = onToggleCollecting) { Text(text = "Toggle collecting", maxLines = 1) }
         OutlinedButton(onClick = onMeasureDialog) { Text(text = "Measure a dialog", maxLines = 1) }
+        OutlinedButton(onClick = onRetainTrace) { Text(text = "Retain the trace", maxLines = 1) }
         OutlinedButton(onClick = onReset) { Text(text = "Reset", maxLines = 1) }
     }
 }

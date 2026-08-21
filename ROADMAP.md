@@ -20,8 +20,6 @@ Nothing queued. What lands next comes out of the list below and out of what peop
 Nothing designed yet. Whether these happen depends on feedback.
 
 - History that survives a restart, so yesterday's numbers are still around
-- A Perfetto flight recorder: QA starts a ring-buffer trace over adb, then jank or a frozen frame asks
-  it to retain the last few seconds and a little time after the event
 - A Macrobenchmark bridge: reset, marks and export around a scenario, with FrameHUD results next to
   the standard JSON and trace, but no home-grown benchmark runner
 - Recomposition counts next to the frame phases: with `FrameMetrics` alone a screen that recomposes

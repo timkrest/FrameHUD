@@ -155,6 +155,16 @@ public object FrameHud {
     }
 
     /**
+     * Asks the trace behind [FrameHudConfig.perfettoTrigger] to retain what its ring buffer holds,
+     * the way an incident does. Does nothing while no trigger is configured, and asking again
+     * within a few seconds of the last ask changes nothing.
+     */
+    @AnyThread
+    public fun retainTrace() {
+        engine.retainTrace()
+    }
+
+    /**
      * Measures a window FrameHUD cannot find on its own — a dialog, a popup, a presentation on a
      * second display — as a screen of its own named [screen], next to the activity in focus. Its
      * frames count towards the session and towards that screen; the live readings, marks and events

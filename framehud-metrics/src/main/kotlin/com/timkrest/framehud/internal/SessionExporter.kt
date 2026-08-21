@@ -56,6 +56,7 @@ internal fun sessionSnapshot(
         counters = stats.counters,
         worstFrames = stats.worstFrames,
         incidents = stats.incidents,
+        flightRecording = stats.flightRecording,
     )
 }
 

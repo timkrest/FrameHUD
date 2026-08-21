@@ -78,8 +78,15 @@ private fun HtmlScope.measurement(snapshot: SessionSnapshot) = with(snapshot) {
                 chipRow("Context", context.map { (key, value) -> "$key=$value" })
             }
             row("Display", "${formatFloat(display.refreshRateHz)} Hz, budget ${formatMs(display.frameBudgetMs)}")
+            flightRecording?.let { row("Perfetto trigger", it.summary()) }
         }
     }
+}
+
+private fun FlightRecording.summary(): String = when (timesAsked) {
+    0 -> "$trigger, never asked to retain the trace"
+    1 -> "$trigger, asked to retain the trace once"
+    else -> "$trigger, asked to retain the trace $timesAsked times"
 }
 
 private fun SessionSnapshot.measurementState(): String = when {

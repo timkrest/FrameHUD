@@ -17,7 +17,7 @@ import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
 
-internal const val EXPORT_SCHEMA_VERSION = 6
+internal const val EXPORT_SCHEMA_VERSION = 7
 
 internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     put("schema", EXPORT_SCHEMA_VERSION)
@@ -41,6 +41,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
         put("mark", mark)
         putObject("context") { putContext(context) }
     }
+    putPerfetto(flightRecording)
     putObject("session") {
         sessionBudgetMs()?.let { put("frameBudgetMs", it) }
         putStats(session)
@@ -172,6 +173,14 @@ private fun JsonObjectScope.putCause(cause: JankCause) {
             put("stage", cause.stage.name)
             put("averageMs", cause.averageMs)
         }
+    }
+}
+
+private fun JsonObjectScope.putPerfetto(recording: FlightRecording?) {
+    if (recording == null) return
+    putObject("perfetto") {
+        put("trigger", recording.trigger)
+        put("timesAsked", recording.timesAsked)
     }
 }
 

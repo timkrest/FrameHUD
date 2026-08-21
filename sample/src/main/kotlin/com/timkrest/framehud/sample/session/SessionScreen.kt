@@ -47,9 +47,11 @@ fun SessionScreen(
                 onSaveBaseline = state::saveBaseline,
                 onToggleCollecting = FrameHud::toggle,
                 onMeasureDialog = state::showDialog,
+                onRetainTrace = state::retainTrace,
             )
         }
         item { FreezeSwitch() }
+        item { FlightRecorderSwitch() }
         state.message?.let { text ->
             item { SampleCard(title = "Last action") { SampleNote(text = text) } }
         }
