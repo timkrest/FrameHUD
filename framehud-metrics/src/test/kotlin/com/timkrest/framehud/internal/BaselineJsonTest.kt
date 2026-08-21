@@ -32,43 +32,37 @@ class BaselineJsonTest {
 
     @Test
     fun `the runs behind each figure survive a round trip`() {
-        val entry = entry(
-            p95FrameMs = 10f,
-            runs = 3,
-            trust = BaselineTrust(
-                cleanRuns = mapOf(MeasuredMetric.P95 to 0, MeasuredMetric.P99 to 2),
-                gpuRuns = 1,
+        val baseline = sessionBaseline(
+            entry(
+                p95FrameMs = 10f,
+                runs = 3,
+                trust = BaselineTrust(
+                    cleanRuns = mapOf(MeasuredMetric.P95 to 0, MeasuredMetric.P99 to 2),
+                    gpuRuns = 1,
+                ),
             ),
         )
-        val baseline = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry))
 
         assertEquals(baseline, read(baseline.toJson()))
     }
 
     @Test
     fun `the frame budget and the candidate budget survive a round trip`() {
-        val entry = entry(
-            p95FrameMs = 10f,
-            runs = 3,
-            frameBudgetMs = 17,
-            trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
-        )
-        val baseline = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry))
+        val baseline = sessionBaseline(candidateEntry())
 
         assertEquals(baseline, read(baseline.toJson()))
     }
 
     @Test
     fun `a missing GPU average stays missing`() {
-        val baseline = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
+        val baseline = sessionBaseline()
 
         assertNull(read(baseline.toJson())?.entries?.getValue(IntervalId.Session)?.phases?.gpu)
     }
 
     @Test
     fun `a file written by another schema is refused`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
+        val json = sessionBaseline().toJson()
             .replace(""""schema":$BASELINE_SCHEMA_VERSION""", """"schema":${BASELINE_SCHEMA_VERSION + 1}""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
@@ -94,35 +88,28 @@ class BaselineJsonTest {
 
     @Test
     fun `an entry missing a figure rejects the file rather than reading zeros`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""jankPercent":""", """"wasJankPercent":""")
+        val json = sessionBaseline().toJson().replace(""""jankPercent":""", """"wasJankPercent":""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `a run count below one rejects the file`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""runs":1""", """"runs":-1""")
+        val json = sessionBaseline().toJson().replace(""""runs":1""", """"runs":-1""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `an invalid clean-run count rejects the file rather than counting every run clean`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""JANK_PERCENT":0""", """"JANK_PERCENT":-1""")
+        val json = sessionBaseline().toJson().replace(""""JANK_PERCENT":0""", """"JANK_PERCENT":-1""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `clean runs of the wrong shape reject the file rather than counting every run clean`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
+        val json = sessionBaseline().toJson()
             .replace(""""cleanRuns":{"JANK_PERCENT":0,"LOST_TIME":0}""", """"cleanRuns":7""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
@@ -130,59 +117,42 @@ class BaselineJsonTest {
 
     @Test
     fun `a phase the entry does not carry rejects the file`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""layoutMs":""", """"wasLayoutMs":""")
+        val json = sessionBaseline().toJson().replace(""""layoutMs":""", """"wasLayoutMs":""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `more clean runs than runs rejects the file`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""JANK_PERCENT":0""", """"JANK_PERCENT":2""")
+        val json = sessionBaseline().toJson().replace(""""JANK_PERCENT":0""", """"JANK_PERCENT":2""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `a run count between whole numbers rejects the file rather than rounding`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""runs":1""", """"runs":1.5""")
+        val json = sessionBaseline().toJson().replace(""""runs":1""", """"runs":1.5""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `a figure past what a float holds rejects the file rather than reading infinity`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""p95FrameMs":10.0""", """"p95FrameMs":1e400""")
+        val json = sessionBaseline().toJson().replace(""""p95FrameMs":10.0""", """"p95FrameMs":1e400""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `a negative phase average rejects the file`() {
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry(p95FrameMs = 10f)))
-            .toJson()
-            .replace(""""layoutMs":4.0""", """"layoutMs":-4.0""")
+        val json = sessionBaseline().toJson().replace(""""layoutMs":4.0""", """"layoutMs":-4.0""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `a candidate budget that already replaced the budget rejects the file`() {
-        val entry = entry(
-            p95FrameMs = 10f,
-            runs = 3,
-            frameBudgetMs = 17,
-            trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
-        )
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry))
-            .toJson()
+        val json = sessionBaseline(candidateEntry()).toJson()
             .replace(""""budgetMs":8,"runs":2""", """"budgetMs":8,"runs":3""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
@@ -190,38 +160,21 @@ class BaselineJsonTest {
 
     @Test
     fun `a candidate for the budget already in effect rejects the file`() {
-        val entry = entry(
-            p95FrameMs = 10f,
-            runs = 3,
-            frameBudgetMs = 17,
-            trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
-        )
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry))
-            .toJson()
-            .replace(""""budgetMs":8""", """"budgetMs":17""")
+        val json = sessionBaseline(candidateEntry()).toJson().replace(""""budgetMs":8""", """"budgetMs":17""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `a candidate backed by more runs than the entry holds rejects the file`() {
-        val entry = entry(
-            p95FrameMs = 10f,
-            runs = 3,
-            frameBudgetMs = 17,
-            trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
-        )
-        val json = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry))
-            .toJson()
-            .replace(""""runs":3""", """"runs":1""")
+        val json = sessionBaseline(candidateEntry()).toJson().replace(""""runs":3""", """"runs":1""")
 
         assertIs<ParsedBaseline.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `the same interval twice rejects the file rather than keeping one of them`() {
-        val entry = entry(p95FrameMs = 10f)
-        val one = Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry)).toJson()
+        val one = sessionBaseline().toJson()
         val session = one.substringAfter(""""intervals":[""").substringBeforeLast("]")
         val json = one.replace(session, "$session,$session")
 
@@ -234,6 +187,16 @@ class BaselineJsonTest {
     }
 
     private fun read(json: String): Baseline? = (parseBaseline(json) as? ParsedBaseline.Read)?.baseline
+
+    private fun sessionBaseline(entry: BaselineEntry = entry(p95FrameMs = 10f)): Baseline =
+        Baseline(ENVIRONMENT, mapOf(IntervalId.Session to entry))
+
+    private fun candidateEntry(): BaselineEntry = entry(
+        p95FrameMs = 10f,
+        runs = 3,
+        frameBudgetMs = 17,
+        trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
+    )
 
     private fun entry(
         p95FrameMs: Float,
