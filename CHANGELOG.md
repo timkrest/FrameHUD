@@ -9,9 +9,10 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 
 - A session export counted the Perfetto asks against whatever trigger the config named when the
-  report was written. Switching the trigger off after an incident hid the ask entirely, and
-  switching to another name credited that name with asks made to the one before it. The count now
-  belongs to the trigger it was made to, and a trigger switched off still says what it retained.
+  report was written. Switching the trigger off after an incident hid the ask entirely, switching
+  to another name credited that name with asks made to the one before it, and switching back
+  started the first one over. Every trigger now keeps its own count, a report names the one asked
+  last, and a trigger switched off still says what it retained.
 - Asking a different Perfetto trigger no longer waits out the five seconds of the one before it.
   They are different traces, and the second one heard nothing.
 

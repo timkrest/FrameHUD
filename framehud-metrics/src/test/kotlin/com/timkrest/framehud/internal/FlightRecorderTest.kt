@@ -72,6 +72,18 @@ class FlightRecorderTest {
     }
 
     @Test
+    fun `a trace asked again after another one keeps what it was asked before`() {
+        recorder.retainTrace("framehud_incident")
+        recorder.retainTrace("framehud_scroll")
+
+        recorder.retainTrace("framehud_incident")
+
+        val recording = recorder.recordingFor(null)
+        assertEquals("framehud_incident", recording?.trigger)
+        assertEquals(2, recording?.timesAsked)
+    }
+
+    @Test
     fun `a trigger switched off after an incident still says the trace was asked`() {
         recorder.retainTrace("framehud_incident")
 
