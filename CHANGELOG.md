@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-08-22
+
 ### Changed
 
 - The usable frame documentation now says that below API 26 no report made through
@@ -531,7 +533,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.1
 [0.13.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.0
 [0.12.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.12.0
 [0.11.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.11.0
