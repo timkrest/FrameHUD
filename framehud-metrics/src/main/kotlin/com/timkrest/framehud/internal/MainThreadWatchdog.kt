@@ -1,8 +1,5 @@
 package com.timkrest.framehud.internal
 
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Process
 import android.os.SystemClock
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
@@ -17,11 +14,7 @@ internal class MainThreadWatchdog(
 
     private val sampler = MainThreadSampler()
 
-    @Volatile
-    private var thread: HandlerThread? = null
-
-    @Volatile
-    private var handler: Handler? = null
+    private val poller = PollingThread(WATCHDOG_THREAD_NAME)
 
     @Volatile
     private var latest = MainThreadBlock.NONE
@@ -31,39 +24,28 @@ internal class MainThreadWatchdog(
 
     private var isBlocked = false
 
-    private var watchGeneration = 0
-
     val latestBlock: MainThreadBlock
         get() = if (nowMs() - latestAtMs > BLOCK_EXPLAINS_JANK_FOR_MS) MainThreadBlock.NONE else latest
 
     fun startWatching() {
-        val running = handler ?: startThread()
-        running.post {
-            forgetBlock()
-            watch(++watchGeneration)
-        }
+        poller.startPolling(beforeFirstPoll = ::forgetBlock, poll = ::watchOnce)
     }
 
     fun stopWatching() {
-        handler?.post { watchGeneration++ }
+        poller.stopPolling()
     }
 
     fun stop() {
-        stopWatching()
-        thread?.quit()
-        thread = null
-        handler = null
+        poller.quit()
     }
 
     @WorkerThread
-    private fun watch(generation: Int) {
-        if (generation != watchGeneration) return
+    private fun watchOnce(): Long {
         val tickMs = lastTickMs()
         val quietMs = nowMs() - tickMs
         if (quietMs < BLOCKED_AFTER_MS) {
             endBlock(drewAtMs = tickMs)
-            handler?.postDelayed({ watch(generation) }, BLOCKED_AFTER_MS - quietMs)
-            return
+            return BLOCKED_AFTER_MS - quietMs
         }
         guarded("sampling the main thread") {
             if (!isBlocked) {
@@ -73,7 +55,7 @@ internal class MainThreadWatchdog(
             sampler.sample(mainThread.stackTrace)
             recordBlock(endedMs = nowMs())
         }
-        handler?.postDelayed({ watch(generation) }, SAMPLE_INTERVAL_MS)
+        return SAMPLE_INTERVAL_MS
     }
 
     private fun forgetBlock() {
@@ -91,12 +73,6 @@ internal class MainThreadWatchdog(
     private fun recordBlock(endedMs: Long) {
         latest = sampler.blockAt(endedMs)
         latestAtMs = endedMs
-    }
-
-    private fun startThread(): Handler {
-        val started = HandlerThread(WATCHDOG_THREAD_NAME, Process.THREAD_PRIORITY_BACKGROUND).apply { start() }
-        thread = started
-        return Handler(started.looper).also { handler = it }
     }
 
     private companion object {

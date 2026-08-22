@@ -1,8 +1,5 @@
 package com.timkrest.framehud.internal
 
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Process
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.ProcessStats
@@ -19,59 +16,37 @@ internal class ProcessStatsMonitor(
 
     private val sampler = ProcessSampler(clock, probe)
 
+    private val poller = PollingThread(PROCESS_THREAD_NAME)
+
     val stats: StateFlow<ProcessStats> = readings.published
 
     val liveStats: ProcessStats get() = readings.live
 
-    @Volatile
-    private var thread: HandlerThread? = null
-
-    @Volatile
-    private var handler: Handler? = null
-
-    private var sampleGeneration = 0
-
     fun startCollecting() {
-        val running = handler ?: startThread()
-        running.post { sample(++sampleGeneration) }
+        poller.startPolling(poll = ::sampleOnce)
     }
 
     fun stopCollecting() {
-        handler?.post { sampleGeneration++ }
+        poller.stopPolling()
     }
 
     fun stop() {
-        stopCollecting()
-        thread?.quit()
-        thread = null
-        handler = null
+        poller.quit()
     }
 
     fun setFrozen(frozen: Boolean) {
         readings.setFrozen(frozen)
     }
 
-    fun reset() = onSamplingThread {
+    fun reset() = poller.postOrRunHere {
         sampler.reset()
         readings.reset(ProcessStats.EMPTY)
     }
 
     @WorkerThread
-    private fun sample(generation: Int) {
-        if (generation != sampleGeneration) return
+    private fun sampleOnce(): Long {
         guarded("sampling process stats") { readings.update(sampler.sample()) }
-        handler?.postDelayed({ sample(generation) }, sampleIntervalMs)
-    }
-
-    private fun startThread(): Handler {
-        val started = HandlerThread(PROCESS_THREAD_NAME, Process.THREAD_PRIORITY_BACKGROUND).apply { start() }
-        thread = started
-        return Handler(started.looper).also { handler = it }
-    }
-
-    private fun onSamplingThread(action: () -> Unit) {
-        val running = handler
-        if (running == null) action() else running.post(action)
+        return sampleIntervalMs
     }
 
     private companion object {
