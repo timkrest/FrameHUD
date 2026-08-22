@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-22
+
 ### Fixed
 
 - A session export counted the Perfetto asks against whatever trigger the config named when the
@@ -523,7 +525,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.0
 [0.12.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.12.0
 [0.11.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.11.0
 [0.10.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.10.0
