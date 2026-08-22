@@ -169,6 +169,11 @@ The first screen of a `ComponentActivity` created while FrameHUD collects needs 
 listens to its `FullyDrawnReporter`, so the `ReportDrawnWhen` or `reportFullyDrawn()` an app
 already has for Macrobenchmark covers the launch.
 
+`FullyDrawnReporter` holds every report until the next draw, through a listener a window below
+API 26 drops, so on Android 7 `ReportDrawn`, `ReportDrawnWhen` and the rest of that API report
+nothing. There the launch needs a `FrameHud.reportUsable()` call of its own, or a direct
+`reportFullyDrawn()`, which reports on every version.
+
 Every other screen reports for itself: a screen renamed through `FrameHud.screen`, an Activity
 returned to, an Activity without the reporter.
 

@@ -1,5 +1,6 @@
 package com.timkrest.framehud.sample
 
+import android.os.Build
 import android.os.SystemClock
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -7,6 +8,7 @@ import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -38,6 +40,11 @@ class UsableFrameEventsTest {
 
     @Test
     fun theLaunchReportsUsableThroughTheFullyDrawnReporter() {
+        assumeTrue(
+            "a window below API 26 drops the draw listener the reporter waits for",
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O,
+        )
+
         ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
             scenario.renderFrames()
 

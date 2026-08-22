@@ -145,9 +145,11 @@ public object FrameHud {
      * next displayed frame, which [FrameHudEvent.UsableFrame] reports as time to usable. The first
      * screen of a [ComponentActivity] created while FrameHud collects needs no call, because its
      * `FullyDrawnReporter` reports for it and the `ReportDrawnWhen` an app already has for
-     * Macrobenchmark covers the launch. Every other screen needs this call: a screen renamed
-     * through [screen], an Activity returned to, an Activity without the reporter. Repeating a
-     * report for the same screen changes nothing, and a new screen measures again.
+     * Macrobenchmark covers the launch. Below API 26 a report made through the reporter never
+     * lands, so the launch needs this call or a direct `reportFullyDrawn()`. Every other screen
+     * needs this call: a screen renamed through [screen], an Activity returned to, an Activity
+     * without the reporter. Repeating a report for the same screen changes nothing, and a new
+     * screen measures again.
      */
     @AnyThread
     public fun reportUsable() {

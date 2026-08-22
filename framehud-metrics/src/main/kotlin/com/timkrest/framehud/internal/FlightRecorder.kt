@@ -58,6 +58,6 @@ internal object SystemPerfettoTrigger : PerfettoTrigger {
         process.waitFor()
     }
 
-    private const val TRIGGER_BINARY = "/system/bin/trigger_perfetto"
+    const val TRIGGER_BINARY = "/system/bin/trigger_perfetto"
     private const val TRIGGER_THREAD_NAME = "framehud-flight"
 }

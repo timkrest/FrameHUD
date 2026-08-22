@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The usable frame documentation now says that below API 26 no report made through
+  `FullyDrawnReporter` reaches FrameHUD, where a launch measures through a `FrameHud.reportUsable()`
+  call or a direct `reportFullyDrawn()`.
+
 ## [0.13.0] - 2026-08-22
 
 ### Fixed
