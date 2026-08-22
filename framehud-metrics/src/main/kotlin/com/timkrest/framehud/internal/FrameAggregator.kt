@@ -2,7 +2,6 @@ package com.timkrest.framehud.internal
 
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
-import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudConfig
@@ -12,12 +11,8 @@ import com.timkrest.framehud.FrameWindowStats
 import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
-import com.timkrest.framehud.MainThreadBlock
-import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
-import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalLevel
-import com.timkrest.framehud.ThermalStats
 import kotlinx.coroutines.flow.StateFlow
 
 @WorkerThread
@@ -41,12 +36,12 @@ internal class FrameAggregator(
         keptIncidents = KEPT_INCIDENTS,
     )
 
-    private val readings = FreezableReading(PerformanceMetrics.EMPTY)
+    private val metricsReadings = FreezableReading(PerformanceMetrics.EMPTY)
 
     @get:AnyThread
-    val metrics: StateFlow<PerformanceMetrics> = readings.published
+    val metrics: StateFlow<PerformanceMetrics> = metricsReadings.published
 
-    val liveMetrics: PerformanceMetrics get() = readings.live
+    val liveMetrics: PerformanceMetrics get() = metricsReadings.live
 
     val screenName: String? get() = accumulators.screenName
 
@@ -80,9 +75,7 @@ internal class FrameAggregator(
         display = frameDisplay
         val judgedOverrunMs =
             overrunAgainst(accumulators.activeBudgetMs, totalMs = totalMs, displayOverrunMs = overrunMs)
-        if (!hasReportedGpuDuration && durationsMs[FramePhase.GPU.ordinal] > 0f) {
-            hasReportedGpuDuration = true
-        }
+        hasReportedGpuDuration = hasReportedGpuDuration || durationsMs[FramePhase.GPU.ordinal] > 0f
         frameWindow.add(durationsMs = durationsMs, overrunMs = judgedOverrunMs, frameEndNs = frameEndNs)
         worstFrames.add(totalMs = totalMs, endNs = frameEndNs)
         incidents.addFrame(
@@ -114,12 +107,12 @@ internal class FrameAggregator(
     }
 
     private fun refreshLiveSession() {
-        readings.updateLive(readings.live.copy(session = accumulators.sessionStats()))
+        metricsReadings.updateLive(metricsReadings.live.copy(session = accumulators.sessionStats()))
     }
 
     @AnyThread
     fun setFrozen(frozen: Boolean) {
-        readings.setFrozen(frozen)
+        metricsReadings.setFrozen(frozen)
     }
 
     fun startCollecting(label: String? = null) = accumulators.startCollecting(label)
@@ -138,23 +131,8 @@ internal class FrameAggregator(
 
     fun endWindow(screen: String?) = accumulators.endWindow(screen)
 
-    fun armIncident(
-        trigger: FrameHudEvent.IncidentTrigger,
-        memory: MemoryStats,
-        thermal: ThermalStats,
-        process: ProcessStats,
-        battery: BatterySample,
-        counters: List<CounterReading>,
-        mainThreadBlock: MainThreadBlock,
-    ) = incidents.arm(
-        trigger = trigger,
-        memory = memory,
-        thermal = thermal,
-        process = process,
-        battery = battery,
-        counters = counters,
-        mainThreadBlock = mainThreadBlock,
-    )
+    fun armIncident(trigger: FrameHudEvent.IncidentTrigger, readings: IncidentReadings) =
+        incidents.arm(trigger, readings)
 
     fun beginMark(name: String) = accumulators.beginMark(name)
 
@@ -182,7 +160,7 @@ internal class FrameAggregator(
         incidents.clear()
         isDrainingToIdle = false
         lastUpdateTime = 0L
-        readings.reset(
+        metricsReadings.reset(
             PerformanceMetrics(
                 window = FrameWindowStats(frameBudgetMs = budgetInForceMs()),
                 display = display,
@@ -223,7 +201,7 @@ internal class FrameAggregator(
             session = accumulators.sessionStats(),
             display = display,
         )
-        readings.update(metrics)
+        metricsReadings.update(metrics)
         if (fps == 0) isDrainingToIdle = false
     }
 

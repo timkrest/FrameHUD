@@ -386,11 +386,11 @@ private fun formatMs(value: Int?): String = if (value == null) "—" else "$valu
 
 private fun formatPercent(value: Float?): String = if (value == null) "—" else "${formatFloat(value)}%"
 
-private fun formatSeconds(durationMs: Long): String = String.format(Locale.US, "%.1f s", durationMs / MS_PER_SECOND_D)
+private fun formatSeconds(durationMs: Long): String = formatInvariant("%.1f s", durationMs / MS_PER_SECOND_D)
 
 private fun formatCount(value: Int): String = value.toString()
 
-private fun formatFloat(value: Float): String = String.format(Locale.US, "%.1f", value)
+private fun formatFloat(value: Float): String = formatInvariant("%.1f", value)
 
 private const val MS_PER_SECOND_D = 1000.0
 private const val CHART_WIDTH = 600f

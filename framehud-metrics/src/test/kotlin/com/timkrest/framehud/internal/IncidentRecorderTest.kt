@@ -257,12 +257,14 @@ class IncidentRecorderTest {
         mainThreadBlock: MainThreadBlock = MainThreadBlock.NONE,
     ) = recorder.arm(
         trigger = trigger,
-        memory = MemoryStats.EMPTY,
-        thermal = ThermalStats.EMPTY,
-        process = ProcessStats.EMPTY,
-        battery = battery,
-        counters = counters,
-        mainThreadBlock = mainThreadBlock,
+        readings = IncidentReadings(
+            memory = MemoryStats.EMPTY,
+            thermal = ThermalStats.EMPTY,
+            process = ProcessStats.EMPTY,
+            battery = battery,
+            counters = counters,
+            mainThreadBlock = mainThreadBlock,
+        ),
     )
 
     private companion object {

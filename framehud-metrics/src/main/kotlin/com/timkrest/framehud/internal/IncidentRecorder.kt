@@ -53,26 +53,13 @@ internal class IncidentRecorder(
         droppedReportsBeforeNextFrame += count
     }
 
-    fun arm(
-        trigger: FrameHudEvent.IncidentTrigger,
-        memory: MemoryStats,
-        thermal: ThermalStats,
-        process: ProcessStats,
-        battery: BatterySample,
-        counters: List<CounterReading>,
-        mainThreadBlock: MainThreadBlock,
-    ) {
+    fun arm(trigger: FrameHudEvent.IncidentTrigger, readings: IncidentReadings) {
         if (pending != null) return
         pending = PendingIncident(
             trigger = trigger,
             triggeredAtEpochMs = clock.epochMs(),
             armedAtMs = clock.elapsedRealtimeMs(),
-            memory = memory,
-            thermal = thermal,
-            process = process,
-            battery = battery,
-            counters = counters,
-            mainThreadBlock = mainThreadBlock,
+            readings = readings,
         )
     }
 
@@ -100,9 +87,10 @@ internal class IncidentRecorder(
 
     private fun close(pending: PendingIncident) {
         this.pending = null
+        val readings = pending.readings
         val measured = SessionAccumulator(clock, isEmulator)
-        measured.addThermalLevel(pending.thermal.level)
-        measured.addBattery(pending.battery)
+        measured.addThermalLevel(readings.thermal.level)
+        measured.addBattery(readings.battery)
         frames.replayInto(measured)
         record(
             IncidentWindow(
@@ -111,11 +99,11 @@ internal class IncidentRecorder(
                 stats = measured.stats().copy(durationMs = frames.durationMs()),
                 frames = frames.history(),
                 framesBeforeTrigger = frames.size - pending.framesAfterTrigger,
-                memory = pending.memory,
-                thermal = pending.thermal,
-                process = pending.process,
-                counters = pending.counters,
-                mainThreadBlock = pending.mainThreadBlock,
+                memory = readings.memory,
+                thermal = readings.thermal,
+                process = readings.process,
+                counters = readings.counters,
+                mainThreadBlock = readings.mainThreadBlock,
             ),
         )
     }
@@ -161,12 +149,7 @@ internal class IncidentRecorder(
         val trigger: FrameHudEvent.IncidentTrigger,
         val triggeredAtEpochMs: Long,
         val armedAtMs: Long,
-        val memory: MemoryStats,
-        val thermal: ThermalStats,
-        val process: ProcessStats,
-        val battery: BatterySample,
-        val counters: List<CounterReading>,
-        val mainThreadBlock: MainThreadBlock,
+        val readings: IncidentReadings,
     ) {
         var framesAfterTrigger = 0
     }
@@ -175,6 +158,15 @@ internal class IncidentRecorder(
         const val WAIT_FOR_TRAILING_FRAMES_MS = 1_000L
     }
 }
+
+internal class IncidentReadings(
+    val memory: MemoryStats,
+    val thermal: ThermalStats,
+    val process: ProcessStats,
+    val battery: BatterySample,
+    val counters: List<CounterReading>,
+    val mainThreadBlock: MainThreadBlock,
+)
 
 private data class IncidentKey(
     val screen: String?,

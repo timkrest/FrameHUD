@@ -1,6 +1,7 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.DisplayInfo
+import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
 import com.timkrest.framehud.FramePhases
@@ -22,16 +23,20 @@ class EventDispatcherTest {
 
     private val clock = TestMetricsClock()
     private val slowListenerReports = mutableListOf<Float>()
-    private val dispatcher = EventDispatcher(clock = clock, onSlowListener = { slowListenerReports += it })
     private val events = mutableListOf<FrameHudEvent>()
     private val listeners = listOf(FrameHudEventListener { events += it })
+    private val dispatcher = EventDispatcher(
+        clock = clock,
+        config = { FrameHudConfig(eventListeners = listeners) },
+        onSlowListener = { slowListenerReports += it },
+    )
 
     @Test
     fun `a listener that fails against its own libraries does not cost the listeners after it`() {
         val failing = FrameHudEventListener { throw NoSuchMethodError("com.example.Analytics.log") }
 
         dispatcher.onMarkEnded(
-            listeners = listOf(failing) + listeners,
+            listenersWhenItEnded = listOf(failing) + listeners,
             stats = IntervalStats.EMPTY,
             mark = "scroll",
             screen = null,
@@ -85,7 +90,7 @@ class EventDispatcherTest {
 
     @Test
     fun `a screen without frames ends without a summary`() {
-        dispatcher.onScreenEnded(listeners = listeners, stats = IntervalStats.EMPTY, screen = SCREEN, context = emptyMap())
+        dispatcher.onScreenEnded(listenersWhenItEnded = listeners, stats = IntervalStats.EMPTY, screen = SCREEN, context = emptyMap())
         assertTrue(events.isEmpty())
 
         dispatcher.onScreenEnded(listeners, IntervalStats.EMPTY.copy(frames = 12), SCREEN, context = emptyMap())
@@ -115,7 +120,7 @@ class EventDispatcherTest {
 
     @Test
     fun `an interaction is reported even when nothing was drawn while it was open`() {
-        dispatcher.onMarkEnded(listeners = listeners, stats = IntervalStats.EMPTY, mark = MARK, screen = SCREEN, context = emptyMap())
+        dispatcher.onMarkEnded(listeners, IntervalStats.EMPTY, mark = MARK, screen = SCREEN, context = emptyMap())
 
         val event = assertIs<FrameHudEvent.MarkEnded>(events.single())
         assertEquals(MARK, event.mark)
@@ -136,7 +141,6 @@ class EventDispatcherTest {
             display = DisplayInfo(refreshRateHz = 60f),
         )
         return dispatcher.onSample(
-            listeners = listeners,
             diagnosis = JankDiagnosis.of(
                 metrics = metrics,
                 memory = MemoryStats.EMPTY,

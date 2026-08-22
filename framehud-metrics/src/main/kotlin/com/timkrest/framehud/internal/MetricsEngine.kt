@@ -31,7 +31,11 @@ internal class MetricsEngine(
 ) {
 
     private val aggregator = FrameAggregator(config(), clock, isEmulator = isRunningOnEmulator())
-    private val eventDispatcher = EventDispatcher(clock = clock, onSlowListener = aggregator::addSlowListener)
+    private val eventDispatcher = EventDispatcher(
+        clock = clock,
+        config = config,
+        onSlowListener = aggregator::addSlowListener,
+    )
     private val tracer = FrameHudTracer()
     private val windows = MeasuredWindows()
     private val collector = FrameMetricsCollector(
@@ -195,7 +199,7 @@ internal class MetricsEngine(
         sampler.post {
             measured.screen = rename.current
             eventDispatcher.onScreenEnded(
-                listeners = listeners,
+                listenersWhenItEnded = listeners,
                 stats = aggregator.restartScreen(rename.current),
                 screen = rename.previous,
                 context = endedContext,
@@ -241,7 +245,7 @@ internal class MetricsEngine(
             memoryMonitor.stopCollecting()
             processMonitor.stopCollecting()
             eventDispatcher.onScreenEnded(
-                listeners = listeners,
+                listenersWhenItEnded = listeners,
                 stats = aggregator.screenStats(),
                 screen = endedScreen,
                 context = endedContext,
@@ -348,7 +352,7 @@ internal class MetricsEngine(
         onMetricsThread {
             aggregator.endMark()?.let { stats ->
                 eventDispatcher.onMarkEnded(
-                    listeners = listeners,
+                    listenersWhenItEnded = listeners,
                     stats = stats,
                     mark = ended,
                     screen = endedScreen,
@@ -363,7 +367,6 @@ internal class MetricsEngine(
         onMetricsThread {
             if (!reportedFailures.add(what)) return@onMetricsThread
             eventDispatcher.onInternalFailure(
-                listeners = config().eventListeners,
                 what = what,
                 error = error,
                 screen = aggregator.screenName,
@@ -376,7 +379,6 @@ internal class MetricsEngine(
     @WorkerThread
     private fun onFirstFrame(timeToDisplayMs: Float) {
         eventDispatcher.onFirstFrame(
-            listeners = config().eventListeners,
             timeToDisplayMs = timeToDisplayMs,
             screen = aggregator.screenName,
             context = context,
@@ -386,7 +388,6 @@ internal class MetricsEngine(
     @WorkerThread
     private fun onUsableFrame(timeToUsableMs: Float) {
         eventDispatcher.onUsableFrame(
-            listeners = config().eventListeners,
             timeToUsableMs = timeToUsableMs,
             screen = aggregator.screenName,
             context = context,
@@ -444,7 +445,6 @@ internal class MetricsEngine(
         )
         diagnosisReadings.update(diagnosis)
         val trigger = eventDispatcher.onSample(
-            listeners = config().eventListeners,
             diagnosis = diagnosis,
             frozenFrames = metrics.session.frozenFrames,
             thermalLevel = thermal.level,
@@ -455,12 +455,14 @@ internal class MetricsEngine(
         if (trigger != null) {
             aggregator.armIncident(
                 trigger = trigger,
-                memory = memory,
-                thermal = thermal,
-                process = processMonitor.liveStats,
-                battery = batteryMonitor.sample,
-                counters = counters,
-                mainThreadBlock = mainThreadWatchdog.latestBlock,
+                readings = IncidentReadings(
+                    memory = memory,
+                    thermal = thermal,
+                    process = processMonitor.liveStats,
+                    battery = batteryMonitor.sample,
+                    counters = counters,
+                    mainThreadBlock = mainThreadWatchdog.latestBlock,
+                ),
             )
             askForTheTrace()
         }

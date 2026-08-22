@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import android.util.Log
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
 import com.timkrest.framehud.IntervalStats
@@ -10,7 +11,11 @@ import com.timkrest.framehud.JankSeverity
 import com.timkrest.framehud.ThermalLevel
 
 @WorkerThread
-internal class EventDispatcher(private val clock: MetricsClock, private val onSlowListener: (callMs: Float) -> Unit) {
+internal class EventDispatcher(
+    private val clock: MetricsClock,
+    private val config: () -> FrameHudConfig,
+    private val onSlowListener: (callMs: Float) -> Unit,
+) {
 
     var isInBurst: Boolean = false
         private set
@@ -18,26 +23,15 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
     private var lastFrozenFrames = 0
     private var lastThermalLevel = ThermalLevel.UNKNOWN
 
-    fun onFirstFrame(
-        listeners: List<FrameHudEventListener>,
-        timeToDisplayMs: Float,
-        screen: String?,
-        context: Map<String, String>,
-    ) {
-        listeners.emit(FrameHudEvent.FirstFrame(timeToDisplayMs = timeToDisplayMs, screen = screen, context = context))
+    fun onFirstFrame(timeToDisplayMs: Float, screen: String?, context: Map<String, String>) {
+        emit(FrameHudEvent.FirstFrame(timeToDisplayMs = timeToDisplayMs, screen = screen, context = context))
     }
 
-    fun onUsableFrame(
-        listeners: List<FrameHudEventListener>,
-        timeToUsableMs: Float,
-        screen: String?,
-        context: Map<String, String>,
-    ) {
-        listeners.emit(FrameHudEvent.UsableFrame(timeToUsableMs = timeToUsableMs, screen = screen, context = context))
+    fun onUsableFrame(timeToUsableMs: Float, screen: String?, context: Map<String, String>) {
+        emit(FrameHudEvent.UsableFrame(timeToUsableMs = timeToUsableMs, screen = screen, context = context))
     }
 
     fun onSample(
-        listeners: List<FrameHudEventListener>,
         diagnosis: JankDiagnosis,
         frozenFrames: Int,
         thermalLevel: ThermalLevel,
@@ -45,9 +39,9 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
         mark: String?,
         context: Map<String, String>,
     ): FrameHudEvent.IncidentTrigger? {
-        val burst = takeBurst(diagnosis, screen, mark, context)?.also { listeners.emit(it) }
-        val frozen = takeFrozenFrames(frozenFrames, screen, mark, context)?.also { listeners.emit(it) }
-        takeThermalChange(thermalLevel, screen, mark, context)?.also { listeners.emit(it) }
+        val burst = takeBurst(diagnosis, screen, mark, context)?.also(::emit)
+        val frozen = takeFrozenFrames(frozenFrames, screen, mark, context)?.also(::emit)
+        takeThermalChange(thermalLevel, screen, mark, context)?.also(::emit)
         return burst ?: frozen
     }
 
@@ -90,35 +84,38 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
     }
 
     fun onScreenEnded(
-        listeners: List<FrameHudEventListener>,
+        listenersWhenItEnded: List<FrameHudEventListener>,
         stats: IntervalStats,
         screen: String?,
         context: Map<String, String>,
     ) {
         if (stats.frames > 0) {
-            listeners.emit(FrameHudEvent.ScreenEnded(stats = stats, screen = screen, context = context))
+            listenersWhenItEnded.emit(
+                FrameHudEvent.ScreenEnded(stats = stats, screen = screen, context = context),
+            )
         }
     }
 
     fun onMarkEnded(
-        listeners: List<FrameHudEventListener>,
+        listenersWhenItEnded: List<FrameHudEventListener>,
         stats: IntervalStats,
         mark: String,
         screen: String?,
         context: Map<String, String>,
     ) {
-        listeners.emit(FrameHudEvent.MarkEnded(stats = stats, mark = mark, screen = screen, context = context))
+        listenersWhenItEnded.emit(
+            FrameHudEvent.MarkEnded(stats = stats, mark = mark, screen = screen, context = context),
+        )
     }
 
     fun onInternalFailure(
-        listeners: List<FrameHudEventListener>,
         what: String,
         error: Throwable,
         screen: String?,
         mark: String?,
         context: Map<String, String>,
     ) {
-        listeners.emit(
+        emit(
             FrameHudEvent.InternalFailure(
                 what = what,
                 error = error,
@@ -133,6 +130,10 @@ internal class EventDispatcher(private val clock: MetricsClock, private val onSl
         isInBurst = false
         lastFrozenFrames = 0
         lastThermalLevel = ThermalLevel.UNKNOWN
+    }
+
+    private fun emit(event: FrameHudEvent) {
+        config().eventListeners.emit(event)
     }
 
     private fun List<FrameHudEventListener>.emit(event: FrameHudEvent) {

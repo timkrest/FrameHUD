@@ -411,12 +411,14 @@ class FrameAggregatorTest {
         aggregator.addFrame(totalMs = 10f)
         aggregator.armIncident(
             trigger = FrameHudEvent.FrozenFrames(count = 1, screen = "Home", mark = null),
-            memory = MemoryStats.EMPTY,
-            thermal = ThermalStats.EMPTY,
-            process = ProcessStats.EMPTY,
-            battery = BatterySample.UNKNOWN,
-            counters = emptyList(),
-            mainThreadBlock = MainThreadBlock.NONE,
+            readings = IncidentReadings(
+                memory = MemoryStats.EMPTY,
+                thermal = ThermalStats.EMPTY,
+                process = ProcessStats.EMPTY,
+                battery = BatterySample.UNKNOWN,
+                counters = emptyList(),
+                mainThreadBlock = MainThreadBlock.NONE,
+            ),
         )
         aggregator.addFrame(totalMs = 400f, screen = "promo")
         aggregator.addFrame(totalMs = 20f)
