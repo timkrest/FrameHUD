@@ -13,27 +13,28 @@ internal class PollingThread(private val threadName: String) {
 
     private var thread: HandlerThread? = null
 
-    @Volatile
     private var handler: Handler? = null
 
-    @Volatile
     private var generation = 0
 
     fun startPolling(beforeFirstPoll: () -> Unit = {}, poll: () -> Long) {
-        val running = synchronized(lock) { handler ?: start() }
-        running.post {
-            beforeFirstPoll()
-            pollAgain(++generation, poll)
+        synchronized(lock) {
+            val running = handler ?: start()
+            val startedAs = ++generation
+            running.post {
+                beforeFirstPoll()
+                pollAgain(running, startedAs, poll)
+            }
         }
     }
 
     fun stopPolling() {
-        handler?.post { generation++ }
+        synchronized(lock) { generation++ }
     }
 
     fun quit() {
-        stopPolling()
         synchronized(lock) {
+            generation++
             thread?.quit()
             thread = null
             handler = null
@@ -41,15 +42,15 @@ internal class PollingThread(private val threadName: String) {
     }
 
     fun postOrRunHere(action: () -> Unit) {
-        val running = handler ?: return action()
+        val running = synchronized(lock) { handler } ?: return action()
         running.post(action)
     }
 
     @WorkerThread
-    private fun pollAgain(startedAs: Int, poll: () -> Long) {
-        if (startedAs != generation) return
+    private fun pollAgain(on: Handler, startedAs: Int, poll: () -> Long) {
+        if (synchronized(lock) { startedAs != generation }) return
         val nextPollInMs = poll()
-        handler?.postDelayed({ pollAgain(startedAs, poll) }, nextPollInMs)
+        on.postDelayed({ pollAgain(on, startedAs, poll) }, nextPollInMs)
     }
 
     private fun start(): Handler {
