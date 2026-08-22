@@ -30,7 +30,7 @@ internal class MetricsEngine(
     clock: MetricsClock = SystemMetricsClock,
 ) {
 
-    private val aggregator = FrameAggregator(config(), clock, isEmulator = isRunningOnEmulator())
+    private val aggregator = FrameAggregator(config(), clock, isEmulator = isEmulatorDevice)
     private val eventDispatcher = EventDispatcher(
         clock = clock,
         config = config,

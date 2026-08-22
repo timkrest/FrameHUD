@@ -15,6 +15,11 @@ All notable changes to this project are documented here. The format follows
   last, and a trigger switched off still says what it retained.
 - Asking a different Perfetto trigger no longer waits out the five seconds of the one before it.
   They are different traces, and the second one heard nothing.
+- The panel and the measurements disagreed about what an emulator is, each recognising devices the
+  other did not. A run on Cuttlefish, Genymotion or a Compute Engine image had its GPU readings
+  dimmed in the panel while the session report, the baseline and the jank gate took the run for a
+  device measurement. Both now answer from one list, which recognises every emulator either of them
+  did.
 
 ## [0.12.0] - 2026-08-22
 

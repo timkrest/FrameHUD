@@ -9,16 +9,18 @@ import androidx.annotation.WorkerThread
 @AnyThread
 internal class PollingThread(private val threadName: String) {
 
-    @Volatile
+    private val lock = Any()
+
     private var thread: HandlerThread? = null
 
     @Volatile
     private var handler: Handler? = null
 
+    @Volatile
     private var generation = 0
 
     fun startPolling(beforeFirstPoll: () -> Unit = {}, poll: () -> Long) {
-        val running = handler ?: start()
+        val running = synchronized(lock) { handler ?: start() }
         running.post {
             beforeFirstPoll()
             pollAgain(++generation, poll)
@@ -31,9 +33,11 @@ internal class PollingThread(private val threadName: String) {
 
     fun quit() {
         stopPolling()
-        thread?.quit()
-        thread = null
-        handler = null
+        synchronized(lock) {
+            thread?.quit()
+            thread = null
+            handler = null
+        }
     }
 
     fun postOrRunHere(action: () -> Unit) {
