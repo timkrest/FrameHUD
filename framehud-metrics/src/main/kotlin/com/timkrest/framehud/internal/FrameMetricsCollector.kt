@@ -76,7 +76,7 @@ internal class FrameMetricsCollector(
                 totalDurationNs = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION),
                 deadlineNs = frameDeadlineNs(frameMetrics),
                 frameEndNs = frameEndNs,
-                refreshRateHz = measured.display?.refreshRate?.takeIf { it.isFinite() && it > 0f },
+                refreshRateHz = refreshRateHzOf(measured),
             )
         }
     }
@@ -87,8 +87,14 @@ internal class FrameMetricsCollector(
         return if (pendingFirstFrame.compareAndSet(expected, null)) expected else null
     }
 
-    private fun frameDeadlineNs(frameMetrics: FrameMetrics): Long? =
-        if (hasApi31FrameMetrics) frameMetrics.getMetric(FrameMetrics.DEADLINE).takeIf { it > 0L } else null
+    private fun frameDeadlineNs(frameMetrics: FrameMetrics): Long =
+        if (hasApi31FrameMetrics) frameMetrics.getMetric(FrameMetrics.DEADLINE) else NO_DEADLINE_NS
+
+    private fun refreshRateHzOf(measured: MeasuredWindows.Measured): Float {
+        val display = measured.display ?: return UNKNOWN_REFRESH_RATE_HZ
+        val refreshRateHz = display.refreshRate
+        return if (refreshRateHz.isFinite() && refreshRateHz > 0f) refreshRateHz else UNKNOWN_REFRESH_RATE_HZ
+    }
 
     private fun frameEndTimestampNs(frameMetrics: FrameMetrics): Long = if (hasApi26FrameMetrics) {
         frameMetrics.getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP) +

@@ -94,6 +94,17 @@ class SessionAccumulatorTest {
     }
 
     @Test
+    fun `a display that cycles through many rates is reported with all of them`() {
+        val session = SessionAccumulator(TestMetricsClock())
+        val ratesHz = listOf(60f, 90f, 120f, 144f, 165f, 240f)
+        repeat(300) { session.addFrame(totalMs = 10f, isJanky = false, refreshRateHz = 60f) }
+        ratesHz.forEach { session.addFrame(totalMs = 10f, isJanky = false, refreshRateHz = it) }
+
+        val issue = session.stats().confidence.issues.filterIsInstance<ConfidenceIssue.RefreshRateChanged>().single()
+        assertEquals(ratesHz.map { it.toInt() }.toSet(), issue.ratesHz)
+    }
+
+    @Test
     fun `dropped reports become a confidence issue`() {
         val session = SessionAccumulator(TestMetricsClock())
         session.addDroppedReports(3)

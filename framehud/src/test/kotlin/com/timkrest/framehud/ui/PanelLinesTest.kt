@@ -193,7 +193,22 @@ class PanelLinesTest {
 
     private fun List<String>.gpuRow(): String = single { it.startsWith(LABEL_GPU) }
 
+    @Test
+    fun `the collapsed line keeps one width while the readings change`() {
+        val quiet = listOf(0, 60, 999).map { buildCollapsedLine(metrics(fps = it)).text }
+        assertEquals(setOf(COLLAPSED_WIDEST_READING.length), quiet.map { it.length }.toSet(), quiet.toString())
+
+        val attention = listOf(
+            metrics(fps = 60, jankPercent = 50f, layoutMs = 9f),
+            metrics(fps = 60, jankPercent = 50f, swapMs = 9f),
+            metrics(fps = 60, jankPercent = 50f, gpuMs = 9f),
+        ).map { buildCollapsedLine(it).text }
+        assertEquals(1, attention.map { it.length }.distinct().size, attention.toString())
+        assertTrue(attention.all { it.length > COLLAPSED_WIDEST_READING.length }, attention.toString())
+    }
+
     private fun metrics(
+        fps: Int = 0,
         jankPercent: Float = 0f,
         layoutMs: Float = 0f,
         swapMs: Float = 0f,
@@ -205,7 +220,7 @@ class PanelLinesTest {
             swapBuffers = MetricValue(current = swapMs, average = swapMs),
             gpu = gpuMs?.let { MetricValue(current = it, average = it) },
         ),
-        window = FrameWindowStats(jankPercent = jankPercent),
+        window = FrameWindowStats(fps = fps, jankPercent = jankPercent),
         session = IntervalStats.EMPTY.copy(droppedReports = droppedReports),
     )
 

@@ -26,6 +26,9 @@ Nothing designed yet. Whether these happen depends on feedback.
   everything just looks slow. Needs a stable Compose API, and `ObservableComposition` is still
   experimental. Would be an opt-in `framehud-compose` module
 - Wear OS and TV
+- A `kotlin("jvm")` core, so the compiler keeps `framehud-api` free of `android.*` where
+  `checkModelDependencies` does it today. It publishes one more artifact to everyone depending on
+  FrameHUD, and nothing outside this repository wants a platform-free core yet
 
 ## Not planned
 

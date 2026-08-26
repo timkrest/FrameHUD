@@ -32,7 +32,7 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.13.1")
+    debugImplementation("com.timkrest:framehud:0.14.0")
 }
 ```
 
@@ -76,7 +76,9 @@ thr 38 ▲44 · fd 210 ▲260
 
 Шапка показывает частоту тиков Choreographer на main thread, бюджет кадра и FPS. Вердикт под ней
 называет строку, на которую стоит смотреть, а `◀` её помечает. Нажатие на шапку переключает панель
-на [худшие экраны](#история-экранов) и обратно, а удержание замораживает показания.
+на [худшие экраны](#история-экранов) и обратно, а удержание замораживает показания. Панель можно
+перетаскивать. Пока её держат, её окно занимает экран, поэтому второй палец попадёт в панель, а не
+в приложение под ней.
 
 Колонки читаются как `now avg peak`: текущий кадр, среднее по окну и пик с последнего сброса.
 Строки, собранные из других строк, заканчиваются на `avg`.
@@ -92,7 +94,7 @@ thr 38 ▲44 · fd 210 ▲260
 `FrameHud` вне `src/debug`: релизной сборке всё равно надо скомпилировать эти строки.
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.13.1")
+releaseImplementation("com.timkrest:framehud-noop:0.14.0")
 ```
 
 Он повторяет API с пустыми телами: вызовы компилируются, ничего не измеряется, окно не добавляется.
@@ -104,7 +106,7 @@ releaseImplementation("com.timkrest:framehud-noop:0.13.1")
 объединённый манифест.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.13.1")
+qaImplementation("com.timkrest:framehud-metrics:0.14.0")
 ```
 
 `FrameHud` — тот же объект, так что код вокруг остаётся прежним. `enabled` включает только сбор, а
@@ -619,7 +621,7 @@ adb shell -T "run-as <package> sh -c 'cat > files/framehud/baseline.json'" < bas
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.13.1")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.14.0")
 ```
 
 ```kotlin
@@ -656,6 +658,17 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.13.1")
 
 Чтобы отключить проверку, пометьте тест или класс `@SkipJankDetection` либо вызовите
 `JankAssertions.assertNoJank("scroll")` в нужный момент сами.
+
+Гейт сбрасывает сборщик, а `FrameHudResetRule` вдобавок очищает то, что живёт дольше теста: экран,
+метку, контекст и подменённый baseline. Иначе набор тестов, который что-то из этого выставил, начнёт
+следующий тест с прежними значениями. Правило пишет main-thread свойства на main thread, из какого
+бы потока ни шёл тест.
+
+```kotlin
+@get:Rule val resetFrameHud = FrameHudResetRule()
+```
+
+Правило, открывающее метку, должно быть внутри этого: закрытие метки доходит до слушателей событий.
 
 ## Разрешение на оверлей
 

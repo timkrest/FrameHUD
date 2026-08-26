@@ -1,13 +1,12 @@
 package com.timkrest.framehud.internal
 
-import android.os.SystemClock
 import android.view.Choreographer
 import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.roundToInt
 
-internal class ChoreographerTickMonitor {
+internal class ChoreographerTickMonitor(private val clock: MetricsClock) {
 
     private val readings = FreezableReading(0)
 
@@ -28,13 +27,13 @@ internal class ChoreographerTickMonitor {
     @MainThread
     fun start() {
         if (activeCallback != null) return
-        lastTickUptimeMs = SystemClock.uptimeMillis()
+        lastTickUptimeMs = clock.uptimeMs()
         windowStartNs = null
         tickCount = 0
         val callback = object : Choreographer.FrameCallback {
             override fun doFrame(frameTimeNanos: Long) {
                 if (activeCallback !== this) return
-                lastTickUptimeMs = SystemClock.uptimeMillis()
+                lastTickUptimeMs = clock.uptimeMs()
                 onTick(frameTimeNanos)
                 Choreographer.getInstance().postFrameCallback(this)
             }

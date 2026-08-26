@@ -6,13 +6,21 @@ import android.view.FrameMetrics
 import com.timkrest.framehud.FramePhase
 
 internal fun FrameMetrics.readPhaseDurationsMs(into: FloatArray) {
-    for (phase in FramePhase.entries) {
-        into[phase.ordinal] = if (Build.VERSION.SDK_INT >= phase.minSdk()) {
-            (getMetric(phase.metricId()) / NS_PER_MS).coerceAtLeast(0f)
-        } else {
+    for (ordinal in PHASE_METRIC_IDS.indices) {
+        val metricId = PHASE_METRIC_IDS[ordinal]
+        into[ordinal] = if (metricId == METRIC_BELOW_MIN_SDK) {
             0f
+        } else {
+            (getMetric(metricId) / NS_PER_MS).coerceAtLeast(0f)
         }
     }
+}
+
+private const val METRIC_BELOW_MIN_SDK = -1
+
+private val PHASE_METRIC_IDS = IntArray(FramePhase.entries.size) { ordinal ->
+    val phase = FramePhase.entries[ordinal]
+    if (Build.VERSION.SDK_INT >= phase.minSdk()) phase.metricId() else METRIC_BELOW_MIN_SDK
 }
 
 @SuppressLint("InlinedApi")

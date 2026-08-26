@@ -5,15 +5,30 @@ import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.os.Build
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.annotation.MainThread
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.timkrest.framehud.ui.PanelDrag
 import kotlin.math.roundToInt
 
 internal data class PanelPosition(val x: Int, val y: Int)
@@ -29,7 +44,7 @@ internal class PanelWindow(
     private val context: Context,
     val mode: PanelWindowMode,
     startPosition: PanelPosition?,
-    content: @Composable (onDrag: (dx: Float, dy: Float) -> Unit) -> Unit,
+    content: @Composable (drag: PanelDrag) -> Unit,
 ) {
 
     private val windowManager = requireNotNull(context.getSystemService(WindowManager::class.java))
@@ -42,20 +57,39 @@ internal class PanelWindow(
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
         PixelFormat.TRANSLUCENT,
     ).apply {
-        val displayMetrics = context.resources.displayMetrics
-        val minVisiblePx = (MIN_VISIBLE_DP * displayMetrics.density).roundToInt()
-        val start = startPosition ?: defaultPosition(displayMetrics.density)
+        val density = context.resources.displayMetrics.density
+        val minVisiblePx = (MIN_VISIBLE_DP * density).roundToInt()
+        val host = hostSize()
+        val start = startPosition ?: defaultPosition(density)
         gravity = Gravity.TOP or Gravity.END
-        x = start.x.clampedIntoHost(displayMetrics.widthPixels, minVisiblePx)
-        y = start.y.clampedIntoHost(displayMetrics.heightPixels, minVisiblePx)
+        x = start.x.clampedIntoHost(host.width, minVisiblePx)
+        y = start.y.clampedIntoHost(host.height, minVisiblePx)
         title = LOG_TAG
     }
 
-    private var preciseX = layoutParams.x.toFloat()
-    private var preciseY = layoutParams.y.toFloat()
+    private var fromEnd by mutableFloatStateOf(layoutParams.x.toFloat())
+    private var fromTop by mutableFloatStateOf(layoutParams.y.toFloat())
+
+    private var track by mutableStateOf<PanelDragTrack?>(null)
+
+    private val isDragging: Boolean get() = track != null
+
+    private var panelSize = IntSize.Zero
+
+    private val drag = object : PanelDrag {
+        override fun grab(screen: Offset) = startDragging(grabbedAt = screen)
+
+        override fun moveTo(screen: Offset) {
+            val track = track ?: return
+            fromEnd = track.fromEndAt(screen.x, panelSize)
+            fromTop = track.fromTopAt(screen.y, panelSize)
+        }
+
+        override fun release() = settle()
+    }
 
     private val configurationCallbacks = object : ComponentCallbacks {
-        override fun onConfigurationChanged(newConfig: Configuration) = clampIntoDisplay()
+        override fun onConfigurationChanged(newConfig: Configuration) = settle()
 
         @Suppress("OVERRIDE_DEPRECATION")
         override fun onLowMemory() = Unit
@@ -64,10 +98,25 @@ internal class PanelWindow(
     private val view = ComposeView(context).apply {
         setViewTreeLifecycleOwner(lifecycleOwner)
         setViewTreeSavedStateRegistryOwner(lifecycleOwner)
-        setContent { content(::moveBy) }
+        setContent {
+            Box(modifier = if (isDragging) Modifier.fillMaxSize() else Modifier) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .onSizeChanged { panelSize = it }
+                        .graphicsLayer {
+                            translationX = if (isDragging) -fromEnd else 0f
+                            translationY = if (isDragging) fromTop else 0f
+                        },
+                ) {
+                    content(drag)
+                }
+            }
+        }
     }
 
-    val position: PanelPosition get() = PanelPosition(x = layoutParams.x, y = layoutParams.y)
+    val position: PanelPosition
+        get() = PanelPosition(x = fromEnd.roundToInt(), y = fromTop.roundToInt())
 
     fun show(): Boolean {
         lifecycleOwner.start()
@@ -78,6 +127,7 @@ internal class PanelWindow(
     }
 
     fun setVisible(visible: Boolean) {
+        if (!visible && isDragging) settle()
         view.visibility = if (visible) View.VISIBLE else View.GONE
         lifecycleOwner.setVisible(visible)
     }
@@ -90,17 +140,44 @@ internal class PanelWindow(
         lifecycleOwner.stop()
     }
 
-    private fun moveBy(dx: Float, dy: Float) = moveTo(preciseX - dx, preciseY + dy)
+    private fun startDragging(grabbedAt: Offset) {
+        track = PanelDragTrack(
+            host = hostSize(),
+            grabbedAt = grabbedAt,
+            grabbedFromEnd = fromEnd,
+            grabbedFromTop = fromTop,
+        )
+        layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+        layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+        layoutParams.x = 0
+        layoutParams.y = 0
+        guarded("expanding the panel window") { windowManager.updateViewLayout(view, layoutParams) }
+    }
 
-    private fun clampIntoDisplay() = moveTo(preciseX, preciseY)
-
-    private fun moveTo(x: Float, y: Float) {
-        val displayMetrics = context.resources.displayMetrics
-        preciseX = x.coerceIn(0f, travelRange(displayMetrics.widthPixels, view.width))
-        preciseY = y.coerceIn(0f, travelRange(displayMetrics.heightPixels, view.height))
-        layoutParams.x = preciseX.roundToInt()
-        layoutParams.y = preciseY.roundToInt()
+    private fun settle() {
+        val host = hostSize()
+        val panel = panelSize
+        track = null
+        fromEnd = fromEnd.insideHost(host.width, panel.width)
+        fromTop = fromTop.insideHost(host.height, panel.height)
+        layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT
+        layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        layoutParams.x = fromEnd.roundToInt()
+        layoutParams.y = fromTop.roundToInt()
         guarded("moving the panel window") { windowManager.updateViewLayout(view, layoutParams) }
+    }
+
+    private fun hostSize(): IntSize {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val metrics = windowManager.currentWindowMetrics
+            val bars = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+            return IntSize(
+                width = metrics.bounds.width() - bars.left - bars.right,
+                height = metrics.bounds.height() - bars.top - bars.bottom,
+            )
+        }
+        val displayMetrics = context.resources.displayMetrics
+        return IntSize(width = displayMetrics.widthPixels, height = displayMetrics.heightPixels)
     }
 
     private companion object {
@@ -115,7 +192,5 @@ internal class PanelWindow(
 
         fun Int.clampedIntoHost(hostSize: Int, minVisiblePx: Int): Int =
             if (hostSize > 0) coerceIn(0, (hostSize - minVisiblePx).coerceAtLeast(0)) else this
-
-        fun travelRange(hostSize: Int, panelSize: Int): Float = (hostSize - panelSize).coerceAtLeast(0).toFloat()
     }
 }

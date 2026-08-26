@@ -46,7 +46,7 @@ class FrameAggregatorTest {
 
     @Test
     fun `a display reporting no refresh rate falls back to the configured one`() {
-        aggregator.addFrame(totalMs = 10f, refreshRateHz = null)
+        aggregator.addFrame(totalMs = 10f, refreshRateHz = UNKNOWN_REFRESH_RATE_HZ)
 
         assertEquals(60f, aggregator.metrics.value.display.refreshRateHz, TOLERANCE)
     }
@@ -533,7 +533,7 @@ class FrameAggregatorTest {
     @Test
     fun `the budget key follows the deadline that judged the frames, not the reported rate`() {
         aggregator.startCollecting("Home")
-        aggregator.addFrame(totalMs = 5f, deadlineNs = DEADLINE_60HZ_NS / 2, refreshRateHz = null)
+        aggregator.addFrame(totalMs = 5f, deadlineNs = DEADLINE_60HZ_NS / 2, refreshRateHz = UNKNOWN_REFRESH_RATE_HZ)
 
         assertEquals(8, aggregator.intervals().first { it.id == IntervalId.Session }.frameBudgetMs)
     }
@@ -718,9 +718,9 @@ class FrameAggregatorTest {
     private fun FrameAggregator.addFrame(
         totalMs: Float,
         screen: String? = screenName,
-        deadlineNs: Long? = null,
+        deadlineNs: Long = NO_DEADLINE_NS,
         totalDurationNs: Long = (totalMs * NS_PER_MS).toLong(),
-        refreshRateHz: Float? = 60f,
+        refreshRateHz: Float = 60f,
     ) {
         addFrame(
             screen = screen,

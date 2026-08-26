@@ -6,6 +6,47 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-27
+
+### Added
+
+- `FrameHudResetRule`, a JUnit rule in `framehud-instrumentation` that returns `FrameHud` to its
+  unmeasured state before and after each test. `FrameHud.reset()` clears the metrics but keeps the
+  screen, mark, context and baseline override a test set, and those outlive the test that set them,
+  so a suite had to clear them by hand, on the main thread, in every class that touched them.
+
+### Changed
+
+- `framehud-api` no longer exports the Compose BOM. It pinned a version of every Compose artifact
+  for anyone depending on FrameHUD, release builds on `framehud-noop` included, while being there
+  for one annotations-only artifact. That artifact now carries a version of its own, and an app
+  resolves Compose the way it did before FrameHUD was added.
+- Collecting a frame allocates less. The deadline and the refresh rate reached the aggregator boxed,
+  a `DisplayInfo` was built for every frame including frames from windows that are not measured,
+  walking the frame phases allocated an iterator up to six times a frame, and on a display faster
+  than 120 Hz every frame boxed its refresh rate again for each interval it counted towards. The
+  numbers the collection reports are unchanged.
+- The metrics thread runs at background priority, as the polling threads already did. It handles the
+  per-frame callback, so under CPU pressure, which is when jank happens, it yields to the app's
+  threads instead of competing with them.
+- Thermal status and battery are read once a second rather than on every metrics tick. Both are
+  Binder calls into `system_server` for values that change far more slowly than a tick.
+- The main thread watchdog takes stacks further apart the longer a block lasts, from 100 ms up to
+  800 ms. Every stack suspends the main thread at a safepoint, so a two-second block used to pay for
+  around seventeen suspensions on top of the block itself. A block is identified by the frame drawn
+  before it, so a thread that drew and stalled again between two stacks starts a new block instead
+  of extending the one before it.
+- Dragging the panel lays its window out twice per gesture instead of once per frame. Every move
+  went through `WindowManager.updateViewLayout`, which relayouts the window and redraws the panel on
+  the main thread of the app being measured. The window covers the screen while you drag, so a
+  second finger lands on the panel and not on the app under it.
+- The panel follows the finger by where it is on screen, not by offsets measured inside a window
+  that was moving under it. It stops at the edge of the area that window is laid out in, which the
+  system bars keep short of the edge of the display.
+- The collapsed panel keeps one width while its readings change. The numbers and the phase it names
+  used to grow and shrink the line, and every change laid the window out again and moved the panel's
+  left edge.
+
 ## [0.13.1] - 2026-08-22
 
 ### Changed
@@ -533,7 +574,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.14.0
 [0.13.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.1
 [0.13.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.0
 [0.12.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.12.0

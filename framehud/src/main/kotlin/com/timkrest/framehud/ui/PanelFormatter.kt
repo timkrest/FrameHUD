@@ -80,7 +80,7 @@ private fun truncated(text: String, width: Int): String =
 internal fun formatTiming(choreographerTicksPerSecond: Int, frameBudgetMs: Float): String =
     formatInvariant("ui %d/s · %.1fms", choreographerTicksPerSecond, frameBudgetMs)
 
-internal fun formatJankShort(jankPercent: Float): String = formatInvariant("jank %.1f%%", jankPercent)
+internal fun formatJankShort(jankPercent: Float): String = formatInvariant("jank %5.1f%%", jankPercent)
 
 internal fun formatWindowSummary(window: FrameWindowStats): String = formatInvariant(
     "$LABEL_WINDOW  jank %4.1f%%  p95 %5.1f  max %5.1f",
@@ -154,7 +154,7 @@ internal fun formatVerdict(verdict: PanelVerdict): String = when (verdict) {
     is PanelVerdict.Attention -> formatInvariant("⚠ %s %.1f ms", verdict.phaseLabel, verdict.phaseAvgMs)
 }
 
-internal fun formatVerdictShort(verdict: PanelVerdict.Attention): String = formatInvariant("⚠%s", verdict.phaseLabel)
+internal fun formatVerdictShort(phaseLabel: String): String = formatInvariant("⚠%s", phaseLabel)
 
 internal fun pipeLabel(stage: PipelineStage): String = when (stage) {
     PipelineStage.CPU -> LABEL_PIPE_CPU

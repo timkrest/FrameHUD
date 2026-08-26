@@ -13,7 +13,8 @@ internal class CounterRegistry {
 
     private val lock = Any()
 
-    private val byName = LinkedHashMap<String, RegisteredCounter>()
+    @Volatile
+    private var byName = emptyMap<String, RegisteredCounter>()
 
     @Volatile
     private var registered = emptyList<RegisteredCounter>()
@@ -28,6 +29,7 @@ internal class CounterRegistry {
 
     fun counter(name: String): FrameHudCounter {
         requireNameStandsApart("A counter name", name)
+        byName[name]?.let { return it }
         synchronized(lock) {
             byName[name]?.let { return it }
             if (byName.size >= MAX_COUNTERS) {
@@ -38,7 +40,7 @@ internal class CounterRegistry {
                 return DiscardedCounter
             }
             return RegisteredCounter(name).also {
-                byName[name] = it
+                byName = byName + (name to it)
                 registered = byName.values.toList()
             }
         }

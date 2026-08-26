@@ -11,14 +11,22 @@ import kotlin.math.roundToInt
 @WorkerThread
 internal class ConfidenceTracker(private val isEmulator: Boolean) {
 
-    private val refreshRatesHz = mutableSetOf<Int>()
+    private var refreshRatesHz = IntArray(REFRESH_RATES_BEFORE_GROWING)
+    private var refreshRatesSeen = 0
     private var worstThrottlingLevel: ThermalLevel? = null
     private var longestListenerCallMs: Float? = null
     private var sawPowerSaveMode = false
     private var lowestBatteryPercent: Int? = null
 
     fun addRefreshRate(refreshRateHz: Float) {
-        refreshRatesHz += refreshRateHz.roundToInt()
+        val rateHz = refreshRateHz.roundToInt()
+        for (index in 0 until refreshRatesSeen) {
+            if (refreshRatesHz[index] == rateHz) return
+        }
+        if (refreshRatesSeen == refreshRatesHz.size) {
+            refreshRatesHz = refreshRatesHz.copyOf(refreshRatesSeen * 2)
+        }
+        refreshRatesHz[refreshRatesSeen++] = rateHz
     }
 
     fun addThermalLevel(level: ThermalLevel) {
@@ -46,14 +54,16 @@ internal class ConfidenceTracker(private val isEmulator: Boolean) {
             if (sawPowerSaveMode || (lowest != null && lowest <= SYSTEM_LOW_BATTERY_WARNING_PERCENT)) {
                 add(ConfidenceIssue.LowBattery(powerSaveMode = sawPowerSaveMode, levelPercent = lowest))
             }
-            if (refreshRatesHz.size > 1) add(ConfidenceIssue.RefreshRateChanged(refreshRatesHz.toSet()))
+            if (refreshRatesSeen > 1) add(ConfidenceIssue.RefreshRateChanged(refreshRatesSeenHz()))
             if (isEmulator) add(ConfidenceIssue.Emulator)
             if (frames < ConfidenceIssue.ShortSample.MIN_FRAMES_P99) add(ConfidenceIssue.ShortSample(frames))
         },
     )
 
+    private fun refreshRatesSeenHz(): Set<Int> = refreshRatesHz.copyOf(refreshRatesSeen).toSet()
+
     fun clear() {
-        refreshRatesHz.clear()
+        refreshRatesSeen = 0
         worstThrottlingLevel = null
         longestListenerCallMs = null
         sawPowerSaveMode = false
@@ -62,3 +72,5 @@ internal class ConfidenceTracker(private val isEmulator: Boolean) {
 }
 
 private const val SYSTEM_LOW_BATTERY_WARNING_PERCENT = 15
+
+private const val REFRESH_RATES_BEFORE_GROWING = 4

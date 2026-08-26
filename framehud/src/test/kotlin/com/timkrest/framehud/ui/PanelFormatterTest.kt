@@ -100,7 +100,7 @@ class PanelFormatterTest {
                 "ui 60/s · 16.7ms",
                 formatTiming(choreographerTicksPerSecond = 60, frameBudgetMs = 16.7f),
             )
-            assertEquals("jank 7.5%", formatJankShort(7.5f))
+            assertEquals("jank   7.5%", formatJankShort(7.5f))
             val row = formatMetricLine(label = "draw", value = MetricValue(current = 1.5f, average = 2.5f))
             assertFalse(row.contains(','), row)
         }

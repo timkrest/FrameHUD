@@ -2,6 +2,7 @@ package com.timkrest.framehud.internal
 
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Process
 import android.util.Log
 import android.view.Window
 import androidx.annotation.AnyThread
@@ -16,7 +17,7 @@ internal class MetricsSampler(
     previousSampler: MetricsSampler? = null,
 ) {
 
-    private val thread = HandlerThread(threadName).apply { start() }
+    private val thread = HandlerThread(threadName, Process.THREAD_PRIORITY_BACKGROUND).apply { start() }
     private val handler = Handler(thread.looper)
 
     private var tickGeneration = 0

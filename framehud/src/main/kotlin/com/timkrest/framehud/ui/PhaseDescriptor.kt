@@ -41,3 +41,5 @@ private val UNSTAGED_PHASES = listOf(
 private val ALL_PHASES = CPU_PHASES + RENDER_PHASES + GPU_PHASES + UNSTAGED_PHASES
 
 private val APP_OWNED_PHASES = CPU_PHASES + UNSTAGED_PHASES
+
+internal val LONGEST_PHASE_LABEL: String = ALL_PHASES.maxBy { it.label.length }.label

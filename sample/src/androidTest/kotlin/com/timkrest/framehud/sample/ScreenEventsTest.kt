@@ -8,11 +8,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
-import org.junit.After
+import com.timkrest.framehud.instrumentation.FrameHudResetRule
 import org.junit.Assume.assumeTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
@@ -27,21 +27,9 @@ class ScreenEventsTest {
     private val listener = FrameHudEventListener { events += it }
 
     @get:Rule
-    val config = FrameHudConfigRule { it.copy(eventListeners = it.eventListeners + listener) }
-
-    @Before
-    fun resetCollector() {
-        clearScreenNameAndContext()
-        FrameHud.reset()
-    }
-
-    @After
-    fun clearScreenNameAndContext() {
-        runOnMain {
-            FrameHud.screen = null
-            FrameHud.context = emptyMap()
-        }
-    }
+    val rules: RuleChain = RuleChain
+        .outerRule(FrameHudResetRule())
+        .around(FrameHudConfigRule { it.copy(eventListeners = it.eventListeners + listener) })
 
     @Test
     fun framesAreCollectedWhileAnActivityIsResumed() {

@@ -46,7 +46,10 @@ internal class FrameAggregator(
     val screenName: String? get() = accumulators.screenName
 
     private var lastUpdateTime = 0L
-    private var display = displayOf(config.fallbackRefreshRateHz)
+    private var display = DisplayInfo(
+        refreshRateHz = config.fallbackRefreshRateHz,
+        frameBudgetMs = frameBudgetMs(NO_DEADLINE_NS, config.fallbackRefreshRateHz),
+    )
     private var isDrainingToIdle = false
 
     private var hasReportedGpuDuration = false
@@ -55,24 +58,26 @@ internal class FrameAggregator(
         screen: String?,
         durationsMs: FloatArray,
         totalDurationNs: Long,
-        deadlineNs: Long?,
+        deadlineNs: Long,
         frameEndNs: Long,
-        refreshRateHz: Float?,
+        refreshRateHz: Float,
     ) {
-        val frameDisplay = displayOf(refreshRateHz ?: config.fallbackRefreshRateHz, deadlineNs)
+        val frameRefreshRateHz =
+            if (refreshRateHz > UNKNOWN_REFRESH_RATE_HZ) refreshRateHz else config.fallbackRefreshRateHz
+        val frameBudgetMs = frameBudgetMs(deadlineNs, frameRefreshRateHz)
         val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
-        val overrunMs = frameOverrunMs(totalDurationNs, deadlineNs, totalMs, frameDisplay)
+        val overrunMs = frameOverrunMs(totalDurationNs, deadlineNs, totalMs, frameBudgetMs)
 
         accumulators.addFrame(
             fromScreen = screen,
             durationsMs = durationsMs,
             overrunMs = overrunMs,
-            refreshRateHz = frameDisplay.refreshRateHz,
-            frameBudgetMs = frameDisplay.frameBudgetMs,
+            refreshRateHz = frameRefreshRateHz,
+            frameBudgetMs = frameBudgetMs,
         )
         if (!isMeasuredScreen(screen)) return
 
-        display = frameDisplay
+        display = displayShowing(refreshRateHz = frameRefreshRateHz, frameBudgetMs = frameBudgetMs)
         val judgedOverrunMs =
             overrunAgainst(accumulators.activeBudgetMs, totalMs = totalMs, displayOverrunMs = overrunMs)
         hasReportedGpuDuration = hasReportedGpuDuration || durationsMs[FramePhase.GPU.ordinal] > 0f
@@ -81,7 +86,7 @@ internal class FrameAggregator(
         incidents.addFrame(
             durationsMs = durationsMs,
             overrunMs = judgedOverrunMs,
-            refreshRateHz = frameDisplay.refreshRateHz,
+            refreshRateHz = frameRefreshRateHz,
             frameBudgetMs = budgetInForceMs(),
             endNs = frameEndNs,
         )
@@ -211,14 +216,18 @@ internal class FrameAggregator(
 
     private fun frameOverrunMs(
         totalDurationNs: Long,
-        deadlineNs: Long?,
+        deadlineNs: Long,
         totalDurationMs: Float,
-        frameDisplay: DisplayInfo,
-    ): Float = if (deadlineNs != null) {
+        frameBudgetMs: Float,
+    ): Float = if (deadlineNs > NO_DEADLINE_NS) {
         (totalDurationNs - deadlineNs) / NS_PER_MS
     } else {
-        totalDurationMs - frameDisplay.frameBudgetMs
+        totalDurationMs - frameBudgetMs
     }
+
+    private fun displayShowing(refreshRateHz: Float, frameBudgetMs: Float): DisplayInfo =
+        display.takeIf { it.refreshRateHz == refreshRateHz && it.frameBudgetMs == frameBudgetMs }
+            ?: DisplayInfo(refreshRateHz = refreshRateHz, frameBudgetMs = frameBudgetMs)
 }
 
 private const val WORST_FRAME_CAPACITY = 10
@@ -230,8 +239,3 @@ private const val INCIDENT_FRAMES_AFTER_TRIGGER = 30
 private const val KEPT_INCIDENTS = 20
 
 private fun FrameHistory.latestBudgetMs(): Float? = if (size == 0) null else deadlineMsAt(size - 1)
-
-private fun displayOf(refreshRateHz: Float, deadlineNs: Long? = null) = DisplayInfo(
-    refreshRateHz = refreshRateHz,
-    frameBudgetMs = if (deadlineNs != null) deadlineNs / NS_PER_MS else MS_PER_SECOND / refreshRateHz,
-)

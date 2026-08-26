@@ -1,11 +1,13 @@
 package com.timkrest.framehud.sample
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -60,7 +62,9 @@ fun SampleApp(onOpenRow: (Int) -> Unit) {
 private fun SampleTabs(destination: SampleDestination, onSelect: (SampleDestination) -> Unit) {
     PrimaryTabRow(
         selectedTabIndex = destination.ordinal,
-        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surface)
+            .windowInsetsPadding(WindowInsets.statusBars),
     ) {
         SampleDestination.entries.forEach { entry ->
             Tab(

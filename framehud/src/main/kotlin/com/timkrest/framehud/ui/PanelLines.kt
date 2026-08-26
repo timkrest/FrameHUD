@@ -123,7 +123,7 @@ internal fun buildCollapsedLine(
 ): AnnotatedString = buildAnnotatedString {
     val window = metrics.window
     appendColored(
-        text = formatFps(window.fps),
+        text = formatFps(window.fps).padStart(FPS_FIELD_WIDTH),
         color = fpsColor(fps = window.fps, refreshRateHz = metrics.display.refreshRateHz),
     )
     append(COLLAPSED_SEPARATOR)
@@ -131,9 +131,23 @@ internal fun buildCollapsedLine(
     val verdict = panelVerdict(phases = metrics.phases, jankPercent = window.jankPercent, isEmulator = isEmulator)
     if (verdict is PanelVerdict.Attention) {
         append(COLLAPSED_SEPARATOR)
-        appendColored(text = formatVerdictShort(verdict), color = verdictColor(verdict))
+        appendColored(
+            text = formatVerdictShort(verdict.phaseLabel).padStart(VERDICT_FIELD_WIDTH),
+            color = verdictColor(verdict),
+        )
     }
 }
+
+private const val WIDEST_FPS_READING = 999
+
+private const val ALL_FRAMES_JANKY = 100f
+
+private val FPS_FIELD_WIDTH = formatFps(WIDEST_FPS_READING).length
+
+private val VERDICT_FIELD_WIDTH = formatVerdictShort(LONGEST_PHASE_LABEL).length
+
+internal val COLLAPSED_WIDEST_READING: String =
+    formatFps(WIDEST_FPS_READING) + COLLAPSED_SEPARATOR + formatJankShort(ALL_FRAMES_JANKY)
 
 internal fun PanelLines.toAnnotatedString(): AnnotatedString = buildAnnotatedString {
     values.forEachIndexed { index, line ->

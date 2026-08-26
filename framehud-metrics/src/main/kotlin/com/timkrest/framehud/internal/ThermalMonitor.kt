@@ -3,7 +3,6 @@ package com.timkrest.framehud.internal
 import android.content.Context
 import android.os.Build
 import android.os.PowerManager
-import android.os.SystemClock
 import androidx.annotation.AnyThread
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.WorkerThread
@@ -12,7 +11,7 @@ import com.timkrest.framehud.ThermalStats
 import kotlinx.coroutines.flow.StateFlow
 
 @WorkerThread
-internal class ThermalMonitor {
+internal class ThermalMonitor(clock: MetricsClock) {
 
     private val readings = FreezableReading(ThermalStats.EMPTY)
 
@@ -29,7 +28,9 @@ internal class ThermalMonitor {
 
     private var powerManager: PowerManager? = null
 
-    private var lastSampleMs: Long? = null
+    private val sampleLimit = RateLimit(clock, MIN_SAMPLE_INTERVAL_MS)
+
+    private val headroomLimit = RateLimit(clock, MIN_HEADROOM_INTERVAL_MS)
 
     fun bind(context: Context) {
         if (!hasThermalStatus) return
@@ -38,7 +39,8 @@ internal class ThermalMonitor {
 
     fun unbind() {
         powerManager = null
-        lastSampleMs = null
+        sampleLimit.clear()
+        headroomLimit.clear()
         readings.reset(ThermalStats.EMPTY)
     }
 
@@ -50,14 +52,8 @@ internal class ThermalMonitor {
     fun sample() {
         if (!hasThermalStatus) return
         val manager = powerManager ?: return
-        val now = SystemClock.elapsedRealtime()
-        val previousMs = lastSampleMs
-        val headroom = if (previousMs == null || now - previousMs >= MIN_HEADROOM_INTERVAL_MS) {
-            lastSampleMs = now
-            readHeadroom(manager)
-        } else {
-            readings.live.headroom
-        }
+        if (!sampleLimit.tryTake()) return
+        val headroom = if (headroomLimit.tryTake()) readHeadroom(manager) else readings.live.headroom
 
         readings.update(
             ThermalStats(
@@ -84,6 +80,8 @@ internal class ThermalMonitor {
     }
 
     private companion object {
+        const val MIN_SAMPLE_INTERVAL_MS = 1_000L
+
         const val PLATFORM_HEADROOM_RATE_LIMIT_MS = 1_000L
 
         const val MIN_HEADROOM_INTERVAL_MS = 2 * PLATFORM_HEADROOM_RATE_LIMIT_MS

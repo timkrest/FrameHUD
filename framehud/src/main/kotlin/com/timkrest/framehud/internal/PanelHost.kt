@@ -15,6 +15,7 @@ import com.timkrest.framehud.FrameHudPanel
 import com.timkrest.framehud.OverlayMode
 import com.timkrest.framehud.ui.Panel
 import com.timkrest.framehud.ui.PanelActions
+import com.timkrest.framehud.ui.PanelDrag
 import com.timkrest.framehud.ui.PanelState
 import com.timkrest.framehud.ui.PanelView
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,10 +103,10 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
 
     private fun createWindow(context: Context, mode: PanelWindowMode): PanelWindow {
         val canRequest = mode == PanelWindowMode.APP && canRequestOverlayPermission
-        return PanelWindow(context = context, mode = mode, startPosition = lastPosition) { onDrag ->
+        return PanelWindow(context = context, mode = mode, startPosition = lastPosition) { drag ->
             Panel(
                 state = remember(canRequest) { panelState(canRequest) },
-                actions = remember(onDrag) { panelActions(onDrag) },
+                actions = remember(drag) { panelActions(drag) },
             )
         }
     }
@@ -126,12 +127,12 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
         isEmulator = isEmulatorDevice,
     )
 
-    private fun panelActions(onDrag: (dx: Float, dy: Float) -> Unit) = PanelActions(
+    private fun panelActions(drag: PanelDrag) = PanelActions(
         toggleCollapsed = { isCollapsed.value = !isCollapsed.value },
         toggleView = { view.value = view.value.next() },
         toggleFrozen = FrameHud::toggleFreeze,
         reset = FrameHud::reset,
-        drag = onDrag,
+        drag = drag,
         requestOverlayPermission = { FrameHud.focusedActivity?.let(::openOverlayPermissionSettings) },
     )
 

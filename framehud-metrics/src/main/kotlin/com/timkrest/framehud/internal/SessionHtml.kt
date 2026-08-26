@@ -308,6 +308,7 @@ private fun frameChart(history: FrameHistory, label: String, framesBeforeTrigger
         append("aria-label=\"").append(escapeHtml(label)).append("\">\n")
         val step = CHART_WIDTH / history.size
         val barWidth = step * CHART_BAR_SHARE
+        val barWidthText = formatFloat(barWidth)
         for (index in 0 until history.size) {
             val totalMs = history.totalMsAt(index)
             val deadlineMs = history.deadlineMsAt(index)
@@ -315,7 +316,7 @@ private fun frameChart(history: FrameHistory, label: String, framesBeforeTrigger
             val cssClass = if (totalMs > deadlineMs) "janky" else "ok"
             append("<rect class=\"").append(cssClass).append("\" x=\"").append(formatFloat(step * index))
             append("\" y=\"").append(formatFloat(CHART_HEIGHT - height))
-            append("\" width=\"").append(formatFloat(barWidth))
+            append("\" width=\"").append(barWidthText)
             append("\" height=\"").append(formatFloat(height)).append("\"/>\n")
 
             val deadlineY = CHART_HEIGHT * (1f - deadlineMs / scaleMs)

@@ -33,7 +33,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.13.1")
+    debugImplementation("com.timkrest:framehud:0.14.0")
 }
 ```
 
@@ -77,7 +77,9 @@ thr 38 ▲44 · fd 210 ▲260
 
 The header shows the main thread's Choreographer tick rate, the frame budget and FPS. The verdict
 under it names the row to look at, and `◀` marks that row. Tapping the header switches to
-[the worst screens](#screen-history) and back; holding it freezes the readings.
+[the worst screens](#screen-history) and back; holding it freezes the readings. The panel can be
+dragged. While you hold it, its window covers the screen, so a second finger lands on the panel and
+not on the app under it.
 
 Columns read `now avg peak`: the current frame, the average over the window, and the peak since the
 last reset. Rows summed from other rows stop after `avg`.
@@ -93,7 +95,7 @@ last reset. Rows summed from other rows stop after `avg`.
 you call `FrameHud` outside `src/debug`, because a release build still has to compile those lines:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.13.1")
+releaseImplementation("com.timkrest:framehud-noop:0.14.0")
 ```
 
 It mirrors the API with empty bodies: the calls compile, nothing is measured, no window is added.
@@ -105,12 +107,15 @@ collects the same numbers and sends the same events, but adds no window and no `
 to the merged manifest.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.13.1")
+qaImplementation("com.timkrest:framehud-metrics:0.14.0")
 ```
 
 `FrameHud` is the same object, so the code around it stays as it is. `enabled` switches collection
 alone and `overlayMode` is ignored. `framehud` is this artifact plus the panel, so a debug build
 needs nothing else.
+
+The panel reads nothing an app cannot. It is built on the `StateFlow`s and the events below, so a
+build that wants its own readout, in views or in its own telemetry, has everything it needs here.
 
 ## Configure
 
@@ -617,7 +622,7 @@ from `BaselineEntry.of` and `BaselineEnvironment.current()`.
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.13.1")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.14.0")
 ```
 
 ```kotlin
@@ -653,6 +658,17 @@ judged under different frame budgets.
 
 To opt out, annotate a test or class with `@SkipJankDetection`, or call
 `JankAssertions.assertNoJank("scroll")` at a point you choose.
+
+The gate resets the collector, and `FrameHudResetRule` clears what outlives a test on top of that:
+the screen, the mark, the context and the baseline override. A suite that sets any of them starts
+the next test with them still in force otherwise. The rule writes the main-thread properties on the
+main thread, whichever thread the test runs on.
+
+```kotlin
+@get:Rule val resetFrameHud = FrameHudResetRule()
+```
+
+A rule that opens a mark belongs inside this one, because ending a mark reaches event listeners.
 
 ## Overlay permission
 

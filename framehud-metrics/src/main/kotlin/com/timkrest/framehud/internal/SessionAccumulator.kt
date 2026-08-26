@@ -29,8 +29,8 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
         framesPerBudgetMs.getOrPut(frameBudgetMs.roundToInt()) { FrameCount() }.frames++
         val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
         totals.add(totalMs)
-        for (phase in FramePhase.entries) {
-            phaseSumsMs[phase.ordinal] += durationsMs[phase.ordinal]
+        for (ordinal in phaseSumsMs.indices) {
+            phaseSumsMs[ordinal] += durationsMs[ordinal]
         }
         if (durationsMs[FramePhase.GPU.ordinal] > 0f) hasReportedGpuDuration = true
         if (overrunMs > 0f) {

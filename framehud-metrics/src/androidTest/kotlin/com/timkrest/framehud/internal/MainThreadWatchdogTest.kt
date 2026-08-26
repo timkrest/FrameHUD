@@ -87,6 +87,18 @@ class MainThreadWatchdogTest {
     }
 
     @Test
+    fun aDrawTheWatchSleptThroughStillEndsTheBlockBeforeIt() {
+        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
+        watchdog.startWatching()
+        awaitStackTakenHere()
+        SystemClock.sleep(SAMPLING_BACKS_OFF_AFTER_MS)
+
+        lastTickMs.set(SystemClock.uptimeMillis() - SHORT_STALL_MS)
+
+        awaitBlockShorterThan(QUIET_FOR_MS)
+    }
+
+    @Test
     fun aWatchThatStartsAgainCarriesNothingOfTheStallItLeft() {
         lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
         watchdog.startWatching()
@@ -146,6 +158,16 @@ class MainThreadWatchdogTest {
         error("the watch took no stack of the thread it left quiet for $SHORT_STALL_MS ms")
     }
 
+    private fun awaitBlockShorterThan(limitMs: Long): MainThreadBlock {
+        val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
+        while (SystemClock.uptimeMillis() < deadlineMs) {
+            val latest = watchdog.latestBlock
+            if (latest != MainThreadBlock.NONE && latest.durationMs < limitMs) return latest
+            SystemClock.sleep(POLL_INTERVAL_MS)
+        }
+        error("the watch carried the stall before the draw into the $SHORT_STALL_MS ms one after it")
+    }
+
     private fun awaitStackTakenHere(): MainThreadBlock {
         val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
         while (SystemClock.uptimeMillis() < deadlineMs) {
@@ -163,6 +185,7 @@ class MainThreadWatchdogTest {
         const val POLL_INTERVAL_MS = 50L
         const val TICKS_TO_KEEP_DRAWING = 20
         const val TICKS_TO_DRAW_AGAIN = 8
+        const val SAMPLING_BACKS_OFF_AFTER_MS = 1_600L
         const val BLOCK_GOES_STALE_AFTER_MS = 2_100L
         const val SOONER_THAN_A_BLOCK_GOES_STALE_MS = 1_000L
         const val AWAIT_TIMEOUT_MS = 5_000L

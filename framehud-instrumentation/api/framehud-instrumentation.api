@@ -21,6 +21,10 @@ public final class com/timkrest/framehud/instrumentation/DetectJankAfterTestSucc
 	public fun apply (Lorg/junit/runners/model/Statement;Lorg/junit/runner/Description;)Lorg/junit/runners/model/Statement;
 }
 
+public final class com/timkrest/framehud/instrumentation/FrameHudResetRule : org/junit/rules/TestWatcher {
+	public fun <init> ()V
+}
+
 public final class com/timkrest/framehud/instrumentation/JankAssertions {
 	public static final field INSTANCE Lcom/timkrest/framehud/instrumentation/JankAssertions;
 	public static final fun assertNoJank (Ljava/lang/String;)V

@@ -45,16 +45,17 @@ internal class MetricsEngine(
         onFirstFrame = ::onFirstFrame,
         onUsableFrame = ::onUsableFrame,
     )
-    private val choreographerTickMonitor = ChoreographerTickMonitor()
+    private val choreographerTickMonitor = ChoreographerTickMonitor(clock)
     private val memoryMonitor = MemoryStatsMonitor()
-    private val thermalMonitor = ThermalMonitor()
-    private val batteryMonitor = BatteryMonitor()
+    private val thermalMonitor = ThermalMonitor(clock)
+    private val batteryMonitor = BatteryMonitor(clock)
     private val processMonitor = ProcessStatsMonitor(clock, PROCESS_SAMPLE_INTERVAL_MS)
     private val counterRegistry = CounterRegistry()
     private val flightRecorder = FlightRecorder(clock)
     private val mainThreadWatchdog = MainThreadWatchdog(
         mainThread = Looper.getMainLooper().thread,
         lastTickMs = choreographerTickMonitor::lastTickUptimeMs,
+        clock = clock,
     )
 
     private val measuredScreen = MeasuredScreen()

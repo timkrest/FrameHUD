@@ -26,6 +26,9 @@
   перекомпоновывает всё подряд, выглядит просто медленным. Нужен стабильный API Compose, а
   `ObservableComposition` пока experimental. Будет отдельным opt-in модулем `framehud-compose`
 - Wear OS и TV
+- Ядро на `kotlin("jvm")`, чтобы границу `framehud-api` без `android.*` держал компилятор, а не
+  `checkModelDependencies`. Это ещё один артефакт всем, кто зависит от FrameHUD, а
+  платформонезависимое ядро пока никому за пределами репозитория не нужно
 
 ## Не планируется
 
