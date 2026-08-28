@@ -7,9 +7,10 @@ rather than a public issue. Fixes land in the latest release; older ones are not
 ## What the panel can reach
 
 FrameHUD reads `FrameMetrics`, the heap counters of its own process and the thermal status of the
-device. It uploads nothing. It writes to disk only when asked: `exportSession` and `saveBaseline`
-put files under the app's own files directory, external when the device reports one and internal
-otherwise, and write nothing outside it.
+device. It uploads nothing. Everything it writes goes under the app's own files directory, external
+when the device reports one and internal otherwise, and nothing outside it: `exportSession` and
+`saveBaseline` write when you call them, and a `keptRuns` above zero adds the run to
+`framehud/history.json` whenever the app leaves the foreground.
 
 With `SYSTEM_ALERT_WINDOW` granted the panel draws in a system window, which sits above other apps.
 That window wraps its own content rather than the screen, never takes focus, and lets touches

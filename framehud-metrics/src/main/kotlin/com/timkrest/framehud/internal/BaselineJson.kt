@@ -2,7 +2,6 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.Baseline
 import com.timkrest.framehud.BaselineEntry
-import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.BaselineTrust
 import com.timkrest.framehud.BudgetCandidate
 import com.timkrest.framehud.IntervalId
@@ -43,16 +42,11 @@ internal fun Baseline.toJson(): String = buildJsonObject {
     }
 }
 
-internal sealed interface ParsedBaseline {
-    data class Read(val baseline: Baseline) : ParsedBaseline
-    data class Rejected(val reason: String) : ParsedBaseline
-}
-
-internal fun parseBaseline(text: String): ParsedBaseline {
+internal fun parseBaseline(text: String): Parsed<Baseline?> {
     val root = parseJson(text) ?: return rejected("it is not valid JSON")
-    val schema = root.int(SCHEMA)
+    val schema = root.int(SCHEMA) ?: return rejected("it names no schema")
     if (schema != BASELINE_SCHEMA_VERSION) {
-        return rejected("it holds schema $schema, this build reads $BASELINE_SCHEMA_VERSION")
+        return Parsed.Unreadable("it holds schema $schema, this build reads $BASELINE_SCHEMA_VERSION")
     }
     val environment = root.obj(ENVIRONMENT)?.environment() ?: return rejected("it names no environment")
     val intervals = (root.member(INTERVALS) as? JsonValue.Arr)?.items ?: return rejected("it lists no intervals")
@@ -64,24 +58,10 @@ internal fun parseBaseline(text: String): ParsedBaseline {
         val entry = item.entry() ?: return rejected("its ${id.label} entry is broken")
         if (entries.put(id, entry) != null) return rejected("it holds ${id.label} twice")
     }
-    return ParsedBaseline.Read(Baseline(environment = environment, entries = entries))
+    return Parsed.Read(Baseline(environment = environment, entries = entries))
 }
 
-private fun rejected(reason: String): ParsedBaseline = ParsedBaseline.Rejected(reason)
-
-internal fun JsonObjectScope.putEnvironment(environment: BaselineEnvironment) {
-    put(MANUFACTURER, environment.manufacturer)
-    put(MODEL, environment.model)
-    put(API_LEVEL, environment.apiLevel)
-}
-
-private fun JsonValue.environment(): BaselineEnvironment? = readOrNull {
-    BaselineEnvironment(
-        manufacturer = string(MANUFACTURER) ?: return@readOrNull null,
-        model = string(MODEL) ?: return@readOrNull null,
-        apiLevel = int(API_LEVEL) ?: return@readOrNull null,
-    )
-}
+private fun rejected(reason: String): Parsed<Nothing> = Parsed.Rejected(reason)
 
 private fun JsonValue.entry(): BaselineEntry? = readOrNull {
     val candidateBudget = when (val candidate = member(CANDIDATE_BUDGET)) {
@@ -115,12 +95,6 @@ private fun JsonValue.optionalInt(name: String): Int? {
     return requireNotNull(int(name)) { "$name holds no whole number" }
 }
 
-private inline fun <T : Any> readOrNull(read: () -> T?): T? = try {
-    read()
-} catch (_: IllegalArgumentException) {
-    null
-}
-
 private fun JsonValue.cleanRuns(): Map<MeasuredMetric, Int>? {
     val listed = member(CLEAN_RUNS) ?: return emptyMap()
     if (listed !is JsonValue.Obj) return null
@@ -134,24 +108,8 @@ private fun JsonValue.cleanRuns(): Map<MeasuredMetric, Int>? {
 
 private fun measuredMetric(name: String?): MeasuredMetric? = MeasuredMetric.entries.firstOrNull { it.name == name }
 
-internal fun IntervalId.key(): String = when (this) {
-    IntervalId.Session -> SESSION
-    is IntervalId.Screen -> "$SCREEN_PREFIX$name"
-    is IntervalId.Mark -> "$MARK_PREFIX$name"
-}
-
-private fun intervalId(key: String): IntervalId? = when {
-    key == SESSION -> IntervalId.Session
-    key.startsWith(SCREEN_PREFIX) -> key.removePrefix(SCREEN_PREFIX).takeIf { it.isNotBlank() }?.let(IntervalId::Screen)
-    key.startsWith(MARK_PREFIX) -> key.removePrefix(MARK_PREFIX).takeIf { it.isNotBlank() }?.let(IntervalId::Mark)
-    else -> null
-}
-
 private const val SCHEMA = "schema"
 private const val ENVIRONMENT = "environment"
-private const val MANUFACTURER = "manufacturer"
-private const val MODEL = "model"
-private const val API_LEVEL = "apiLevel"
 private const val INTERVALS = "intervals"
 private const val INTERVAL = "interval"
 private const val RUNS = "runs"
@@ -167,6 +125,3 @@ private const val FRAME_BUDGET_MS = "frameBudgetMs"
 private const val CANDIDATE_BUDGET = "candidateBudget"
 private const val BUDGET_MS = "budgetMs"
 private const val PHASES = "phases"
-private const val SESSION = "session"
-private const val SCREEN_PREFIX = "screen:"
-private const val MARK_PREFIX = "mark:"

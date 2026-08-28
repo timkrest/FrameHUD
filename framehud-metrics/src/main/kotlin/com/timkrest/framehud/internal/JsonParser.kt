@@ -37,6 +37,19 @@ internal fun JsonValue?.int(name: String): Int? {
     return number.toInt().takeIf { it.toDouble() == number }
 }
 
+internal fun JsonValue?.long(name: String): Long? {
+    val number = (member(name) as? JsonValue.Num)?.value ?: return null
+    return number.toLong().takeIf { it.toDouble() == number }
+}
+
+internal fun JsonValue?.bool(name: String): Boolean? = (member(name) as? JsonValue.Bool)?.value
+
+internal inline fun <T : Any> readOrNull(read: () -> T?): T? = try {
+    read()
+} catch (_: IllegalArgumentException) {
+    null
+}
+
 internal class JsonSyntaxException(message: String) : Exception(message)
 
 private class JsonParser(private val text: String) {

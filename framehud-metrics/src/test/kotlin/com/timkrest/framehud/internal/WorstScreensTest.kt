@@ -33,8 +33,8 @@ class WorstScreensTest {
     @Test
     fun `the session and the marks are left out`() {
         val ranked = listOf(
-            IntervalReport(IntervalId.Session, IntervalStats.EMPTY),
-            IntervalReport(IntervalId.Mark("scroll"), IntervalStats.EMPTY),
+            IntervalReport.of(IntervalId.Session, IntervalStats.EMPTY),
+            IntervalReport.of(IntervalId.Mark("scroll"), IntervalStats.EMPTY),
             screen("cart"),
         ).worstScreensFirst()
 
@@ -47,7 +47,7 @@ class WorstScreensTest {
         jankPercent: Float = 0f,
         p95FrameMs: Float = 0f,
         frozenFrames: Int = 0,
-    ) = IntervalReport(
+    ) = IntervalReport.of(
         id = IntervalId.Screen(name),
         stats = IntervalStats(
             frames = frames,

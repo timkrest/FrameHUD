@@ -30,8 +30,8 @@ class JankDiagnosisTest {
     fun `throttling outranks every other cause`() {
         val diagnosis = diagnose(
             metrics = metrics(jankPercent = 30f, unknownDelayMs = 20f),
-            memory = MemoryStats.EMPTY.copy(gcTimeMs = 5_000L),
-            thermal = ThermalStats(level = ThermalLevel.SEVERE, headroom = null),
+            memory = MemoryStats.of(gcTimeMs = 5_000L),
+            thermal = ThermalStats.of(level = ThermalLevel.SEVERE, headroom = null),
             choreographerTicksPerSecond = 10,
         )
         assertEquals(JankCause.Thermal(ThermalLevel.SEVERE), diagnosis.cause)
@@ -41,7 +41,7 @@ class JankDiagnosisTest {
     fun `gc pauses win over vsync starvation`() {
         val diagnosis = diagnose(
             metrics = metrics(jankPercent = 30f, sessionDurationMs = 10_000L),
-            memory = MemoryStats.EMPTY.copy(gcTimeMs = 300L),
+            memory = MemoryStats.of(gcTimeMs = 300L),
             choreographerTicksPerSecond = 10,
         )
         val cause = assertIs<JankCause.Gc>(diagnosis.cause)
@@ -52,7 +52,7 @@ class JankDiagnosisTest {
     fun `gc is blamed once it takes the share that counts, and not a millisecond before`() {
         fun causeFor(gcTimeMs: Long) = diagnose(
             metrics = metrics(jankPercent = 30f, sessionDurationMs = 10_000L, busiestStageMs = 12f),
-            memory = MemoryStats.EMPTY.copy(gcTimeMs = gcTimeMs),
+            memory = MemoryStats.of(gcTimeMs = gcTimeMs),
         ).cause
 
         assertIs<JankCause.Stage>(causeFor(gcTimeMs = 199L))
@@ -107,17 +107,17 @@ class JankDiagnosisTest {
         sessionDurationMs: Long = 1_000L,
         frameBudgetMs: Float = 16.7f,
     ): PerformanceMetrics {
-        val busiestStage = MetricValue(average = busiestStageMs)
-        val unknownDelay = MetricValue(average = unknownDelayMs)
-        return PerformanceMetrics(
+        val busiestStage = MetricValue.of(average = busiestStageMs)
+        val unknownDelay = MetricValue.of(average = unknownDelayMs)
+        return PerformanceMetrics.of(
             phases = when (bottleneckStage) {
-                PipelineStage.CPU -> FramePhases(unknownDelay = unknownDelay, draw = busiestStage)
-                PipelineStage.RENDER -> FramePhases(unknownDelay = unknownDelay, sync = busiestStage)
-                PipelineStage.GPU -> FramePhases(unknownDelay = unknownDelay, gpu = busiestStage)
+                PipelineStage.CPU -> FramePhases.of(unknownDelay = unknownDelay, draw = busiestStage)
+                PipelineStage.RENDER -> FramePhases.of(unknownDelay = unknownDelay, sync = busiestStage)
+                PipelineStage.GPU -> FramePhases.of(unknownDelay = unknownDelay, gpu = busiestStage)
             },
-            window = FrameWindowStats(jankPercent = jankPercent, frameBudgetMs = frameBudgetMs),
+            window = FrameWindowStats.of(jankPercent = jankPercent, frameBudgetMs = frameBudgetMs),
             session = IntervalStats.EMPTY.copy(durationMs = sessionDurationMs),
-            display = DisplayInfo(refreshRateHz = 60f),
+            display = DisplayInfo.of(refreshRateHz = 60f),
         )
     }
 

@@ -112,6 +112,9 @@ public object FrameHud {
     @AnyThread
     public suspend fun compareWithBaseline(): BaselineComparison = BaselineComparison.NoBaseline
 
+    @AnyThread
+    public suspend fun history(): List<RecordedRun> = emptyList()
+
     public fun shareSession(activity: Activity, export: SessionExport): Unit = Unit
 }
 

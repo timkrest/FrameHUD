@@ -345,10 +345,10 @@ private fun BaselineEntry.compareWith(report: IntervalReport): IntervalCompariso
         val measured = current.trustedValue(metric)
         when {
             metric.confidenceMetric in BUDGET_CATEGORIES && !budgetsMatch ->
-                gaps += UncomparedMetric(metric, ComparisonGap.OTHER_FRAME_BUDGET)
-            baseline == null -> gaps += UncomparedMetric(metric, ComparisonGap.BASELINE_HAS_NONE)
-            measured == null -> gaps += UncomparedMetric(metric, ComparisonGap.RUN_UNTRUSTED)
-            else -> deltas += MetricDelta(
+                gaps += UncomparedMetric.of(metric, ComparisonGap.OTHER_FRAME_BUDGET)
+            baseline == null -> gaps += UncomparedMetric.of(metric, ComparisonGap.BASELINE_HAS_NONE)
+            measured == null -> gaps += UncomparedMetric.of(metric, ComparisonGap.RUN_UNTRUSTED)
+            else -> deltas += MetricDelta.of(
                 metric = metric,
                 baseline = baseline,
                 current = measured,
@@ -356,7 +356,7 @@ private fun BaselineEntry.compareWith(report: IntervalReport): IntervalCompariso
             )
         }
     }
-    return IntervalComparison(
+    return IntervalComparison.of(
         id = report.id,
         recordedRuns = runs,
         currentFrames = stats.frames,
@@ -366,7 +366,7 @@ private fun BaselineEntry.compareWith(report: IntervalReport): IntervalCompariso
             if (cleanRunsOfPhase(phase) == 0 || current.cleanRunsOfPhase(phase) == 0) return@mapNotNull null
             val baseline = phases[phase] ?: return@mapNotNull null
             val measured = current.phases[phase] ?: return@mapNotNull null
-            PhaseDelta(phase = phase, baselineMs = baseline, currentMs = measured)
+            PhaseDelta.of(phase = phase, baselineMs = baseline, currentMs = measured)
         },
     )
 }

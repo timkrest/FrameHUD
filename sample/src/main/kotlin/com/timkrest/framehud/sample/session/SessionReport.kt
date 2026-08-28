@@ -6,6 +6,7 @@ import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.RecordedRun
 
 @Immutable
 data class SessionReport(
@@ -14,6 +15,7 @@ data class SessionReport(
     val worstScreens: List<IntervalReport> = emptyList(),
     val incidents: List<Incident> = emptyList(),
     val comparison: BaselineComparison? = null,
+    val pastRuns: List<RecordedRun> = emptyList(),
 ) {
     companion object {
         suspend fun read(): SessionReport = SessionReport(
@@ -22,6 +24,7 @@ data class SessionReport(
             worstScreens = FrameHud.screens(),
             incidents = FrameHud.incidents(),
             comparison = FrameHud.compareWithBaseline(),
+            pastRuns = FrameHud.history(),
         )
     }
 }

@@ -1,11 +1,7 @@
 package com.timkrest.framehud.internal
 
 import android.app.Application
-import android.content.pm.PackageInfo
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.annotation.WorkerThread
-import androidx.core.content.pm.PackageInfoCompat
 import com.timkrest.framehud.Baseline
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.BaselineEnvironment
@@ -27,7 +23,7 @@ internal fun sessionSnapshot(
     isFrozen: Boolean,
     baseline: Baseline?,
 ): SessionSnapshot {
-    val packageInfo = packageInfo(application)
+    val version = appVersion(application)
     val environment = BaselineEnvironment.current()
     return SessionSnapshot(
         takenAtEpochMs = System.currentTimeMillis(),
@@ -35,8 +31,8 @@ internal fun sessionSnapshot(
         timeZone = TimeZone.getDefault(),
         frameHudVersion = BuildConfig.FRAMEHUD_VERSION,
         packageName = application.packageName,
-        appVersionName = packageInfo.versionName,
-        appVersionCode = PackageInfoCompat.getLongVersionCode(packageInfo),
+        appVersionName = version.name,
+        appVersionCode = version.code,
         environment = environment,
         isEnabled = isEnabled,
         isFrozen = isFrozen,
@@ -81,10 +77,3 @@ private fun unusedName(directory: File, stamp: String): String {
 
 internal fun exportDirectory(application: Application): File =
     File(application.getExternalFilesDir(null) ?: application.filesDir, EXPORT_DIRECTORY)
-
-private fun packageInfo(application: Application): PackageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-    application.packageManager.getPackageInfo(application.packageName, PackageManager.PackageInfoFlags.of(0L))
-} else {
-    @Suppress("DEPRECATION")
-    application.packageManager.getPackageInfo(application.packageName, 0)
-}

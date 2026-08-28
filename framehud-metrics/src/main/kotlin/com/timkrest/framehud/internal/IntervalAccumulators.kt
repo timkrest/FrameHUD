@@ -180,7 +180,7 @@ internal class IntervalAccumulators(
     fun screenStats(): IntervalStats = screen.stats()
 
     fun intervals(): List<IntervalReport> = buildList {
-        add(IntervalReport(IntervalId.Session, session.stats(), session.frameBudgetMs()))
+        add(IntervalReport.of(IntervalId.Session, session.stats(), session.frameBudgetMs()))
         addAll(screenTotals.intervals())
         addAll(markTotals.intervals())
     }

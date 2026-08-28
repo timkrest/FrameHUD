@@ -12,7 +12,8 @@ public interface FrameHudCounter {
 }
 
 @Immutable
-public data class CounterReading(
+@ConsistentCopyVisibility
+public data class CounterReading private constructor(
     val name: String,
     val value: Int,
     val peakSinceReset: Int,
@@ -20,5 +21,11 @@ public data class CounterReading(
     init {
         require(name.isNotBlank()) { "A counter name must not be blank" }
         require(peakSinceReset >= value) { "A peak of $peakSinceReset is below the $value it covers" }
+    }
+
+    public companion object {
+        @InternalFrameHudApi
+        public fun of(name: String, value: Int, peakSinceReset: Int): CounterReading =
+            CounterReading(name = name, value = value, peakSinceReset = peakSinceReset)
     }
 }

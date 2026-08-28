@@ -4,7 +4,8 @@ import androidx.compose.runtime.Immutable
 
 /** [calls] come most sampled first. */
 @Immutable
-public data class MainThreadBlock(
+@ConsistentCopyVisibility
+public data class MainThreadBlock private constructor(
     val durationMs: Long,
     val stacksTaken: Int,
     val calls: List<SampledCall>,
@@ -18,16 +19,26 @@ public data class MainThreadBlock(
     public companion object {
         public val NONE: MainThreadBlock =
             MainThreadBlock(durationMs = 0, stacksTaken = 0, calls = emptyList())
+
+        @InternalFrameHudApi
+        public fun of(durationMs: Long, stacksTaken: Int, calls: List<SampledCall>): MainThreadBlock =
+            MainThreadBlock(durationMs = durationMs, stacksTaken = stacksTaken, calls = calls)
     }
 }
 
 @Immutable
-public data class SampledCall(
+@ConsistentCopyVisibility
+public data class SampledCall private constructor(
     val name: String,
     val samples: Int,
 ) {
     init {
         require(name.isNotBlank()) { "A sampled call must name where the thread stood" }
         require(samples > 0) { "A call reaches the block once sampled, got $samples" }
+    }
+
+    public companion object {
+        @InternalFrameHudApi
+        public fun of(name: String, samples: Int): SampledCall = SampledCall(name = name, samples = samples)
     }
 }

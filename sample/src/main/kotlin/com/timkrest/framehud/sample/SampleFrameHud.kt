@@ -14,6 +14,8 @@ object SampleFrameHud : FrameHudEventListener {
 
     const val PERFETTO_TRIGGER: String = "framehud_incident"
 
+    const val KEPT_RUNS: Int = 10
+
     private val strictBudgetsMs = mapOf(
         IntervalId.Session to SESSION_BUDGET_MS,
         IntervalId.Mark(SCROLL_MARK) to SCROLL_BUDGET_MS,
@@ -31,6 +33,9 @@ object SampleFrameHud : FrameHudEventListener {
 
     private val _flightRecorder = MutableStateFlow(false)
     val flightRecorder: StateFlow<Boolean> = _flightRecorder.asStateFlow()
+
+    private val _keepsRuns = MutableStateFlow(false)
+    val keepsRuns: StateFlow<Boolean> = _keepsRuns.asStateFlow()
 
     override fun onEvent(event: FrameHudEvent) {
         _lastEvent.value = event
@@ -50,6 +55,11 @@ object SampleFrameHud : FrameHudEventListener {
     fun setFlightRecorder(recording: Boolean) {
         FrameHud.config = FrameHud.config.copy(perfettoTrigger = if (recording) PERFETTO_TRIGGER else null)
         _flightRecorder.value = FrameHud.config.perfettoTrigger != null
+    }
+
+    fun setKeepsRuns(keeping: Boolean) {
+        FrameHud.config = FrameHud.config.copy(keptRuns = if (keeping) KEPT_RUNS else 0)
+        _keepsRuns.value = FrameHud.config.keptRuns > 0
     }
 }
 

@@ -204,7 +204,7 @@ class MetricsEngineTest {
             val readings = await { engine.counters.first { it.isNotEmpty() } }
 
             onMainThread { engine.unbindWindow() }
-            assertEquals(listOf(CounterReading(COUNTER, value = 7, peakSinceReset = 7)), readings)
+            assertEquals(listOf(CounterReading.of(COUNTER, value = 7, peakSinceReset = 7)), readings)
         }
     }
 

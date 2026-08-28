@@ -15,14 +15,17 @@ import com.timkrest.framehud.internal.ActivityTracker
 import com.timkrest.framehud.internal.GuardedFailures
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
+import com.timkrest.framehud.internal.RunHistory
+import com.timkrest.framehud.internal.SavedBaseline
 import com.timkrest.framehud.internal.ScreenStart
 import com.timkrest.framehud.internal.baselineFile
 import com.timkrest.framehud.internal.exportAuthority
 import com.timkrest.framehud.internal.exportDirectory
-import com.timkrest.framehud.internal.readBaseline
+import com.timkrest.framehud.internal.historyFile
+import com.timkrest.framehud.internal.measuredRun
+import com.timkrest.framehud.internal.oneAtATime
 import com.timkrest.framehud.internal.requireNameStandsApart
 import com.timkrest.framehud.internal.sessionSnapshot
-import com.timkrest.framehud.internal.writeBaseline
 import com.timkrest.framehud.internal.writeTo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,9 +55,11 @@ public object FrameHud {
 
     private val freezeLock = Any()
 
-    private val baselineLock = Any()
+    private val savedBaseline = SavedBaseline()
 
-    private var savedSessionId: Int? = null
+    private val runHistory = RunHistory(
+        queue = oneAtATime { error -> GuardedFailures.report("writing the run history", error) },
+    )
 
     @Volatile
     private var application: Application? = null
@@ -317,29 +322,16 @@ public object FrameHud {
 
     /**
      * Averages the session since [reset] into `framehud/baseline.json` as one run and returns what
-     * the file now holds. Null when the session recorded no frame. Throws when the write fails. A
-     * second call before the next [reset] changes nothing. Reads and writes the file even when
-     * [baselineOverride] is set.
+     * the file now holds. Null when the session recorded no frame. A second call before the next
+     * [reset] changes nothing. Reads and writes the file even when [baselineOverride] is set.
+     * Throws when the file cannot be read or written, leaving it as it was.
      */
     @AnyThread
     public suspend fun saveBaseline(): Baseline? {
         val application = installedApplication("save a baseline")
-        val stats = engine.baselineStats()?.takeIf { it.session.frames > 0 } ?: return null
+        val stats = engine.runStats()?.takeIf { it.session.frames > 0 } ?: return null
         val file = baselineFile(application)
-        return withContext(Dispatchers.IO) {
-            synchronized(baselineLock) {
-                val stored = readBaseline(file)
-                if (stats.sessionId == savedSessionId) {
-                    Log.w(LOG_TAG, "This session is already in the baseline; reset before measuring the next run")
-                    return@synchronized stored
-                }
-                val updated = (stored ?: Baseline(stats.environment, emptyMap()))
-                    .updatedWith(stats.environment, stats.intervals)
-                writeBaseline(file, updated)
-                savedSessionId = stats.sessionId
-                updated
-            }
-        }
+        return withContext(Dispatchers.IO) { savedBaseline.updated(file, stats) }
     }
 
     /**
@@ -349,11 +341,22 @@ public object FrameHud {
     @AnyThread
     public suspend fun compareWithBaseline(): BaselineComparison = gateStats().comparison
 
+    /**
+     * Runs `framehud/history.json` holds, newest first, without the run in progress. A run is
+     * written whenever the app leaves the foreground, so one killed while it is showing holds what
+     * it had when it last left. Throws when the file cannot be read.
+     */
+    @AnyThread
+    public suspend fun history(): List<RecordedRun> {
+        val application = installedApplication("read the run history")
+        return withContext(Dispatchers.IO) { runHistory.recorded(historyFile(application), engine.runNumber) }
+    }
+
     @InternalFrameHudApi
     @AnyThread
     public suspend fun gateStats(): GateStats {
         val baseline = withContext(Dispatchers.IO) { loadedBaseline() }
-        val stats = engine.baselineStats()
+        val stats = engine.runStats()
         return GateStats(
             session = stats?.session ?: IntervalStats.EMPTY,
             comparison = when {
@@ -392,7 +395,7 @@ public object FrameHud {
 
     @WorkerThread
     private fun loadedBaseline(): Baseline? =
-        baselineOverride ?: application?.let { readBaseline(baselineFile(it)) }
+        baselineOverride ?: application?.let { savedBaseline.stored(baselineFile(it)) }
 
     @AnyThread
     private fun installedApplication(action: String): Application =
@@ -437,6 +440,22 @@ public object FrameHud {
     private fun onActivityLost() {
         engine.unbindWindow()
         panel?.onScreenLost()
+        recordRun()
+    }
+
+    private fun recordRun() {
+        val application = application ?: return
+        val keptRuns = currentConfig.keptRuns
+        if (keptRuns == 0) return
+        engine.postRunStats { stats ->
+            if (stats.session.frames == 0) return@postRunStats
+            runHistory.record(
+                keptRuns = keptRuns,
+                runNumber = stats.runNumber,
+                file = { historyFile(application) },
+                run = { measuredRun(application, stats) },
+            )
+        }
     }
 
     @AnyThread

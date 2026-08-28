@@ -56,7 +56,7 @@ internal class ThermalMonitor(clock: MetricsClock) {
         val headroom = if (headroomLimit.tryTake()) readHeadroom(manager) else readings.live.headroom
 
         readings.update(
-            ThermalStats(
+            ThermalStats.of(
                 level = thermalLevelOf(manager.currentThermalStatus),
                 headroom = headroom,
             ),

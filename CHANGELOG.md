@@ -1,10 +1,44 @@
 # Changelog
 
 All notable changes to this project are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
-[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html) with the two exceptions the README's
+Versioning section names.
 
 ## [Unreleased]
+
+## [0.15.0] - 2026-08-29
+
+### Added
+
+- Runs that survive a restart. `FrameHudConfig.keptRuns` says how many to keep, and FrameHUD writes
+  each one to `framehud/history.json`, next to the exports. `FrameHud.history()` answers them newest
+  first, without the run in progress. A run is written whenever the app leaves the foreground, and
+  rewrites its own record rather than adding one.
+
+### Changed
+
+- A reading FrameHUD produces carries no public constructor and no `copy`: `PerformanceMetrics`,
+  `FramePhases`, `FrameWindowStats`, `PhaseAverages`, `MetricValue`, `DisplayInfo`, `MemoryStats`,
+  `ProcessStats`, `ThermalStats`, `CounterReading`, `Incident`, `IncidentWindow`, `MainThreadBlock`,
+  `SampledCall`, `JankDiagnosis`, `IntervalReport`, `IntervalComparison`, `MetricDelta`, `PhaseDelta`
+  and `UncomparedMetric`. Each can now gain a figure without breaking code compiled against an
+  earlier version. Where a test or a preview built one, use `EMPTY`, or opt into
+  `InternalFrameHudApi` and call `of`. What the API asks you to build is untouched: the config, a
+  baseline, thresholds, an interval id, an event, and `IntervalStats`. The README's Versioning
+  section says what 1.0 promises.
+
+### Fixed
+
+- A read that failed no longer costs you the baseline. It used to look like a device with no
+  baseline yet, so `saveBaseline()` replaced averages built over dozens of runs. It now throws and
+  leaves the file alone, both when it cannot read the file and when the file names a schema this
+  build does not read.
+- A baseline that outgrew the size it is read back at read as empty. The intervals with the fewest
+  runs behind them now go first, the way the run history drops its oldest.
+- A write that never reached the disk reported success. The baseline and the history go to a
+  temporary file, synced and moved into place; a failure at any of the three throws and leaves what
+  was there.
 
 ## [0.14.0] - 2026-08-27
 
@@ -575,6 +609,7 @@ All notable changes to this project are documented here. The format follows
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
 [Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.14.0...HEAD
+[0.15.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.15.0
 [0.14.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.14.0
 [0.13.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.1
 [0.13.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.0

@@ -52,6 +52,7 @@ fun SessionScreen(
         }
         item { FreezeSwitch() }
         item { FlightRecorderSwitch() }
+        item { PastRunsSwitch() }
         state.message?.let { text ->
             item { SampleCard(title = "Last action") { SampleNote(text = text) } }
         }
@@ -61,5 +62,6 @@ fun SessionScreen(
         item { IncidentsCard(incidents = report.incidents) }
         items(report.incidents) { incident -> IncidentCard(incident = incident) }
         item { BaselineCard(comparison = report.comparison) }
+        item { PastRunsCard(runs = report.pastRuns) }
     }
 }

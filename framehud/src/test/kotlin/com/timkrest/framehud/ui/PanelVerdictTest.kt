@@ -49,10 +49,10 @@ class PanelVerdictTest {
         swapMs: Float = 0f,
         isEmulator: Boolean = false,
     ): PanelVerdict = panelVerdict(
-        phases = FramePhases(
-            unknownDelay = MetricValue(average = unknownDelayMs),
-            draw = MetricValue(average = drawMs),
-            swapBuffers = MetricValue(average = swapMs),
+        phases = FramePhases.of(
+            unknownDelay = MetricValue.of(average = unknownDelayMs),
+            draw = MetricValue.of(average = drawMs),
+            swapBuffers = MetricValue.of(average = swapMs),
         ),
         jankPercent = jankPercent,
         isEmulator = isEmulator,

@@ -238,7 +238,7 @@ class IncidentRecorderTest {
 
     private fun armBurst(cause: JankCause) = arm(
         FrameHudEvent.JankBurst(
-            diagnosis = JankDiagnosis(
+            diagnosis = JankDiagnosis.of(
                 cause = cause,
                 severity = JankSeverity.WARNING,
                 jankPercent = 10f,

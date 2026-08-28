@@ -10,23 +10,24 @@ import androidx.compose.runtime.Immutable
  * throughput is limited by [bottleneck], not [total].
  */
 @Immutable
-public data class FramePhases(
+@ConsistentCopyVisibility
+public data class FramePhases private constructor(
     /** Vsync signal to the frame actually starting. Grows when the main thread is busy elsewhere. */
-    val unknownDelay: MetricValue = MetricValue.ZERO,
-    val input: MetricValue = MetricValue.ZERO,
-    val animation: MetricValue = MetricValue.ZERO,
-    val layout: MetricValue = MetricValue.ZERO,
-    val draw: MetricValue = MetricValue.ZERO,
+    val unknownDelay: MetricValue,
+    val input: MetricValue,
+    val animation: MetricValue,
+    val layout: MetricValue,
+    val draw: MetricValue,
     /** Display list sync to the render thread, plus bitmap upload to GPU textures. */
-    val sync: MetricValue = MetricValue.ZERO,
-    val commandIssue: MetricValue = MetricValue.ZERO,
+    val sync: MetricValue,
+    val commandIssue: MetricValue,
     /** Waiting for the GPU to finish the previous frame, then presenting this one. */
-    val swapBuffers: MetricValue = MetricValue.ZERO,
+    val swapBuffers: MetricValue,
     /** Null until `FrameMetrics` reports GPU time: it needs API 31+ and a driver that supports it. */
-    val gpu: MetricValue? = null,
-    val total: MetricValue = MetricValue.ZERO,
+    val gpu: MetricValue?,
+    val total: MetricValue,
     /** [total] minus [FrameWindowStats.frameBudgetMs]. Negative means the frame finished with headroom. */
-    val overrun: MetricValue = MetricValue.ZERO,
+    val overrun: MetricValue,
 ) {
     public val cpu: MetricValue = input + animation + layout + draw
 
@@ -45,7 +46,7 @@ public data class FramePhases(
     public val bottleneck: MetricValue = when (bottleneckStage) {
         PipelineStage.CPU -> cpu
         PipelineStage.RENDER -> render
-        PipelineStage.GPU -> gpu?.copy(peak = null) ?: MetricValue.ZERO
+        PipelineStage.GPU -> gpu?.let { MetricValue.of(current = it.current, average = it.average) } ?: MetricValue.ZERO
     }
 
     public operator fun get(phase: FramePhase): MetricValue? = when (phase) {
@@ -62,7 +63,34 @@ public data class FramePhases(
     }
 
     public companion object {
-        public val EMPTY: FramePhases = FramePhases()
+        public val EMPTY: FramePhases = of()
+
+        @InternalFrameHudApi
+        public fun of(
+            unknownDelay: MetricValue = MetricValue.ZERO,
+            input: MetricValue = MetricValue.ZERO,
+            animation: MetricValue = MetricValue.ZERO,
+            layout: MetricValue = MetricValue.ZERO,
+            draw: MetricValue = MetricValue.ZERO,
+            sync: MetricValue = MetricValue.ZERO,
+            commandIssue: MetricValue = MetricValue.ZERO,
+            swapBuffers: MetricValue = MetricValue.ZERO,
+            gpu: MetricValue? = null,
+            total: MetricValue = MetricValue.ZERO,
+            overrun: MetricValue = MetricValue.ZERO,
+        ): FramePhases = FramePhases(
+            unknownDelay = unknownDelay,
+            input = input,
+            animation = animation,
+            layout = layout,
+            draw = draw,
+            sync = sync,
+            commandIssue = commandIssue,
+            swapBuffers = swapBuffers,
+            gpu = gpu,
+            total = total,
+            overrun = overrun,
+        )
     }
 }
 

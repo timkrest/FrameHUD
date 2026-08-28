@@ -41,7 +41,7 @@ internal class MemoryStatsMonitor {
         peakNativeHeapMb = max(peakNativeHeapMb, nativeHeapMb)
 
         readings.update(
-            MemoryStats(
+            MemoryStats.of(
                 usedHeapMb = usedHeapMb,
                 maxHeapMb = (runtime.maxMemory() / BYTES_PER_MB).toInt(),
                 nativeHeapMb = nativeHeapMb,

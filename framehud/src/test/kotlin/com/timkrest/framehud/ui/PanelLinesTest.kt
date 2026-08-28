@@ -32,7 +32,7 @@ class PanelLinesTest {
     fun `the process rows wait for a reading and leave out what the platform withheld`() {
         assertFalse(lines(metrics()).any { it.startsWith(LABEL_PROCESS_CPU) || it.startsWith(LABEL_THREADS) })
 
-        val sampled = lines(metrics(), process = ProcessStats(cpuPercent = 42f, peakCpuPercent = 61f, threads = 38))
+        val sampled = lines(metrics(), process = ProcessStats.of(cpuPercent = 42f, peakCpuPercent = 61f, threads = 38))
         assertTrue(sampled.any { it == "$LABEL_PROCESS_CPU 42% ▲61" }, sampled.toString())
         assertTrue(sampled.any { it == "$LABEL_THREADS 38" }, sampled.toString())
     }
@@ -42,8 +42,8 @@ class PanelLinesTest {
         val rows = lines(
             metrics(),
             counters = listOf(
-                CounterReading(name = "decode queue", value = 4, peakSinceReset = 31),
-                CounterReading(name = "cache misses", value = 12, peakSinceReset = 12),
+                CounterReading.of(name = "decode queue", value = 4, peakSinceReset = 31),
+                CounterReading.of(name = "cache misses", value = 12, peakSinceReset = 12),
             ),
         )
 
@@ -58,8 +58,8 @@ class PanelLinesTest {
             memory = MemoryStats.EMPTY,
             thermal = ThermalStats.EMPTY,
             counters = listOf(
-                CounterReading(name = "decode queue", value = 4, peakSinceReset = 4),
-                CounterReading(name = "cache misses", value = 12, peakSinceReset = 12),
+                CounterReading.of(name = "decode queue", value = 4, peakSinceReset = 4),
+                CounterReading.of(name = "cache misses", value = 12, peakSinceReset = 12),
             ),
         ).values.filter { it.hasSeparatorAbove }.map { it.text }
 
@@ -70,7 +70,7 @@ class PanelLinesTest {
     fun `counters past the listed rows are counted instead of shown`() {
         val rows = lines(
             metrics(),
-            counters = List(6) { CounterReading(name = "counter-$it", value = it, peakSinceReset = it) },
+            counters = List(6) { CounterReading.of(name = "counter-$it", value = it, peakSinceReset = it) },
         )
 
         assertTrue(rows.any { it == "+2 more counters" }, rows.toString())
@@ -87,7 +87,7 @@ class PanelLinesTest {
     fun `the thermal row waits for a level the platform knows`() {
         assertFalse(lines(metrics(), thermal = ThermalStats.EMPTY).any { it.startsWith(LABEL_THERMAL) })
 
-        val throttled = ThermalStats(level = ThermalLevel.LIGHT, headroom = null)
+        val throttled = ThermalStats.of(level = ThermalLevel.LIGHT, headroom = null)
         assertTrue(lines(metrics(), thermal = throttled).any { it == "$LABEL_THERMAL light" })
     }
 
@@ -121,7 +121,7 @@ class PanelLinesTest {
         val panelLines = buildPanelLines(
             metrics = metrics(jankPercent = 30f, layoutMs = 12f, droppedReports = 2),
             memory = MemoryStats.EMPTY,
-            thermal = ThermalStats(level = ThermalLevel.MODERATE, headroom = 0.5f),
+            thermal = ThermalStats.of(level = ThermalLevel.MODERATE, headroom = 0.5f),
         )
         assertEquals(panelLines.values.size, panelLines.toAnnotatedString().text.lines().size)
     }
@@ -138,11 +138,11 @@ class PanelLinesTest {
     @Test
     fun `the load bar is a share of the frame budget`() {
         val row = MetricRowContext(frameBudgetMs = 16f, attentionLabel = null)
-        assertEquals(0.5f, row.loadFractionOf(MetricValue(average = 8f)), TOLERANCE)
-        assertEquals(1f, row.loadFractionOf(MetricValue(average = 40f)), TOLERANCE)
+        assertEquals(0.5f, row.loadFractionOf(MetricValue.of(average = 8f)), TOLERANCE)
+        assertEquals(1f, row.loadFractionOf(MetricValue.of(average = 40f)), TOLERANCE)
 
         val noBudget = MetricRowContext(frameBudgetMs = 0f, attentionLabel = null)
-        assertEquals(0f, noBudget.loadFractionOf(MetricValue(average = 8f)), TOLERANCE)
+        assertEquals(0f, noBudget.loadFractionOf(MetricValue.of(average = 8f)), TOLERANCE)
     }
 
     @Test
@@ -214,13 +214,13 @@ class PanelLinesTest {
         swapMs: Float = 0f,
         gpuMs: Float? = null,
         droppedReports: Int = 0,
-    ) = PerformanceMetrics(
-        phases = FramePhases(
-            layout = MetricValue(current = layoutMs, average = layoutMs),
-            swapBuffers = MetricValue(current = swapMs, average = swapMs),
-            gpu = gpuMs?.let { MetricValue(current = it, average = it) },
+    ) = PerformanceMetrics.of(
+        phases = FramePhases.of(
+            layout = MetricValue.of(current = layoutMs, average = layoutMs),
+            swapBuffers = MetricValue.of(current = swapMs, average = swapMs),
+            gpu = gpuMs?.let { MetricValue.of(current = it, average = it) },
         ),
-        window = FrameWindowStats(fps = fps, jankPercent = jankPercent),
+        window = FrameWindowStats.of(fps = fps, jankPercent = jankPercent),
         session = IntervalStats.EMPTY.copy(droppedReports = droppedReports),
     )
 

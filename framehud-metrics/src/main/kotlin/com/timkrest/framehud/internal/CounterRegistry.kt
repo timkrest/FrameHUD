@@ -72,7 +72,7 @@ private class RegisteredCounter(private val name: String) : FrameHudCounter {
 
     fun read(): CounterReading {
         val current = CounterState(state.get())
-        return CounterReading(name = name, value = current.value, peakSinceReset = current.peak)
+        return CounterReading.of(name = name, value = current.value, peakSinceReset = current.peak)
     }
 
     fun reset() = replace { standing -> standing.afterReset() }

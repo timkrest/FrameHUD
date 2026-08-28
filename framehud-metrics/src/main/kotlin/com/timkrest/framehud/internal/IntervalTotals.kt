@@ -51,7 +51,7 @@ internal class IntervalTotals(
 
     fun intervals(): List<IntervalReport> =
         byName.map { (name, accumulator) ->
-            IntervalReport(idOf(name), accumulator.stats(), accumulator.frameBudgetMs())
+            IntervalReport.of(idOf(name), accumulator.stats(), accumulator.frameBudgetMs())
         }
 
     fun clear() {

@@ -13,6 +13,7 @@ import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.PerformanceMetrics
 import com.timkrest.framehud.ThermalLevel
+import com.timkrest.framehud.withSession
 import kotlinx.coroutines.flow.StateFlow
 
 @WorkerThread
@@ -46,7 +47,7 @@ internal class FrameAggregator(
     val screenName: String? get() = accumulators.screenName
 
     private var lastUpdateTime = 0L
-    private var display = DisplayInfo(
+    private var display = DisplayInfo.of(
         refreshRateHz = config.fallbackRefreshRateHz,
         frameBudgetMs = frameBudgetMs(NO_DEADLINE_NS, config.fallbackRefreshRateHz),
     )
@@ -112,7 +113,7 @@ internal class FrameAggregator(
     }
 
     private fun refreshLiveSession() {
-        metricsReadings.updateLive(metricsReadings.live.copy(session = accumulators.sessionStats()))
+        metricsReadings.updateLive(metricsReadings.live.withSession(accumulators.sessionStats()))
     }
 
     @AnyThread
@@ -166,8 +167,8 @@ internal class FrameAggregator(
         isDrainingToIdle = false
         lastUpdateTime = 0L
         metricsReadings.reset(
-            PerformanceMetrics(
-                window = FrameWindowStats(frameBudgetMs = budgetInForceMs()),
+            PerformanceMetrics.of(
+                window = FrameWindowStats.of(frameBudgetMs = budgetInForceMs()),
                 display = display,
             ),
         )
@@ -193,9 +194,9 @@ internal class FrameAggregator(
         val fps = frameWindow.fps(clock.nanoTime())
         val history = frameWindow.history()
         val judgedBudgetMs = history.latestBudgetMs() ?: budgetInForceMs()
-        val metrics = PerformanceMetrics(
+        val metrics = PerformanceMetrics.of(
             phases = frameWindow.phases(hasReportedGpuDuration),
-            window = FrameWindowStats(
+            window = FrameWindowStats.of(
                 fps = fps,
                 jankPercent = frameWindow.jankPercent(),
                 p95FrameMs = frameWindow.totalPercentile(P95),
@@ -227,7 +228,7 @@ internal class FrameAggregator(
 
     private fun displayShowing(refreshRateHz: Float, frameBudgetMs: Float): DisplayInfo =
         display.takeIf { it.refreshRateHz == refreshRateHz && it.frameBudgetMs == frameBudgetMs }
-            ?: DisplayInfo(refreshRateHz = refreshRateHz, frameBudgetMs = frameBudgetMs)
+            ?: DisplayInfo.of(refreshRateHz = refreshRateHz, frameBudgetMs = frameBudgetMs)
 }
 
 private const val WORST_FRAME_CAPACITY = 10

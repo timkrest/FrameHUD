@@ -8,13 +8,19 @@ import com.timkrest.framehud.internal.label
 import com.timkrest.framehud.internal.reason
 
 @Immutable
-public data class MetricDelta(
+@ConsistentCopyVisibility
+public data class MetricDelta private constructor(
     val metric: BaselineMetric,
     val baseline: Float,
     val current: Float,
     /** Runs whose measurement of [metric] entered the baseline's average. */
     val baselineRuns: Int,
 ) {
+    internal companion object {
+        fun of(metric: BaselineMetric, baseline: Float, current: Float, baselineRuns: Int): MetricDelta =
+            MetricDelta(metric = metric, baseline = baseline, current = current, baselineRuns = baselineRuns)
+    }
+
     public val change: Float = current - baseline
 
     /** Null when the baseline is zero. */
@@ -30,12 +36,18 @@ public data class MetricDelta(
 }
 
 @Immutable
-public data class PhaseDelta(
+@ConsistentCopyVisibility
+public data class PhaseDelta private constructor(
     val phase: FramePhase,
     val baselineMs: Float,
     val currentMs: Float,
 ) {
     public val changeMs: Float = currentMs - baselineMs
+
+    internal companion object {
+        fun of(phase: FramePhase, baselineMs: Float, currentMs: Float): PhaseDelta =
+            PhaseDelta(phase = phase, baselineMs = baselineMs, currentMs = currentMs)
+    }
 }
 
 public enum class ComparisonGap {
@@ -45,15 +57,22 @@ public enum class ComparisonGap {
 }
 
 @Immutable
-public data class UncomparedMetric(
+@ConsistentCopyVisibility
+public data class UncomparedMetric private constructor(
     val metric: BaselineMetric,
     val gap: ComparisonGap,
 ) {
     public val summary: String get() = "${metric.label()} ${gap.reason()}"
+
+    internal companion object {
+        fun of(metric: BaselineMetric, gap: ComparisonGap): UncomparedMetric =
+            UncomparedMetric(metric = metric, gap = gap)
+    }
 }
 
 @Immutable
-public data class IntervalComparison(
+@ConsistentCopyVisibility
+public data class IntervalComparison private constructor(
     val id: IntervalId,
     val recordedRuns: Int,
     val currentFrames: Int,
@@ -68,6 +87,24 @@ public data class IntervalComparison(
     public fun delta(metric: BaselineMetric): MetricDelta? = metrics.firstOrNull { it.metric == metric }
 
     public fun gap(metric: BaselineMetric): ComparisonGap? = uncompared.firstOrNull { it.metric == metric }?.gap
+
+    internal companion object {
+        fun of(
+            id: IntervalId,
+            recordedRuns: Int,
+            currentFrames: Int,
+            metrics: List<MetricDelta>,
+            uncompared: List<UncomparedMetric>,
+            phases: List<PhaseDelta>,
+        ): IntervalComparison = IntervalComparison(
+            id = id,
+            recordedRuns = recordedRuns,
+            currentFrames = currentFrames,
+            metrics = metrics,
+            uncompared = uncompared,
+            phases = phases,
+        )
+    }
 }
 
 public sealed interface BaselineComparison {

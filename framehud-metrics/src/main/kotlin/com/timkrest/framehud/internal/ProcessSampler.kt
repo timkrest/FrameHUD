@@ -24,7 +24,7 @@ internal class ProcessSampler(private val clock: MetricsClock, private val probe
         peaks.threads = higher(peaks.threads, threads)
         peaks.openFiles = higher(peaks.openFiles, openFiles)
 
-        return ProcessStats(
+        return ProcessStats.of(
             cpuPercent = cpuPercent,
             peakCpuPercent = peaks.cpuPercent,
             pssMb = pssMb,

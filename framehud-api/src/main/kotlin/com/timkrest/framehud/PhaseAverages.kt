@@ -11,21 +11,22 @@ import androidx.compose.runtime.Immutable
  * [bottleneckStage].
  */
 @Immutable
-public data class PhaseAverages(
+@ConsistentCopyVisibility
+public data class PhaseAverages private constructor(
     /** Vsync signal to the frame actually starting. Grows when the main thread is busy elsewhere. */
-    val unknownDelay: Float = 0f,
-    val input: Float = 0f,
-    val animation: Float = 0f,
-    val layout: Float = 0f,
-    val draw: Float = 0f,
+    val unknownDelay: Float,
+    val input: Float,
+    val animation: Float,
+    val layout: Float,
+    val draw: Float,
     /** Display list sync to the render thread, plus bitmap upload to GPU textures. */
-    val sync: Float = 0f,
-    val commandIssue: Float = 0f,
+    val sync: Float,
+    val commandIssue: Float,
     /** Waiting for the GPU to finish the previous frame, then presenting this one. */
-    val swapBuffers: Float = 0f,
+    val swapBuffers: Float,
     /** Null until `FrameMetrics` reports GPU time: it needs API 31+ and a driver that supports it. */
-    val gpu: Float? = null,
-    val total: Float = 0f,
+    val gpu: Float?,
+    val total: Float,
 ) {
     public val cpu: Float = input + animation + layout + draw
 
@@ -59,7 +60,32 @@ public data class PhaseAverages(
     }
 
     public companion object {
-        public val EMPTY: PhaseAverages = PhaseAverages()
+        public val EMPTY: PhaseAverages = of()
+
+        @InternalFrameHudApi
+        public fun of(
+            unknownDelay: Float = 0f,
+            input: Float = 0f,
+            animation: Float = 0f,
+            layout: Float = 0f,
+            draw: Float = 0f,
+            sync: Float = 0f,
+            commandIssue: Float = 0f,
+            swapBuffers: Float = 0f,
+            gpu: Float? = null,
+            total: Float = 0f,
+        ): PhaseAverages = PhaseAverages(
+            unknownDelay = unknownDelay,
+            input = input,
+            animation = animation,
+            layout = layout,
+            draw = draw,
+            sync = sync,
+            commandIssue = commandIssue,
+            swapBuffers = swapBuffers,
+            gpu = gpu,
+            total = total,
+        )
 
         @InternalFrameHudApi
         public fun of(average: (FramePhase) -> Float?): PhaseAverages {

@@ -93,7 +93,7 @@ internal class IncidentRecorder(
         measured.addBattery(readings.battery)
         frames.replayInto(measured)
         record(
-            IncidentWindow(
+            IncidentWindow.of(
                 trigger = pending.trigger,
                 triggeredAtEpochMs = pending.triggeredAtEpochMs,
                 stats = measured.stats().copy(durationMs = frames.durationMs()),
@@ -137,7 +137,7 @@ internal class IncidentRecorder(
             if (window.stats.lostTimeMs > this.window.stats.lostTimeMs) this.window = window
         }
 
-        fun toIncident() = Incident(
+        fun toIncident() = Incident.of(
             occurrences = occurrences,
             firstAtEpochMs = firstAtEpochMs,
             lastAtEpochMs = lastAtEpochMs,

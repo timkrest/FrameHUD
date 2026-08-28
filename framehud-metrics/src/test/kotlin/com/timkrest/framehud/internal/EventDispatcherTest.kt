@@ -67,17 +67,17 @@ class EventDispatcherTest {
 
     @Test
     fun `the first thermal reading stays quiet unless it throttles`() {
-        sample(thermal = ThermalStats(level = ThermalLevel.NONE, headroom = null))
+        sample(thermal = ThermalStats.of(level = ThermalLevel.NONE, headroom = null))
         assertTrue(events.isEmpty())
 
-        sample(thermal = ThermalStats(level = ThermalLevel.MODERATE, headroom = null))
+        sample(thermal = ThermalStats.of(level = ThermalLevel.MODERATE, headroom = null))
         val event = assertIs<FrameHudEvent.ThermalChanged>(events.single())
         assertEquals(ThermalLevel.MODERATE, event.level)
     }
 
     @Test
     fun `throttling on the first reading is reported`() {
-        sample(thermal = ThermalStats(level = ThermalLevel.SEVERE, headroom = null))
+        sample(thermal = ThermalStats.of(level = ThermalLevel.SEVERE, headroom = null))
         assertIs<FrameHudEvent.ThermalChanged>(events.single())
     }
 
@@ -134,11 +134,11 @@ class EventDispatcherTest {
         choreographerTicksPerSecond: Int = 60,
         mark: String? = null,
     ): FrameHudEvent.IncidentTrigger? {
-        val metrics = PerformanceMetrics(
-            phases = FramePhases(draw = MetricValue(average = 12f)),
-            window = FrameWindowStats(jankPercent = jankPercent),
+        val metrics = PerformanceMetrics.of(
+            phases = FramePhases.of(draw = MetricValue.of(average = 12f)),
+            window = FrameWindowStats.of(jankPercent = jankPercent),
             session = IntervalStats.EMPTY.copy(frames = 100, durationMs = 1_000L, frozenFrames = frozenFrames),
-            display = DisplayInfo(refreshRateHz = 60f),
+            display = DisplayInfo.of(refreshRateHz = 60f),
         )
         return dispatcher.onSample(
             diagnosis = JankDiagnosis.of(

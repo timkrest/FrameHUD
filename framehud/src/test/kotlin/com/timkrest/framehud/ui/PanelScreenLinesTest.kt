@@ -50,7 +50,7 @@ class PanelScreenLinesTest {
         jankPercent: Float = 0f,
         p95FrameMs: Float = 0f,
         frozenFrames: Int = 0,
-    ) = IntervalReport(
+    ) = IntervalReport.of(
         id = IntervalId.Screen(name),
         stats = IntervalStats(
             frames = frames,

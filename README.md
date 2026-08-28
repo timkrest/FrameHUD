@@ -33,7 +33,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.14.0")
+    debugImplementation("com.timkrest:framehud:0.15.0")
 }
 ```
 
@@ -95,7 +95,7 @@ last reset. Rows summed from other rows stop after `avg`.
 you call `FrameHud` outside `src/debug`, because a release build still has to compile those lines:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.14.0")
+releaseImplementation("com.timkrest:framehud-noop:0.15.0")
 ```
 
 It mirrors the API with empty bodies: the calls compile, nothing is measured, no window is added.
@@ -107,7 +107,7 @@ collects the same numbers and sends the same events, but adds no window and no `
 to the merged manifest.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.14.0")
+qaImplementation("com.timkrest:framehud-metrics:0.15.0")
 ```
 
 `FrameHud` is the same object, so the code around it stays as it is. `enabled` switches collection
@@ -136,6 +136,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | `frameBudgetsMs` | `{}` | Milliseconds a frame may take on an interval, in place of the display deadline. |
 | `metricsThreadName` | `framehud-metrics` | Name of the collecting thread, as it shows up in traces. |
 | `perfettoTrigger` | `null` | Perfetto trigger an incident activates, so a ring-buffer trace keeps the seconds around it. |
+| `keptRuns` | `0` | Runs kept in `framehud/history.json`, the run in progress included. Zero writes no file. |
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
@@ -413,7 +414,9 @@ device, app version, measurement state and confidence issues. They land in `fram
 app's external files directory, so CI pulls them without root. A device that reports no external
 storage falls back to the app's internal directory, which `adb pull` cannot read at all;
 `adb exec-out run-as <package> cat files/framehud/<file>` gets a report out of there, and
-`shareSession` opens the system share sheet either way. Nothing is ever uploaded.
+`shareSession` opens the system share sheet either way. Nothing is ever uploaded. A write that
+fails throws rather than returning no export, so a call that must not crash the app catches
+`IOException`. `saveBaseline` and `history` answer the same way.
 
 ```kotlin
 lifecycleScope.launch {
@@ -569,6 +572,36 @@ every figure.
 The JSON export carries the issues for the session and the screen, the HTML report lists them, and
 `ScreenEnded`/`MarkEnded` summaries end with `(suspect measurement)`.
 
+## Past runs
+
+Metrics live in memory, so restarting the app takes them with it. Say how many runs to keep and
+FrameHUD writes each one to a file next to the exports.
+
+```kotlin
+FrameHud.config = FrameHud.config.copy(keptRuns = 10)
+```
+
+A run is everything measured since the process started, or since the last reset. It is written
+whenever the app leaves the foreground, and a run still going rewrites its own record rather than
+adding one, so walking between screens does not fill the file with a single run. A run killed while
+it is showing holds what it had when it last left.
+
+```kotlin
+lifecycleScope.launch {
+    val previous = FrameHud.history().firstOrNull() ?: return@launch
+    val checkout = previous.interval(IntervalId.Screen("checkout")) ?: return@launch
+    Log.w("app", "checkout ran at ${checkout.stats.p95FrameMs} ms p95 last time")
+}
+```
+
+`history()` answers newest first and leaves out the run in progress. Every run carries the session,
+each screen and each mark it measured, next to the device and the app version it ran on. The file is
+`framehud/history.json`, and `adb pull` reaches it the way it reaches the exports; it throws when it
+cannot read the file rather than answering that nothing was recorded.
+
+This is not the baseline. The baseline is one averaged figure per interval and answers whether this
+run is worse than usual. The history is the runs themselves, each with the time it was written.
+
 ## Comparing with earlier runs
 
 A fixed threshold that fits one device is flaky on the next, which is the usual reason a jank gate
@@ -622,7 +655,7 @@ from `BaselineEntry.of` and `BaselineEnvironment.current()`.
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.14.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.15.0")
 ```
 
 ```kotlin
@@ -727,8 +760,46 @@ Two of those counters are the app's own. `rows composed` climbs while the list r
 
 **Session** is what a QA run ends with. Read the intervals with the budget each one followed, the
 screens worst first, and the incidents with the readings they fired under. Save a baseline, compare
-against it, freeze the readings, toggle collection, share the report, hand a dialog window over to
-be measured, or switch the flight recorder on and ask a Perfetto trace to keep what it holds.
+against it, keep past runs and read how the last ones went, freeze the readings, toggle collection,
+share the report, hand a dialog window over to be measured, or switch the flight recorder on and
+ask a Perfetto trace to keep what it holds.
+
+## Versioning
+
+Before 1.0 the public API can change in a minor release; the changelog says what to write instead.
+
+1.0 fixes it. Within a major version binary compatibility holds, with two exceptions a minor
+release may still make. Both are caught by the compiler, and rebuilding against the new version
+settles both:
+
+- A type you build yourself grows a field, which changes the signature of its constructor and
+  `copy`: `FrameHudConfig` gains an option, `IntervalStats` gains a figure. Building them is the
+  point, so they stay public and grow with it.
+- A sealed type gains a subtype: a new event, a new confidence issue, a new jank cause. A `when`
+  over it that has no `else` stops compiling.
+
+A reading you only read carries no public constructor and no `copy`, so it gains figures without
+breaking anyone. Something on its way out is deprecated first, for at least one minor release, with
+`@Deprecated` naming what replaces it, and goes in the next major version.
+
+## Non-goals
+
+- The panel in release builds. It is a debug tool, and `framehud-noop` exists so release code
+  compiles without it.
+- FPS in a notification. An app in the background draws no frames, so there is nothing to show. When
+  the panel covers what you are testing, collapse it or read logcat.
+- Uploading anything anywhere. Measurements stay on the device.
+- Process startup and production aggregates. FrameHUD times the screen in front of you, first frame
+  and usable frame included; a cold start belongs to Macrobenchmark, and an installed base to Play
+  Vitals and Firebase Performance.
+- A system profiler or trace viewer of its own. FrameHUD leaves markers and may signal an event, but
+  Perfetto records and analyzes the trace.
+- Rendering outside the View and Canvas pipeline. `FrameMetrics` reports nothing for Vulkan, OpenGL or
+  a game engine, so neither can FrameHUD.
+- A Gradle plugin for the jank gate. It would wire `debugImplementation` and `releaseImplementation`
+  per variant and save a `@get:Rule` line per module, but following AGP across versions costs more
+  than both are worth.
+- Other platforms. Frame phases come from `FrameMetrics`, which is Android and nothing else.
 
 ## Documentation
 
@@ -738,7 +809,6 @@ be measured, or switch the flight recorder on and ask a Perfetto trace to keep w
   Perfetto and Play Vitals
 - [API reference](https://javadoc.io/doc/com.timkrest/framehud-metrics): generated from the sources
   of each release
-- [Roadmap](ROADMAP.md): what is planned next, and what is deliberately not
 - [Changelog](CHANGELOG.md): what changed in each release
 - [Contributing](CONTRIBUTING.md): how to build, and what to check before opening a pull request.
   Contributions are covered by a [CLA](CLA.md), which a bot will ask you to sign.

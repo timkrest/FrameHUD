@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import com.timkrest.framehud.FrameHud
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 @Composable
 fun rememberSessionState(): SessionState {
@@ -31,7 +32,7 @@ class SessionState(private val scope: CoroutineScope) {
         private set
 
     fun read() {
-        scope.launch { report = SessionReport.read() }
+        scope.launch { readReport() }
     }
 
     fun reset() {
@@ -42,7 +43,12 @@ class SessionState(private val scope: CoroutineScope) {
 
     fun share(activity: Activity?) {
         scope.launch {
-            val export = FrameHud.exportSession()
+            val export = try {
+                FrameHud.exportSession()
+            } catch (e: IOException) {
+                message = "The session could not be written: ${e.message}"
+                return@launch
+            }
             if (export == null) {
                 message = "Nothing has been collected yet."
                 return@launch
@@ -54,12 +60,23 @@ class SessionState(private val scope: CoroutineScope) {
 
     fun saveBaseline() {
         scope.launch {
-            val baseline = FrameHud.saveBaseline()
-            message = when (baseline) {
-                null -> "This session recorded no frame, so the baseline is unchanged."
-                else -> "This run joined the baseline for ${baseline.environment.label}."
+            message = try {
+                when (val baseline = FrameHud.saveBaseline()) {
+                    null -> "This session recorded no frame, so the baseline is unchanged."
+                    else -> "This run joined the baseline for ${baseline.environment.label}."
+                }
+            } catch (e: IOException) {
+                "The baseline was left as it was: ${e.message}"
             }
+            readReport()
+        }
+    }
+
+    private suspend fun readReport() {
+        try {
             report = SessionReport.read()
+        } catch (e: IOException) {
+            message = "FrameHUD could not read what it wrote: ${e.message}"
         }
     }
 

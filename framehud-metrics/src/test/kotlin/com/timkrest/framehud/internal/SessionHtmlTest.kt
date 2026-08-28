@@ -80,7 +80,7 @@ class SessionHtmlTest {
     @Test
     fun `the counters section shows what the app kept, peak included`() {
         val html = sessionSnapshotFixture(
-            counters = listOf(CounterReading(name = "decode queue", value = 4, peakSinceReset = 31)),
+            counters = listOf(CounterReading.of(name = "decode queue", value = 4, peakSinceReset = 31)),
         ).toHtml()
 
         assertContains(html, "Counters")
@@ -92,12 +92,12 @@ class SessionHtmlTest {
     fun `the screens section ranks what the run measured`() {
         val html = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalReport(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 600)),
-                IntervalReport(
+                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 600)),
+                IntervalReport.of(
                     IntervalId.Screen("checkout"),
                     IntervalStats.EMPTY.copy(frames = 600, frozenFrames = 2),
                 ),
-                IntervalReport(IntervalId.Mark("scroll"), IntervalStats.EMPTY.copy(frames = 600)),
+                IntervalReport.of(IntervalId.Mark("scroll"), IntervalStats.EMPTY.copy(frames = 600)),
             ),
         ).toHtml()
 
@@ -109,7 +109,7 @@ class SessionHtmlTest {
     @Test
     fun `the environment section reports the process next to the heap`() {
         val html = sessionSnapshotFixture(
-            process = ProcessStats(cpuPercent = 42f, peakCpuPercent = 61f, pssMb = 210, peakPssMb = 228),
+            process = ProcessStats.of(cpuPercent = 42f, peakCpuPercent = 61f, pssMb = 210, peakPssMb = 228),
         ).toHtml()
 
         assertContains(html, "42.0%, peak 61.0%")
@@ -155,7 +155,7 @@ class SessionHtmlTest {
     @Test
     fun `an incident carries the process reading it was drawn under`() {
         val html = sessionSnapshotFixture(
-            incidents = listOf(incidentFixture(process = ProcessStats(cpuPercent = 180f, pssMb = 240))),
+            incidents = listOf(incidentFixture(process = ProcessStats.of(cpuPercent = 180f, pssMb = 240))),
         ).toHtml()
 
         assertContains(html, "· cpu 180.0% · pss 240 MB")
@@ -166,7 +166,7 @@ class SessionHtmlTest {
         val html = sessionSnapshotFixture(
             incidents = listOf(
                 incidentFixture(
-                    counters = listOf(CounterReading(name = "decode queue", value = 31, peakSinceReset = 31)),
+                    counters = listOf(CounterReading.of(name = "decode queue", value = 31, peakSinceReset = 31)),
                 ),
             ),
         ).toHtml()
@@ -179,10 +179,10 @@ class SessionHtmlTest {
         val html = sessionSnapshotFixture(
             incidents = listOf(
                 incidentFixture(
-                    mainThreadBlock = MainThreadBlock(
+                    mainThreadBlock = MainThreadBlock.of(
                         durationMs = 850,
                         stacksTaken = 3,
-                        calls = listOf(SampledCall(name = "Repo.load(Repo.kt:12)", samples = 3)),
+                        calls = listOf(SampledCall.of(name = "Repo.load(Repo.kt:12)", samples = 3)),
                     ),
                 ),
             ),
@@ -196,7 +196,7 @@ class SessionHtmlTest {
     fun `a case that happened more than once says how often and over what stretch`() {
         val html = sessionSnapshotFixture(
             incidents = listOf(
-                incidentFixture().copy(occurrences = 7, lastAtEpochMs = TAKEN_AT_EPOCH_MS + 45_000L),
+                incidentFixture(occurrences = 7, lastAtEpochMs = TAKEN_AT_EPOCH_MS + 45_000L),
             ),
         ).toHtml()
 
@@ -220,9 +220,9 @@ class SessionHtmlTest {
     @Test
     fun `a phase is reported per interval, with the peak the whole session reached`() {
         val html = sessionSnapshotFixture(
-            session = IntervalStats.EMPTY.copy(phases = PhaseAverages(layout = 9f, total = 12f)),
-            screen = IntervalStats.EMPTY.copy(phases = PhaseAverages(layout = 4f, total = 6f)),
-            phases = FramePhases(layout = MetricValue(average = 9f, peak = 21f)),
+            session = IntervalStats.EMPTY.copy(phases = PhaseAverages.of(layout = 9f, total = 12f)),
+            screen = IntervalStats.EMPTY.copy(phases = PhaseAverages.of(layout = 4f, total = 6f)),
+            phases = FramePhases.of(layout = MetricValue.of(average = 9f, peak = 21f)),
         ).toHtml()
 
         assertContains(html, "Session cpu bound at 9.0 ms per frame, screen cpu bound at 4.0 ms per frame.")
@@ -262,8 +262,8 @@ class SessionHtmlTest {
     fun `a baseline from another device says so instead of showing deltas`() {
         val html = sessionSnapshotFixture(
             baseline = BaselineComparison.OtherEnvironment(
-                recorded = BASELINE_ENVIRONMENT,
-                current = BASELINE_ENVIRONMENT.copy(model = "Pixel 5"),
+                recorded = RECORDED_ENVIRONMENT,
+                current = RECORDED_ENVIRONMENT.copy(model = "Pixel 5"),
             ),
         ).toHtml()
 

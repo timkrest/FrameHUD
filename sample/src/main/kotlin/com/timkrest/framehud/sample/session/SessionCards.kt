@@ -9,13 +9,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.Incident
+import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.RecordedRun
 import com.timkrest.framehud.sample.ui.SampleCard
 import com.timkrest.framehud.sample.ui.SampleLine
 import com.timkrest.framehud.sample.ui.SampleNote
 import com.timkrest.framehud.sample.ui.formatMs
 import com.timkrest.framehud.sample.ui.formatPercent
+import java.text.DateFormat
+import java.util.Date
 
 @Composable
 fun SessionActions(
@@ -93,6 +97,24 @@ fun BaselineCard(comparison: BaselineComparison?) {
             }
         }
     }
+}
+
+@Composable
+fun PastRunsCard(runs: List<RecordedRun>) {
+    SampleCard(title = "Past runs") {
+        if (runs.isEmpty()) {
+            SampleNote(text = "No earlier run yet. A run becomes a previous one once the next starts.")
+        }
+        runs.forEach { run -> SampleLine(label = run.recordedAt(), value = run.sessionSummary()) }
+    }
+}
+
+private fun RecordedRun.recordedAt(): String =
+    DateFormat.getTimeInstance(DateFormat.MEDIUM).format(Date(recordedAtEpochMs))
+
+private fun RecordedRun.sessionSummary(): String {
+    val stats = interval(IntervalId.Session)?.stats ?: return "no session recorded"
+    return "${formatPercent(stats.jankPercent)} jank, p95 ${formatMs(stats.p95FrameMs)}"
 }
 
 private fun IntervalReport.budgetSummary(): String = when {

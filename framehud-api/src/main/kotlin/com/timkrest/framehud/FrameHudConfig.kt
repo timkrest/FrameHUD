@@ -22,6 +22,11 @@ public data class FrameHudConfig(
      * buffer. FrameHUD neither starts nor configures that trace. Null activates none.
      */
     val perfettoTrigger: String? = null,
+    /**
+     * Runs `framehud/history.json` keeps, the one in progress included. Zero writes no file, and the
+     * oldest go early once the file outgrows what FrameHUD reads back.
+     */
+    val keptRuns: Int = 0,
 ) {
     init {
         require(metricsSampleWindowFrames > 0) {
@@ -39,6 +44,7 @@ public data class FrameHudConfig(
         require(perfettoTrigger == null || perfettoTrigger.isNotBlank()) {
             "A Perfetto trigger must be named, or left null"
         }
+        require(keptRuns >= 0) { "keptRuns must not be negative, was $keptRuns" }
     }
 
     public companion object {

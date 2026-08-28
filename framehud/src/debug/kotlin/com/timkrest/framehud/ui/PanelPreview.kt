@@ -94,13 +94,13 @@ private val PREVIEW_DRAG = object : PanelDrag {
 }
 
 private val PREVIEW_COUNTERS = listOf(
-    CounterReading(name = "decode queue", value = 4, peakSinceReset = 31),
-    CounterReading(name = "cache misses", value = 12, peakSinceReset = 12),
+    CounterReading.of(name = "decode queue", value = 4, peakSinceReset = 31),
+    CounterReading.of(name = "cache misses", value = 12, peakSinceReset = 12),
 )
 
 private const val PREVIEW_CHOREOGRAPHER_TICKS_PER_SECOND = 120
 
-private val PREVIEW_PROCESS = ProcessStats(
+private val PREVIEW_PROCESS = ProcessStats.of(
     cpuPercent = 42f,
     peakCpuPercent = 61f,
     pssMb = 210,
@@ -123,7 +123,7 @@ private fun previewScreen(
     jankPercent: Float,
     p95FrameMs: Float,
     frozenFrames: Int,
-) = IntervalReport(
+) = IntervalReport.of(
     id = IntervalId.Screen(name),
     stats = IntervalStats(
         frames = frames,
@@ -143,8 +143,8 @@ private fun previewHistory(): FrameHistory {
     return FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs)
 }
 
-private val PREVIEW_METRICS = PerformanceMetrics(
-    window = FrameWindowStats(
+private val PREVIEW_METRICS = PerformanceMetrics.of(
+    window = FrameWindowStats.of(
         fps = 55,
         jankPercent = 33.3f,
         p95FrameMs = 23f,
@@ -153,7 +153,7 @@ private val PREVIEW_METRICS = PerformanceMetrics(
     ),
 )
 
-private val PREVIEW_MEMORY = MemoryStats(
+private val PREVIEW_MEMORY = MemoryStats.of(
     usedHeapMb = 84,
     maxHeapMb = 256,
     nativeHeapMb = 37,

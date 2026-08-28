@@ -3,6 +3,7 @@ package com.timkrest.framehud.internal
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import java.io.File
 
 internal fun isMainProcess(context: Context): Boolean {
@@ -19,6 +20,7 @@ private fun currentProcessName(): String? = if (Build.VERSION.SDK_INT >= Build.V
 private fun readCmdline(): String? = try {
     File(CMDLINE_PATH).readText().substringBefore(Char(0)).trim().takeIf { it.isNotEmpty() }
 } catch (e: Exception) {
+    Log.w(LOG_TAG, "Cannot read $CMDLINE_PATH, taking this for the main process", e)
     null
 }
 

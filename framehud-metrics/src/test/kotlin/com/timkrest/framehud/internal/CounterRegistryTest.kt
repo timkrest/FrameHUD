@@ -16,7 +16,7 @@ class CounterRegistryTest {
         registry.counter("decode queue").add(4)
         registry.sample()
 
-        assertEquals(listOf(CounterReading("decode queue", value = 7, peakSinceReset = 7)), registry.liveCounters)
+        assertEquals(listOf(CounterReading.of("decode queue", value = 7, peakSinceReset = 7)), registry.liveCounters)
     }
 
     @Test

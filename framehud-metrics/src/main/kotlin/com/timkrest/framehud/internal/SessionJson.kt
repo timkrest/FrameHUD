@@ -1,17 +1,14 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
-import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.IntervalComparison
 import com.timkrest.framehud.IntervalId
-import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.JankCause
 import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.MainThreadBlock
-import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.ProcessStats
@@ -44,11 +41,11 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     putPerfetto(flightRecording)
     putObject("session") {
         sessionBudgetMs()?.let { put("frameBudgetMs", it) }
-        putStats(session)
+        putIntervalStats(session)
     }
     putObject("screen") {
         put("name", screenName)
-        putStats(screen)
+        putIntervalStats(screen)
     }
     putArray("intervals") {
         for (interval in intervals) {
@@ -56,7 +53,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
             addObject {
                 put("interval", interval.id.key())
                 interval.frameBudgetMs?.let { put("frameBudgetMs", it) }
-                putStats(interval.stats)
+                putIntervalStats(interval.stats)
             }
         }
     }
@@ -111,7 +108,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
                     put("at", formatTimestamp(worst.triggeredAtEpochMs))
                     put("atMs", worst.triggeredAtEpochMs)
                     put("framesBeforeTrigger", worst.framesBeforeTrigger)
-                    putObject("stats") { putStats(worst.stats) }
+                    putObject("stats") { putIntervalStats(worst.stats) }
                     putFrames(worst.frames)
                     putObject("memory") { putMemory(worst.memory) }
                     putObject("thermal") { putThermal(worst.thermal) }
@@ -304,65 +301,6 @@ private fun JsonObjectScope.putIntervalComparison(interval: IntervalComparison) 
             }
         }
     }
-}
-
-private fun JsonObjectScope.putStats(stats: IntervalStats) {
-    put("frames", stats.frames)
-    put("durationMs", stats.durationMs)
-    put("p50FrameMs", stats.p50FrameMs)
-    put("p95FrameMs", stats.p95FrameMs)
-    put("p99FrameMs", stats.p99FrameMs)
-    put("jankPercent", stats.jankPercent)
-    put("lostTimeMs", stats.lostTimeMs)
-    put("frozenFrames", stats.frozenFrames)
-    put("maxJankStreak", stats.maxJankStreak)
-    put("droppedReports", stats.droppedReports)
-    putObject("phases") {
-        put("bottleneckStage", stats.phases.bottleneckStage.name)
-        putPhaseAverages(stats.phases)
-    }
-    putObject("confidence") { putConfidence(stats.confidence) }
-}
-
-private fun JsonObjectScope.putConfidence(confidence: MeasurementConfidence) {
-    put("suspect", confidence.isSuspect)
-    putArray("issues") {
-        for (issue in confidence.issues) addObject { putIssue(issue) }
-    }
-}
-
-private fun JsonObjectScope.putIssue(issue: ConfidenceIssue) {
-    when (issue) {
-        is ConfidenceIssue.DroppedReports -> {
-            put("type", "droppedReports")
-            put("count", issue.count)
-        }
-        is ConfidenceIssue.SlowListener -> {
-            put("type", "slowListener")
-            put("longestCallMs", issue.longestCallMs)
-        }
-        is ConfidenceIssue.ThermalThrottling -> {
-            put("type", "thermalThrottling")
-            put("worstLevel", issue.worstLevel.name)
-        }
-        is ConfidenceIssue.LowBattery -> {
-            put("type", "lowBattery")
-            put("powerSaveMode", issue.powerSaveMode)
-            put("levelPercent", issue.levelPercent)
-        }
-        is ConfidenceIssue.RefreshRateChanged -> {
-            put("type", "refreshRateChanged")
-            putArray("ratesHz") { for (rate in issue.ratesHz.sorted()) add(rate) }
-        }
-        is ConfidenceIssue.Emulator -> {
-            put("type", "emulator")
-        }
-        is ConfidenceIssue.ShortSample -> {
-            put("type", "shortSample")
-            put("frames", issue.frames)
-        }
-    }
-    putArray("affected") { for (metric in issue.affected) add(metric.name) }
 }
 
 private fun JsonObjectScope.putPhase(name: String, value: MetricValue?) {

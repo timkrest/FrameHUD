@@ -59,7 +59,8 @@ public enum class JankSeverity {
 
 /** Diagnosis for the current rolling window. */
 @Immutable
-public data class JankDiagnosis(
+@ConsistentCopyVisibility
+public data class JankDiagnosis private constructor(
     val cause: JankCause,
     val severity: JankSeverity,
     val jankPercent: Float,
@@ -82,6 +83,21 @@ public data class JankDiagnosis(
             jankPercent = 0f,
             worstFrameMs = 0f,
             frameBudgetMs = 0f,
+        )
+
+        @InternalFrameHudApi
+        public fun of(
+            cause: JankCause,
+            severity: JankSeverity,
+            jankPercent: Float,
+            worstFrameMs: Float,
+            frameBudgetMs: Float,
+        ): JankDiagnosis = JankDiagnosis(
+            cause = cause,
+            severity = severity,
+            jankPercent = jankPercent,
+            worstFrameMs = worstFrameMs,
+            frameBudgetMs = frameBudgetMs,
         )
 
         private const val MIN_GC_TIME_SHARE = 0.02f

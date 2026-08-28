@@ -27,13 +27,13 @@ internal class MainThreadSampler {
 
     fun blockAt(nowMs: Long): MainThreadBlock {
         if (stacksTaken == 0) return MainThreadBlock.NONE
-        return MainThreadBlock(
+        return MainThreadBlock.of(
             durationMs = maxOf(nowMs - blockedSinceMs, 0L),
             stacksTaken = stacksTaken,
             calls = samplesByCall.entries
                 .sortedByDescending { it.value }
                 .take(CALLS_KEPT)
-                .map { SampledCall(name = it.key, samples = it.value) },
+                .map { SampledCall.of(name = it.key, samples = it.value) },
         )
     }
 

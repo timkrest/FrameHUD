@@ -4,10 +4,11 @@ import androidx.compose.runtime.Immutable
 import com.timkrest.framehud.internal.MS_PER_SECOND
 
 @Immutable
-public data class DisplayInfo(
-    val refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ,
+@ConsistentCopyVisibility
+public data class DisplayInfo private constructor(
+    val refreshRateHz: Float,
     /** The system deadline (API 31+), otherwise `1000 / refreshRateHz`. */
-    val frameBudgetMs: Float = MS_PER_SECOND / DEFAULT_REFRESH_RATE_HZ,
+    val frameBudgetMs: Float,
 ) {
     init {
         require(refreshRateHz > 0f) { "refreshRateHz must be positive, was $refreshRateHz" }
@@ -17,6 +18,12 @@ public data class DisplayInfo(
     public companion object {
         public const val DEFAULT_REFRESH_RATE_HZ: Float = 60f
 
-        public val DEFAULT: DisplayInfo = DisplayInfo()
+        public val DEFAULT: DisplayInfo = of()
+
+        @InternalFrameHudApi
+        public fun of(
+            refreshRateHz: Float = DEFAULT_REFRESH_RATE_HZ,
+            frameBudgetMs: Float = MS_PER_SECOND / DEFAULT_REFRESH_RATE_HZ,
+        ): DisplayInfo = DisplayInfo(refreshRateHz = refreshRateHz, frameBudgetMs = frameBudgetMs)
     }
 }

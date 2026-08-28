@@ -79,7 +79,7 @@ class SessionJsonTest {
 
     @Test
     fun `an incident carries the diagnosis that opened it, its window and where the trigger fell`() {
-        val diagnosis = JankDiagnosis(
+        val diagnosis = JankDiagnosis.of(
             cause = JankCause.Stage(stage = PipelineStage.CPU, averageMs = 12.5f),
             severity = JankSeverity.SEVERE,
             jankPercent = 40f,
@@ -126,7 +126,7 @@ class SessionJsonTest {
         val json = sessionSnapshotFixture(
             incidents = listOf(
                 incidentFixture(
-                    counters = listOf(CounterReading(name = "decode queue", value = 31, peakSinceReset = 31)),
+                    counters = listOf(CounterReading.of(name = "decode queue", value = 31, peakSinceReset = 31)),
                 ),
             ),
         ).toJson()
@@ -139,10 +139,10 @@ class SessionJsonTest {
         val json = sessionSnapshotFixture(
             incidents = listOf(
                 incidentFixture(
-                    mainThreadBlock = MainThreadBlock(
+                    mainThreadBlock = MainThreadBlock.of(
                         durationMs = 850,
                         stacksTaken = 3,
-                        calls = listOf(SampledCall(name = "Repo.load(Repo.kt:12)", samples = 3)),
+                        calls = listOf(SampledCall.of(name = "Repo.load(Repo.kt:12)", samples = 3)),
                     ),
                 ),
             ),
@@ -176,7 +176,7 @@ class SessionJsonTest {
     @Test
     fun `counters the app kept reach the export with their peaks`() {
         val json = sessionSnapshotFixture(
-            counters = listOf(CounterReading(name = "decode queue", value = 4, peakSinceReset = 31)),
+            counters = listOf(CounterReading.of(name = "decode queue", value = 4, peakSinceReset = 31)),
         ).toJson()
 
         assertContains(json, """"counters":[{"name":"decode queue","value":4,"peak":31}]""")
@@ -215,7 +215,7 @@ class SessionJsonTest {
     fun `intervals and their deltas against the baseline reach the export`() {
         val json = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalReport(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
+                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
             ),
             baseline = comparisonFixture(),
         ).toJson()
@@ -233,8 +233,8 @@ class SessionJsonTest {
     fun `the session carries its own budget and does not repeat itself among the intervals`() {
         val json = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalReport(IntervalId.Session, IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
-                IntervalReport(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90)),
+                IntervalReport.of(IntervalId.Session, IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
+                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90)),
             ),
         ).toJson()
 
@@ -247,8 +247,8 @@ class SessionJsonTest {
     fun `a baseline from another device exports both environments instead of deltas`() {
         val json = sessionSnapshotFixture(
             baseline = BaselineComparison.OtherEnvironment(
-                recorded = BASELINE_ENVIRONMENT,
-                current = BASELINE_ENVIRONMENT.copy(model = "Pixel 5"),
+                recorded = RECORDED_ENVIRONMENT,
+                current = RECORDED_ENVIRONMENT.copy(model = "Pixel 5"),
             ),
         ).toJson()
 

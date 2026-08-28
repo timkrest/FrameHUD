@@ -4,7 +4,8 @@ import androidx.compose.runtime.Immutable
 
 /** Throttling state from `PowerManager`. Timings taken while throttling are not comparable to cold ones. */
 @Immutable
-public data class ThermalStats(
+@ConsistentCopyVisibility
+public data class ThermalStats private constructor(
     val level: ThermalLevel,
     /**
      * How close the device is to severe throttling: `1.0` is that point and higher is past it.
@@ -14,6 +15,10 @@ public data class ThermalStats(
 ) {
     public companion object {
         public val EMPTY: ThermalStats = ThermalStats(level = ThermalLevel.UNKNOWN, headroom = null)
+
+        @InternalFrameHudApi
+        public fun of(level: ThermalLevel, headroom: Float?): ThermalStats =
+            ThermalStats(level = level, headroom = headroom)
     }
 }
 

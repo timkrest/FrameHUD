@@ -34,7 +34,8 @@ public sealed interface IntervalId {
 }
 
 @Immutable
-public data class IntervalReport(
+@ConsistentCopyVisibility
+public data class IntervalReport private constructor(
     val id: IntervalId,
     val stats: IntervalStats,
     /** Null when no single budget judged nearly every frame. */
@@ -44,5 +45,11 @@ public data class IntervalReport(
         require(frameBudgetMs == null || frameBudgetMs > 0) {
             "A frame budget must be positive, got $frameBudgetMs"
         }
+    }
+
+    public companion object {
+        @InternalFrameHudApi
+        public fun of(id: IntervalId, stats: IntervalStats, frameBudgetMs: Int? = null): IntervalReport =
+            IntervalReport(id = id, stats = stats, frameBudgetMs = frameBudgetMs)
     }
 }

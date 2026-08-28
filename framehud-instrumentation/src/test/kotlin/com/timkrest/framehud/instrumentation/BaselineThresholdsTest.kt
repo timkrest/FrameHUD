@@ -60,8 +60,8 @@ class BaselineThresholdsTest {
         val comparison = comparisonOf(
             baseline = 10f,
             current = 14f,
-            baselinePhases = PhaseAverages(layout = 4f, draw = 2f),
-            currentPhases = PhaseAverages(layout = 7f, draw = 3f),
+            baselinePhases = PhaseAverages.of(layout = 4f, draw = 2f),
+            currentPhases = PhaseAverages.of(layout = 7f, draw = 3f),
         )
 
         val failed = assertIs<GateVerdict.Fail>(BaselineThresholds().verdict(TAG, comparison, session()))
@@ -169,7 +169,7 @@ class BaselineThresholdsTest {
         return recorded.compare(
             ENVIRONMENT,
             listOf(
-                IntervalReport(
+                IntervalReport.of(
                     id = IntervalId.Session,
                     stats = statsOf(p95FrameMs = current, phases = currentPhases)
                         .copy(confidence = MeasurementConfidence(currentIssues)),

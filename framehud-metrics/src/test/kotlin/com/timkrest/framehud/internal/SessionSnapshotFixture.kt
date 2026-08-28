@@ -3,7 +3,6 @@ package com.timkrest.framehud.internal
 import com.timkrest.framehud.Baseline
 import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.BaselineEntry
-import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.DisplayInfo
 import com.timkrest.framehud.FrameHistory
@@ -31,7 +30,7 @@ internal fun sessionSnapshotFixture(
     intervals: List<IntervalReport> = emptyList(),
     baseline: BaselineComparison = BaselineComparison.NoBaseline,
     phases: FramePhases = FramePhases.EMPTY,
-    window: FrameWindowStats = FrameWindowStats(frameBudgetMs = 16.6f),
+    window: FrameWindowStats = FrameWindowStats.of(frameBudgetMs = 16.6f),
     worstFrames: List<WorstFrames.Frame> = emptyList(),
     incidents: List<Incident> = emptyList(),
     process: ProcessStats = ProcessStats.EMPTY,
@@ -45,7 +44,7 @@ internal fun sessionSnapshotFixture(
     packageName = "com.example.app",
     appVersionName = "9.9",
     appVersionCode = 42L,
-    environment = BASELINE_ENVIRONMENT,
+    environment = RECORDED_ENVIRONMENT,
     isEnabled = true,
     isFrozen = false,
     screenName = screenName,
@@ -57,7 +56,7 @@ internal fun sessionSnapshotFixture(
     baseline = baseline,
     phases = phases,
     window = window,
-    display = DisplayInfo(refreshRateHz = 60f, frameBudgetMs = 16.6f),
+    display = DisplayInfo.of(refreshRateHz = 60f, frameBudgetMs = 16.6f),
     memory = MemoryStats.EMPTY,
     thermal = ThermalStats.EMPTY,
     process = process,
@@ -75,11 +74,13 @@ internal fun incidentFixture(
     process: ProcessStats = ProcessStats.EMPTY,
     counters: List<CounterReading> = emptyList(),
     mainThreadBlock: MainThreadBlock = MainThreadBlock.NONE,
-) = Incident(
-    occurrences = 1,
+    occurrences: Int = 1,
+    lastAtEpochMs: Long = TAKEN_AT_EPOCH_MS,
+) = Incident.of(
+    occurrences = occurrences,
     firstAtEpochMs = TAKEN_AT_EPOCH_MS,
-    lastAtEpochMs = TAKEN_AT_EPOCH_MS,
-    worst = IncidentWindow(
+    lastAtEpochMs = lastAtEpochMs,
+    worst = IncidentWindow.of(
         trigger = trigger,
         triggeredAtEpochMs = TAKEN_AT_EPOCH_MS,
         stats = stats,
@@ -93,7 +94,7 @@ internal fun incidentFixture(
     ),
 )
 
-internal fun windowOf(totalsMs: FloatArray, deadlinesMs: FloatArray) = FrameWindowStats(
+internal fun windowOf(totalsMs: FloatArray, deadlinesMs: FloatArray) = FrameWindowStats.of(
     fps = totalsMs.size,
     jankPercent = 50f,
     p95FrameMs = totalsMs.max(),
@@ -105,24 +106,18 @@ internal fun windowOf(totalsMs: FloatArray, deadlinesMs: FloatArray) = FrameWind
 internal const val TAKEN_AT_EPOCH_MS = 1_700_000_000_000L
 internal const val TAKEN_AT_NS = 1_000_000_000_000L
 
-internal val BASELINE_ENVIRONMENT = BaselineEnvironment(
-    manufacturer = "Google",
-    model = "Pixel 8",
-    apiLevel = 34,
-)
-
 internal fun comparisonFixture(): BaselineComparison = Baseline(
-    environment = BASELINE_ENVIRONMENT,
+    environment = RECORDED_ENVIRONMENT,
     entries = mapOf(
-        IntervalId.Session to BaselineEntry.of(baselineStats(p95FrameMs = 10f, layoutMs = 4f), runs = 3),
+        IntervalId.Session to BaselineEntry.of(runStats(p95FrameMs = 10f, layoutMs = 4f), runs = 3),
     ),
 ).compare(
-    environment = BASELINE_ENVIRONMENT,
-    intervals = listOf(IntervalReport(IntervalId.Session, baselineStats(p95FrameMs = 12f, layoutMs = 7f))),
+    environment = RECORDED_ENVIRONMENT,
+    intervals = listOf(IntervalReport.of(IntervalId.Session, runStats(p95FrameMs = 12f, layoutMs = 7f))),
 )
 
-private fun baselineStats(p95FrameMs: Float, layoutMs: Float) = IntervalStats.EMPTY.copy(
+private fun runStats(p95FrameMs: Float, layoutMs: Float) = IntervalStats.EMPTY.copy(
     frames = 300,
     p95FrameMs = p95FrameMs,
-    phases = PhaseAverages(layout = layoutMs),
+    phases = PhaseAverages.of(layout = layoutMs),
 )

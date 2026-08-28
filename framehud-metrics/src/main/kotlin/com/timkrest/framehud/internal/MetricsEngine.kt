@@ -60,7 +60,9 @@ internal class MetricsEngine(
 
     private val measuredScreen = MeasuredScreen()
 
-    private var sessionId = 0
+    @Volatile
+    var runNumber = 0
+        private set
 
     private val reportedFailures = mutableSetOf<String>()
 
@@ -280,7 +282,7 @@ internal class MetricsEngine(
     @AnyThread
     fun reset() {
         onAggregates {
-            sessionId++
+            runNumber++
             aggregator.reset()
             memoryMonitor.reset()
             processMonitor.reset()
@@ -325,14 +327,20 @@ internal class MetricsEngine(
     }
 
     @AnyThread
-    suspend fun baselineStats(): BaselineStats? = readOnMetricsThread {
-        BaselineStats(
-            sessionId = sessionId,
-            session = aggregator.sessionStats(),
-            environment = BaselineEnvironment.current(),
-            intervals = aggregator.intervals(),
-        )
+    suspend fun runStats(): RunStats? = readOnMetricsThread(::runStatsHere)
+
+    @AnyThread
+    fun postRunStats(onRead: (RunStats) -> Unit) {
+        metricsThread.started?.post { onRead(runStatsHere()) }
     }
+
+    @WorkerThread
+    private fun runStatsHere(): RunStats = RunStats(
+        runNumber = runNumber,
+        session = aggregator.sessionStats(),
+        environment = BaselineEnvironment.current(),
+        intervals = aggregator.intervals(),
+    )
 
     @AnyThread
     private suspend fun <T : Any> readOnMetricsThread(read: () -> T): T? = suspendCancellableCoroutine { waiting ->
@@ -478,8 +486,8 @@ internal class MetricsEngine(
         const val PROCESS_SAMPLE_INTERVAL_MS = 5_000L
     }
 
-    class BaselineStats(
-        val sessionId: Int,
+    class RunStats(
+        val runNumber: Int,
         val session: IntervalStats,
         val environment: BaselineEnvironment,
         val intervals: List<IntervalReport>,

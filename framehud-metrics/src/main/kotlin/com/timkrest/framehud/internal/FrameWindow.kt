@@ -23,7 +23,7 @@ internal class FrameWindow(size: Int) {
 
     fun overrunValue(): MetricValue = overruns.toMetricValue()
 
-    fun phases(hasGpuDuration: Boolean): FramePhases = FramePhases(
+    fun phases(hasGpuDuration: Boolean): FramePhases = FramePhases.of(
         unknownDelay = metricValue(FramePhase.UNKNOWN_DELAY),
         input = metricValue(FramePhase.INPUT),
         animation = metricValue(FramePhase.ANIMATION),

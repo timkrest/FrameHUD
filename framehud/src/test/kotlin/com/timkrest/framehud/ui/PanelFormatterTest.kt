@@ -15,7 +15,7 @@ class PanelFormatterTest {
 
     @Test
     fun `metric rows line up under the header`() {
-        val row = formatMetricLine(label = "layout", value = MetricValue(current = 1.2f, average = 3.4f, peak = 15.6f))
+        val row = formatMetricLine(label = "layout", value = MetricValue.of(current = 1.2f, average = 3.4f, peak = 15.6f))
         assertEquals(CPU_COLUMNS_HEADER_LINE.length, row.length)
         assertEquals(CPU_COLUMNS_HEADER_LINE.length, GPU_UNAVAILABLE_LINE.length)
 
@@ -30,14 +30,14 @@ class PanelFormatterTest {
         } + listOf(LABEL_DELAY, LABEL_OTHER, LABEL_TOTAL, LABEL_OVERRUN)
 
         labels.forEach { label ->
-            val row = formatMetricLine(label, MetricValue(current = 1.2f, average = 3.4f, peak = 15.6f))
+            val row = formatMetricLine(label, MetricValue.of(current = 1.2f, average = 3.4f, peak = 15.6f))
             assertEquals(CPU_COLUMNS_HEADER_LINE.length, row.length, row)
         }
     }
 
     @Test
     fun `a frame that ran for seconds drops its decimal rather than push the columns right`() {
-        val row = formatMetricLine(LABEL_TOTAL, MetricValue(current = 1200.4f, average = 987.6f, peak = 60_000f))
+        val row = formatMetricLine(LABEL_TOTAL, MetricValue.of(current = 1200.4f, average = 987.6f, peak = 60_000f))
 
         assertEquals(CPU_COLUMNS_HEADER_LINE.length, row.length, row)
         assertTrue(row.contains(" 1200 "), row)
@@ -46,14 +46,14 @@ class PanelFormatterTest {
 
     @Test
     fun `a timing that never went positive still prints its peak column`() {
-        val row = formatMetricLine(label = "over", value = MetricValue(current = -6.7f, average = -5.2f, peak = -1.1f))
+        val row = formatMetricLine(label = "over", value = MetricValue.of(current = -6.7f, average = -5.2f, peak = -1.1f))
         assertEquals(CPU_COLUMNS_HEADER_LINE.length, row.length)
         assertTrue(row.contains("-1.1"), row)
     }
 
     @Test
     fun `derived timings stop after two columns`() {
-        val row = formatMetricLine(label = "other", value = MetricValue(current = 1.2f, average = 3.4f))
+        val row = formatMetricLine(label = "other", value = MetricValue.of(current = 1.2f, average = 3.4f))
         assertTrue(row.length < CPU_COLUMNS_HEADER_LINE.length)
     }
 
@@ -89,8 +89,8 @@ class PanelFormatterTest {
     @Test
     fun `thermal headroom is dropped when the platform reports none`() {
         val level = ThermalLevel.MODERATE
-        assertEquals("therm moderate", formatThermal(ThermalStats(level = level, headroom = null)))
-        assertEquals("therm moderate · hr 0.42", formatThermal(ThermalStats(level = level, headroom = 0.42f)))
+        assertEquals("therm moderate", formatThermal(ThermalStats.of(level = level, headroom = null)))
+        assertEquals("therm moderate · hr 0.42", formatThermal(ThermalStats.of(level = level, headroom = 0.42f)))
     }
 
     @Test
@@ -101,7 +101,7 @@ class PanelFormatterTest {
                 formatTiming(choreographerTicksPerSecond = 60, frameBudgetMs = 16.7f),
             )
             assertEquals("jank   7.5%", formatJankShort(7.5f))
-            val row = formatMetricLine(label = "draw", value = MetricValue(current = 1.5f, average = 2.5f))
+            val row = formatMetricLine(label = "draw", value = MetricValue.of(current = 1.5f, average = 2.5f))
             assertFalse(row.contains(','), row)
         }
     }

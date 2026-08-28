@@ -81,7 +81,7 @@ class FrameHudEventTest {
         frozenFrames = 1,
     )
 
-    private fun diagnosis() = JankDiagnosis(
+    private fun diagnosis() = JankDiagnosis.of(
         cause = JankCause.Stage(stage = PipelineStage.CPU, averageMs = 19.3f),
         severity = JankSeverity.SEVERE,
         jankPercent = 25f,
