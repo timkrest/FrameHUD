@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.util.Log
 import com.timkrest.framehud.internal.LOG_TAG
@@ -12,18 +11,9 @@ import com.timkrest.framehud.internal.baselineFile
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 
-/**
- * Drives [FrameHud] over `adb shell am broadcast -a com.timkrest.framehud.<COMMAND> <package>`.
- * Exported, because the shell cannot reach it otherwise — so any app on the device can send the
- * same commands. They only touch debug state and exports never leave the app's own storage.
- */
 internal class FrameHudCommandReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
-            Log.w(LOG_TAG, "Ignoring ${intent.action}: the app is not debuggable")
-            return
-        }
         when (intent.action) {
             ACTION_ENABLE -> {
                 FrameHud.show()
@@ -71,21 +61,17 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         "failed: ${e.message}"
     }
 
-    private val Intent.name: String? get() = readExtras()?.getString(EXTRA_NAME)
+    private val Intent.name: String? get() = extrasIfLoadable()?.getString(EXTRA_NAME)
 
-    /**
-     * Reading an extra unpacks the whole bundle, and a bundle from another app can name a class
-     * this process cannot load. That throws where the sender chose, on the main thread.
-     */
-    private fun Intent.readExtras(): Bundle? = try {
+    private fun Intent.extrasIfLoadable(): Bundle? = try {
         extras?.apply { keySet() }
     } catch (e: Exception) {
-        Log.w(LOG_TAG, "Ignoring the extras of $action", e)
+        Log.w(LOG_TAG, "Ignoring the extras of $action: a sender named a class this process cannot load", e)
         null
     }
 
     private fun Intent.contextPairs(): Map<String, String> {
-        val bundle = readExtras() ?: return emptyMap()
+        val bundle = extrasIfLoadable() ?: return emptyMap()
         return buildMap {
             for (key in bundle.keySet()) {
                 if (key.isBlank()) continue

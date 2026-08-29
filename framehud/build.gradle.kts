@@ -15,6 +15,7 @@ android {
 
 dependencies {
     api(project(":framehud-metrics"))
+    implementation(project(":framehud-qa"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.runtime)

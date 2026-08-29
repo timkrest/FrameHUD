@@ -19,6 +19,7 @@ rootProject.name = "framehud"
 
 include(":framehud-api")
 include(":framehud-metrics")
+include(":framehud-qa")
 include(":framehud")
 include(":framehud-noop")
 include(":framehud-instrumentation")

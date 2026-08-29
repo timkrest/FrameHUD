@@ -15,7 +15,8 @@ release build with R8. It needs JDK 21 and an Android SDK.
 Thread and window behaviour is covered by instrumentation tests, which need a device or emulator:
 
 ```
-./gradlew :framehud-metrics:connectedDebugAndroidTest :sample:connectedDebugAndroidTest
+./gradlew :framehud-metrics:connectedDebugAndroidTest :framehud-qa:connectedDebugAndroidTest \
+  :sample:connectedDebugAndroidTest
 ```
 
 CI runs both on API 24, 31 and 36, the levels where `FrameMetrics` changes what it reports.
@@ -46,7 +47,8 @@ For maintainers:
 
 1. Move the `Unreleased` entries under a `## [x.y.z] - yyyy-mm-dd` heading and add the matching link
    at the bottom of the changelog. The publish workflow refuses a tag with no changelog section.
-   Point the dependency snippets in both READMEs at the new version in the same commit.
+   Point the dependency snippets in the READMEs and the guides at the new version in the same
+   commit.
 2. Commit, then tag: `git tag -a vx.y.z -m "FrameHUD x.y.z" && git push origin vx.y.z`. The tag is the
    only source of a released version; `VERSION_NAME` in `gradle.properties` stays a snapshot.
 3. The workflow builds, signs, uploads a deployment to the Central Portal and opens the GitHub release

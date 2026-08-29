@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <receiver
+            android:name="com.timkrest.framehud.FrameHudCommandReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="com.timkrest.framehud.ENABLE" />
+                <action android:name="com.timkrest.framehud.DISABLE" />
+                <action android:name="com.timkrest.framehud.RESET" />
+                <action android:name="com.timkrest.framehud.SCREEN" />
+                <action android:name="com.timkrest.framehud.MARK" />
+                <action android:name="com.timkrest.framehud.CONTEXT" />
+                <action android:name="com.timkrest.framehud.EXPORT" />
+                <action android:name="com.timkrest.framehud.BASELINE" />
+                <action android:name="com.timkrest.framehud.RETAIN" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

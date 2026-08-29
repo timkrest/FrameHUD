@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.annotation.WorkerThread
 import com.timkrest.framehud.Baseline
 import com.timkrest.framehud.BaselineEntry
+import com.timkrest.framehud.InternalFrameHudApi
 import com.timkrest.framehud.IntervalId
 import java.io.File
 
@@ -12,7 +13,8 @@ internal const val BASELINE_FILE_NAME = "baseline.json"
 
 private const val MAX_BASELINE_BYTES = 1L shl 20
 
-internal fun baselineFile(application: Application): File = File(exportDirectory(application), BASELINE_FILE_NAME)
+@InternalFrameHudApi
+public fun baselineFile(application: Application): File = File(exportDirectory(application), BASELINE_FILE_NAME)
 
 @WorkerThread
 internal fun readBaseline(file: File): Stored<Baseline?> =

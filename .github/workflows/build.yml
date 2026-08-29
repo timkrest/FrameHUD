@@ -74,6 +74,7 @@ jobs:
           script: >
             ./gradlew
             :framehud-metrics:connectedDebugAndroidTest
+            :framehud-qa:connectedDebugAndroidTest
             :sample:connectedDebugAndroidTest
             --stacktrace
 
@@ -83,8 +84,10 @@ jobs:
         with:
           name: instrumentation-reports-api${{ matrix.api-level }}
           path: |
-            framehud/build/reports/
-            framehud/build/outputs/androidTest-results/
+            framehud-metrics/build/reports/
+            framehud-metrics/build/outputs/androidTest-results/
+            framehud-qa/build/reports/
+            framehud-qa/build/outputs/androidTest-results/
             sample/build/reports/
             sample/build/outputs/androidTest-results/
           retention-days: 7

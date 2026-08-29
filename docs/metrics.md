@@ -15,10 +15,11 @@ report.
 
 ## Controls
 
-Drag the panel with a finger. Tap a collapsed panel to expand it, and tap the header of an expanded
-one to switch between the readings and the worst screens. Long-press to freeze: the readings hold
-still so you can read them while collection continues. `×` resets the window, the session and the
-peaks.
+Drag the panel with a finger. While you hold it, its window covers the screen, so a second finger
+lands on the panel and not on the app under it. Tap a collapsed panel to expand it, and tap the
+header of an expanded one to switch between the readings and the worst screens. Long-press to
+freeze: the readings hold still so you can read them while collection continues. `×` resets the
+window, the session and the peaks.
 
 ## Header
 
@@ -167,7 +168,8 @@ issues next to the stats, each naming the figures it taints.
 
 An emulator renders through the host machine, so `sync`, `command`, `swap` and `gpu` time a desktop
 GPU and say nothing about a phone. Their section headers read `RENDER · host` and `GPU · host`, the
-rows are greyed out, and the verdict skips them, as does `pipe` when the bottleneck lands there.
+rows are greyed out, and the verdict never names them. `pipe` still does when the bottleneck lands
+there, greyed out with the rest.
 
 <img src="panel-emulator.png" alt="The panel on an emulator: an EMU badge and greyed-out host rows" width="340">
 

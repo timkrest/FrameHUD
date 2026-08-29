@@ -72,7 +72,7 @@ class CommandReceiverTest {
 
     @Test
     fun theContextCommandTakesEveryStringExtra() {
-        val result = broadcast(
+        broadcast(
             Intent(FrameHudCommandReceiver.ACTION_CONTEXT)
                 .putExtra("variant", "b")
                 .putExtra("scenario", "smoke")
@@ -80,7 +80,6 @@ class CommandReceiverTest {
                 .putExtra("dropped", 7),
         )
 
-        assertNotNull(result)
         assertEquals(mapOf("variant" to "b", "scenario" to "smoke"), FrameHud.context)
 
         broadcast(Intent(FrameHudCommandReceiver.ACTION_CONTEXT))

@@ -2,10 +2,27 @@
 
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
-[Semantic Versioning](https://semver.org/spec/v2.0.0.html) with the two exceptions the README's
-Versioning section names.
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html) with the two exceptions the
+[guide's Versioning section](docs/guide.md#versioning) names.
 
 ## [Unreleased]
+
+## [0.16.0] - 2026-08-29
+
+### Added
+
+- `framehud-qa`, the artifact that answers the adb commands. A QA pass can now measure a
+  release-signed build, the one R8 has been through.
+
+### Changed
+
+- The adb commands left `framehud-metrics`. A build that takes `framehud-metrics` alone and drives
+  FrameHUD over adb adds `framehud-qa` next to it; a build on `framehud` needs no change, because it
+  depends on the new artifact. `framehud-metrics` on its own now declares no exported component.
+- The receiver no longer refuses a build without `android:debuggable`, which is what lets a
+  release-signed QA flavour answer. It is exported, as the shell cannot reach it otherwise, and now
+  requires the sender to hold `android.permission.DUMP`: the shell has it, an app a user installs
+  cannot be granted it. Before, an exported receiver on a debuggable build took any sender.
 
 ## [0.15.0] - 2026-08-29
 
@@ -25,7 +42,7 @@ Versioning section names.
   and `UncomparedMetric`. Each can now gain a figure without breaking code compiled against an
   earlier version. Where a test or a preview built one, use `EMPTY`, or opt into
   `InternalFrameHudApi` and call `of`. What the API asks you to build is untouched: the config, a
-  baseline, thresholds, an interval id, an event, and `IntervalStats`. The README's Versioning
+  baseline, thresholds, an interval id, an event, and `IntervalStats`. The guide's Versioning
   section says what 1.0 promises.
 
 ### Fixed
@@ -608,7 +625,8 @@ Versioning section names.
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.16.0
 [0.15.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.15.0
 [0.14.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.14.0
 [0.13.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.13.1
