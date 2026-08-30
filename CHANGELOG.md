@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-08-31
+
 ### Fixed
 
 - Renaming the screen and then reporting it usable could name the screen that just ended.
@@ -635,7 +637,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.16.1
 [0.16.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.16.0
 [0.15.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.15.0
 [0.14.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.14.0
