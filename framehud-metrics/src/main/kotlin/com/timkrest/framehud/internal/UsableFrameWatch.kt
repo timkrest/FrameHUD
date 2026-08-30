@@ -5,24 +5,27 @@ import java.util.concurrent.atomic.AtomicReference
 
 internal class UsableFrameWatch(private val clock: MetricsClock) {
 
+    data class UsableFrame(val timeToUsableMs: Float, val screen: String?)
+
     private sealed class State(val window: Any)
 
-    private class Waiting(window: Any, val start: ScreenStart) : State(window)
+    private class Waiting(window: Any, val screen: String?, val start: ScreenStart) : State(window)
 
-    private class Armed(window: Any, val start: ScreenStart, val reportedAtNs: Long) : State(window)
+    private class Armed(window: Any, val screen: String?, val start: ScreenStart, val reportedAtNs: Long) :
+        State(window)
 
     private class Measured(window: Any) : State(window)
 
     private val state = AtomicReference<State?>(null)
 
     @AnyThread
-    fun expectScreen(window: Any, start: ScreenStart) {
-        state.set(Waiting(window, start))
+    fun expectScreen(window: Any, screen: String?, start: ScreenStart) {
+        state.set(Waiting(window, screen, start))
     }
 
     @AnyThread
-    fun restartScreen() {
-        update { current -> Waiting(current.window, ScreenStart(clock.nanoTime())) }
+    fun restartScreen(screen: String?) {
+        update { current -> Waiting(current.window, screen, ScreenStart(clock.nanoTime())) }
     }
 
     @AnyThread
@@ -35,18 +38,19 @@ internal class UsableFrameWatch(private val clock: MetricsClock) {
         update { current ->
             if (current !is Waiting) return
             if (start != null && current.start !== start) return
-            Armed(current.window, current.start, reportedAtNs = clock.nanoTime())
+            Armed(current.window, current.screen, current.start, reportedAtNs = clock.nanoTime())
         }
     }
 
     @AnyThread
-    fun onFrame(window: Any, frameEndNs: Long): Float? {
+    fun onFrame(window: Any, frameEndNs: Long): UsableFrame? {
         val current = state.get()
         if (current !is Armed || current.window !== window) return null
         val displayedBeforeTheReport = frameEndNs < current.reportedAtNs
         if (displayedBeforeTheReport) return null
         if (!state.compareAndSet(current, Measured(current.window))) return null
-        return current.start.elapsedMs(frameEndNs)
+        val timeToUsableMs = current.start.elapsedMs(frameEndNs) ?: return null
+        return UsableFrame(timeToUsableMs = timeToUsableMs, screen = current.screen)
     }
 
     private inline fun update(next: (State) -> State) {

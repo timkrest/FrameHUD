@@ -142,7 +142,7 @@ internal class MetricsEngine(
         unbindFocusedWindow()
         val label = measuredScreen.bind(screen)
         tracer.screenChanged(label)
-        collector.expectScreen(window = window, start = start)
+        collector.expectScreen(window = window, screen = label, start = start)
         focusedWindow = window
         windows.add(window, label)
         sampler.post {
@@ -196,7 +196,7 @@ internal class MetricsEngine(
         val sampler = metricsThread.started ?: return
         val measured = focusedWindow?.let(windows::get) ?: return
         tracer.screenChanged(rename.current)
-        collector.restartScreen()
+        collector.restartScreen(rename.current)
         val listeners = config().eventListeners
         val endedContext = context
         sampler.post {
@@ -395,10 +395,10 @@ internal class MetricsEngine(
     }
 
     @WorkerThread
-    private fun onUsableFrame(timeToUsableMs: Float) {
+    private fun onUsableFrame(timeToUsableMs: Float, screen: String?) {
         eventDispatcher.onUsableFrame(
             timeToUsableMs = timeToUsableMs,
-            screen = aggregator.screenName,
+            screen = screen,
             context = context,
         )
     }

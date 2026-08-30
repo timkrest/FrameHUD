@@ -14,7 +14,7 @@ internal class FrameMetricsCollector(
     private val clock: MetricsClock,
     private val windows: MeasuredWindows,
     private val onFirstFrame: (timeToDisplayMs: Float) -> Unit,
-    private val onUsableFrame: (timeToUsableMs: Float) -> Unit,
+    private val onUsableFrame: (timeToUsableMs: Float, screen: String?) -> Unit,
 ) : Window.OnFrameMetricsAvailableListener {
 
     @field:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
@@ -30,15 +30,15 @@ internal class FrameMetricsCollector(
     private val usableWatch = UsableFrameWatch(clock)
 
     @AnyThread
-    fun expectScreen(window: Window, start: ScreenStart?) {
+    fun expectScreen(window: Window, screen: String?, start: ScreenStart?) {
         val creation = start?.takeIf { it.precedesCreation }
         pendingFirstFrame.set(creation?.let { PendingFirstFrame(window = window, creation = it) })
-        usableWatch.expectScreen(window = window, start = start ?: ScreenStart(clock.nanoTime()))
+        usableWatch.expectScreen(window = window, screen = screen, start = start ?: ScreenStart(clock.nanoTime()))
     }
 
     @AnyThread
-    fun restartScreen() {
-        usableWatch.restartScreen()
+    fun restartScreen(screen: String?) {
+        usableWatch.restartScreen(screen)
     }
 
     @AnyThread
@@ -66,7 +66,8 @@ internal class FrameMetricsCollector(
             val expected = takeExpectedFirstFrame(window)
             val isFirstDraw = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) != 0L
             if (isFirstDraw) expected?.creation?.elapsedMs(frameEndNs)?.let(onFirstFrame)
-            usableWatch.onFrame(window = window, frameEndNs = frameEndNs)?.let(onUsableFrame)
+            val usable = usableWatch.onFrame(window = window, frameEndNs = frameEndNs)
+            if (usable != null) onUsableFrame(usable.timeToUsableMs, usable.screen)
             if (isFirstDraw) return@guarded
 
             frameMetrics.readPhaseDurationsMs(scratchDurationsMs)

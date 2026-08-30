@@ -7,6 +7,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Renaming the screen and then reporting it usable could name the screen that just ended.
+  `FrameHud.screen` restarts the measurement on the main thread the moment it is set, while the
+  name came from the metrics thread, which learns about the rename from a task queued behind the
+  frame reports already waiting there. A report from that queue ended the new screen's measurement
+  under the old name. The event now carries the name the measurement started under. Below API 26
+  the platform timestamps no frame, so a frame displayed before the report cannot be told from the
+  one that ends the measurement, and the mismatch showed up there on almost every rename.
+
 ## [0.16.0] - 2026-08-29
 
 ### Added
