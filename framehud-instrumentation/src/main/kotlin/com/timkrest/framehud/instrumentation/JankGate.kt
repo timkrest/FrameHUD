@@ -4,10 +4,14 @@ import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.internal.formatInvariant
+import org.junit.AssumptionViolatedException
 
 public enum class OnInconclusive {
     FAIL,
     WARN,
+
+    /** Throws [AssumptionViolatedException], which a JUnit runner reports as a skipped test. */
+    SKIP,
 }
 
 internal sealed interface GateVerdict {
@@ -27,6 +31,7 @@ internal fun GateVerdict.throwOrWarn(onInconclusive: OnInconclusive, warn: (Stri
         is GateVerdict.Inconclusive -> when (onInconclusive) {
             OnInconclusive.FAIL -> throw AssertionError(message)
             OnInconclusive.WARN -> warn(message)
+            OnInconclusive.SKIP -> throw AssumptionViolatedException(message)
         }
     }
 }

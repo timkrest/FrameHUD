@@ -3,12 +3,12 @@ package com.timkrest.framehud.instrumentation
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasurementConfidence
+import org.junit.AssumptionViolatedException
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.fail
 
 class JankThresholdsTest {
 
@@ -91,20 +91,27 @@ class JankThresholdsTest {
     }
 
     @Test
-    fun `an untainted violation fails even in warn mode`() {
-        val verdict = JankThresholds().verdict(TAG, session(jankPercent = 12f))
-        assertFailsWith<AssertionError> { verdict.throwOrWarn(OnInconclusive.WARN) { fail("should not warn") } }
+    fun `an untainted violation fails in every mode`() {
+        val verdict = assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, session(jankPercent = 12f)))
+        OnInconclusive.entries.forEach { mode ->
+            assertFailsWith<AssertionError> { verdict.throwOrWarn(mode) { error("should not warn") } }
+        }
     }
 
     @Test
-    fun `an inconclusive verdict fails in strict mode and only logs in warn mode`() {
+    fun `an inconclusive verdict fails in strict mode, logs in warn mode and skips the test in skip mode`() {
         val verdict = GateVerdict.Inconclusive("boom")
 
-        assertFailsWith<AssertionError> { verdict.throwOrWarn(OnInconclusive.FAIL) { fail("should not warn") } }
+        assertFailsWith<AssertionError> { verdict.throwOrWarn(OnInconclusive.FAIL) { error("should not warn") } }
 
         var logged: String? = null
         verdict.throwOrWarn(OnInconclusive.WARN) { logged = it }
         assertEquals("boom", logged)
+
+        val skipped = assertFailsWith<AssumptionViolatedException> {
+            verdict.throwOrWarn(OnInconclusive.SKIP) { error("should not warn") }
+        }
+        assertEquals("boom", skipped.message)
     }
 
     private fun session(

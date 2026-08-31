@@ -593,8 +593,10 @@ failing test keeps its own error. Session totals outlive the panel, so the numbe
 
 A threshold whose figure a confidence issue taints cannot pass or fail honestly, so the gate calls
 the run inconclusive and reports both the figure and the issue. The default `OnInconclusive.FAIL`
-fails the test, `OnInconclusive.WARN` logs the message and lets it pass. A violated threshold with
-a clean figure fails in both modes.
+fails the test, `OnInconclusive.WARN` logs the message and lets it pass, and `OnInconclusive.SKIP`
+reports the test as skipped, which is what a shared CI device usually wants: a run the machine was
+too busy to measure blocks nothing, and no regression is called clean. A violated threshold with a
+clean figure fails in every mode.
 
 A threshold can be relative instead of fixed. `BaselineThresholds` fails a test once a figure grows
 past a share of the baseline for that device:

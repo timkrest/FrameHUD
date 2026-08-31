@@ -13,13 +13,14 @@ import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.instrumentation.BaselineThresholds
 import com.timkrest.framehud.instrumentation.JankAssertions
 import com.timkrest.framehud.instrumentation.JankThresholds
+import com.timkrest.framehud.instrumentation.OnInconclusive
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertContains
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 @RunWith(AndroidJUnit4::class)
 class BaselineGateTest {
@@ -41,10 +42,8 @@ class BaselineGateTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.renderFrames(FRAMES_THE_GATE_NEEDS)
 
-            val failure = assertFailsWith<AssertionError> {
-                JankAssertions.assertNoJank(TAG, JankThresholds.baselineOnly(P95_ONLY))
-            }
-            assertContains(assertNotNull(failure.message), "p95")
+            val failure = assertNotNull(gateFailure(), "the gate let a run slower than its baseline pass")
+            assertContains(failure, "p95")
         }
     }
 
@@ -55,8 +54,15 @@ class BaselineGateTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.renderFrames(FRAMES_THE_GATE_NEEDS)
 
-            JankAssertions.assertNoJank(TAG, JankThresholds.baselineOnly(P95_ONLY))
+            assertNull(gateFailure())
         }
+    }
+
+    private fun gateFailure(): String? = try {
+        JankAssertions.assertNoJank(TAG, JankThresholds.baselineOnly(P95_ONLY), OnInconclusive.SKIP)
+        null
+    } catch (failure: AssertionError) {
+        assertNotNull(failure.message)
     }
 
     private fun baselineOf(p95FrameMs: Float) = Baseline(

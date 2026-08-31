@@ -7,6 +7,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `OnInconclusive.SKIP`, which reports a test as skipped instead of failing it when a confidence
+  issue taints a checked figure. A busy CI device drops frame reports or holds a listener up often
+  enough that `FAIL` turns noise into red builds, while `WARN` lets a real regression through as a
+  pass; a skipped run says the machine could not measure it and blocks nothing.
+
 ## [0.16.1] - 2026-08-31
 
 ### Fixed

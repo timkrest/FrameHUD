@@ -79,6 +79,19 @@ class BaselineThresholdsTest {
     }
 
     @Test
+    fun `a regression on a metric a noisy run measured cleanly fails in every mode`() {
+        val issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120)))
+        val thresholds = BaselineThresholds(metrics = setOf(BaselineMetric.P95_MS))
+        val comparison = comparisonOf(baseline = 10f, current = 12f, currentIssues = issues)
+
+        val verdict = assertIs<GateVerdict.Fail>(thresholds.verdict(TAG, comparison, session(issues)))
+
+        OnInconclusive.entries.forEach { mode ->
+            assertFailsWith<AssertionError> { verdict.throwOrWarn(mode) { error("should not warn") } }
+        }
+    }
+
+    @Test
     fun `a baseline recorded elsewhere is inconclusive rather than a verdict`() {
         val comparison = BaselineComparison.OtherEnvironment(recorded = ENVIRONMENT, current = OTHER_ENVIRONMENT)
 

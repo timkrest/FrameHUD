@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.instrumentation.DetectJankAfterTestSuccess
 import com.timkrest.framehud.instrumentation.JankThresholds
+import com.timkrest.framehud.instrumentation.OnInconclusive
 import com.timkrest.framehud.instrumentation.SkipJankDetection
 import org.junit.Rule
 import org.junit.Test
@@ -16,6 +17,7 @@ class JankGateTest {
     @get:Rule
     val noJank = DetectJankAfterTestSuccess(
         thresholds = SMOKE_TEST_THRESHOLDS,
+        onInconclusive = OnInconclusive.SKIP,
     )
 
     @Test

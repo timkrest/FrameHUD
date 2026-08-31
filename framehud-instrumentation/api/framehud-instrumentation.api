@@ -65,6 +65,7 @@ public final class com/timkrest/framehud/instrumentation/JankThresholds$Companio
 
 public final class com/timkrest/framehud/instrumentation/OnInconclusive : java/lang/Enum {
 	public static final field FAIL Lcom/timkrest/framehud/instrumentation/OnInconclusive;
+	public static final field SKIP Lcom/timkrest/framehud/instrumentation/OnInconclusive;
 	public static final field WARN Lcom/timkrest/framehud/instrumentation/OnInconclusive;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/timkrest/framehud/instrumentation/OnInconclusive;
