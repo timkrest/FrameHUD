@@ -126,12 +126,12 @@ class CommandReceiverTest {
             null,
             null,
         )
-        assertTrue(done.await(TIMEOUT_MS, TimeUnit.MILLISECONDS), "the broadcast was never delivered")
+        assertTrue(done.await(COLD_START_AND_DELIVERY_MS, TimeUnit.MILLISECONDS), "the broadcast was never delivered")
         return resultData.get()
     }
 
     private companion object {
-        const val TIMEOUT_MS = 10_000L
+        const val COLD_START_AND_DELIVERY_MS = 60_000L
         const val FRAMES = 30
         const val TOO_LONG_FOR_A_TRACE = 111
     }
