@@ -39,6 +39,12 @@ jobs:
             echo "::error::CHANGELOG.md has no section for ${version}"
             exit 1
           fi
+          for doc in README.md README.ru.md docs/guide.md docs/guide.ru.md; do
+            if ! grep -q ":${version}\"" "${doc}"; then
+              echo "::error::${doc} still points at another version than ${version}"
+              exit 1
+            fi
+          done
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "Publishing ${version}"
 
