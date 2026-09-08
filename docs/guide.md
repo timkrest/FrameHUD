@@ -11,7 +11,7 @@ collects the same numbers and sends the same events, but adds no window and no `
 to the merged manifest.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.16.0")
+qaImplementation("com.timkrest:framehud-metrics:0.17.0")
 ```
 
 `FrameHud` is the same object, so the code around it stays as it is. `enabled` switches collection
@@ -340,7 +340,7 @@ adb pull /sdcard/Android/data/<package>/files/framehud/
 The commands live in an artifact of their own, which `framehud` already brings in:
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-qa:0.16.0")
+qaImplementation("com.timkrest:framehud-qa:0.17.0")
 ```
 
 A build carrying it answers broadcasts, so a QA build starts reporting, marks a scenario and pulls
@@ -580,7 +580,7 @@ from `BaselineEntry.of` and `BaselineEnvironment.current()`.
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.16.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.17.0")
 ```
 
 ```kotlin
