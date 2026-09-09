@@ -54,7 +54,7 @@ releaseImplementation("com.timkrest:framehud-noop:0.18.0")
 ## What the panel shows
 
 ```
-ui 118/s · 8.3ms  118 FPS
+ui 59/s · 16.7ms   58 FPS
 ⚠ layout 8.4 ms
 CPU        now   avg  peak
 input      0.1   0.2   1.1
@@ -68,13 +68,13 @@ swap       0.2   0.3   1.4
 GPU
 gpu        2.1   2.4   9.8
 delay      0.3   0.4   2.2
-other      0.1   0.2
-TOTAL     13.2  14.5  38.6
-over       4.9   6.2  30.3
-pipe:cpu  10.4  11.0
-win  jank  4.2%  p95  12.1  max  22.3
-ses  p50   7.1  p95  12.4  p99  19.8
-ses 4312f 1m12s jank 4.2% frz0 run3
+other      0.3   0.3
+TOTAL     11.3  12.6  38.6
+over      -5.4  -4.1  21.9
+pipe:cpu   9.5  10.4
+win  jank  7.5%  p95  18.4  max  22.3
+ses  p50  11.8  p95  19.6  p99  28.4
+ses 4312f 1m12s jank 6.4% frz0 run3
 lost 2.1s
 mem 84/256 ▲96 · nat 37 ▲41 MB
 gc x3 · 18 ms
