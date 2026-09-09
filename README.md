@@ -33,7 +33,7 @@ you down.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.17.0")
+    debugImplementation("com.timkrest:framehud:0.18.0")
 }
 ```
 
@@ -48,7 +48,7 @@ you call `FrameHud` outside `src/debug`, because a release build still has to co
 It mirrors the API with empty bodies:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.17.0")
+releaseImplementation("com.timkrest:framehud-noop:0.18.0")
 ```
 
 ## What the panel shows
@@ -94,7 +94,7 @@ switches to [the worst screens](docs/guide.md#screen-history) and back.
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.17.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.18.0")
 ```
 
 ```kotlin

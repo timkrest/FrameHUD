@@ -32,7 +32,7 @@
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.17.0")
+    debugImplementation("com.timkrest:framehud:0.18.0")
 }
 ```
 
@@ -47,7 +47,7 @@ dependencies {
 API с пустыми телами:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.17.0")
+releaseImplementation("com.timkrest:framehud-noop:0.18.0")
 ```
 
 ## Что показывает панель
@@ -93,7 +93,7 @@ thr 38 ▲44 · fd 210 ▲260
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.17.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.18.0")
 ```
 
 ```kotlin
