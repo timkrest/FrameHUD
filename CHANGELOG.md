@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-09-09
+
 ### Changed
 
 - A tap on the panel steps through how much it shows: every row, the frame rows on their own, and
@@ -664,7 +666,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.18.0
 [0.17.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.17.0
 [0.16.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.16.1
 [0.16.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.16.0
