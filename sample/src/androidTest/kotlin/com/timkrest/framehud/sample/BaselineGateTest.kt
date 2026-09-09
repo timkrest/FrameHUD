@@ -14,6 +14,7 @@ import com.timkrest.framehud.instrumentation.BaselineThresholds
 import com.timkrest.framehud.instrumentation.JankAssertions
 import com.timkrest.framehud.instrumentation.JankThresholds
 import com.timkrest.framehud.instrumentation.OnInconclusive
+import com.timkrest.framehud.shared.drawFrames
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -40,7 +41,7 @@ class BaselineGateTest {
         FrameHud.baselineOverride = baselineOf(p95FrameMs = UNREACHABLE_P95_MS)
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(FRAMES_THE_GATE_NEEDS)
+            scenario.drawFrames(FRAMES_THE_GATE_NEEDS)
 
             val failure = assertNotNull(gateFailure(), "the gate let a run slower than its baseline pass")
             assertContains(failure, "p95")
@@ -52,7 +53,7 @@ class BaselineGateTest {
         FrameHud.baselineOverride = baselineOf(p95FrameMs = FORGIVING_P95_MS)
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames(FRAMES_THE_GATE_NEEDS)
+            scenario.drawFrames(FRAMES_THE_GATE_NEEDS)
 
             assertNull(gateFailure())
         }

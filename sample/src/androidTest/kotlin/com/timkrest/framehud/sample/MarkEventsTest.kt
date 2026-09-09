@@ -1,12 +1,13 @@
 package com.timkrest.framehud.sample
 
-import android.os.SystemClock
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
 import com.timkrest.framehud.instrumentation.FrameHudResetRule
+import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.runOnMain
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -15,7 +16,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlin.test.fail
 
 @RunWith(AndroidJUnit4::class)
 class MarkEventsTest {
@@ -35,12 +35,12 @@ class MarkEventsTest {
     @Test
     fun aMarkLeftOpenEndsWithTheScreenItRanOn() {
         ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
             runOnMain { FrameHud.mark = MARK }
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
         }
 
-        val ended = awaitMarkEnded()
+        val ended = events.awaitEvents<FrameHudEvent.MarkEnded>(count = 1).single()
         assertEquals(MARK, ended.mark)
         assertEquals(ReportingProbeActivity::class.java.simpleName, ended.screen)
         assertTrue(ended.stats.frames > 0, "the mark reported no frames")
@@ -52,18 +52,7 @@ class MarkEventsTest {
         assertEquals(listOf(metricsThread), deliveryThreads.distinct(), "an event skipped the metrics thread")
     }
 
-    private fun awaitMarkEnded(): FrameHudEvent.MarkEnded {
-        val deadlineMs = SystemClock.elapsedRealtime() + EVENT_TIMEOUT_MS
-        while (SystemClock.elapsedRealtime() < deadlineMs) {
-            events.filterIsInstance<FrameHudEvent.MarkEnded>().firstOrNull()?.let { return it }
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        fail("Expected a finished mark, saw ${events.map { it.summary }}")
-    }
-
     private companion object {
         const val MARK = "checkout"
-        const val EVENT_TIMEOUT_MS = 5_000L
-        const val POLL_INTERVAL_MS = 50L
     }
 }

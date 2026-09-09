@@ -3,6 +3,7 @@ package com.timkrest.framehud.internal
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.MainThreadBlock
+import com.timkrest.framehud.shared.AWAIT_TIMEOUT_MS
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -188,6 +189,5 @@ class MainThreadWatchdogTest {
         const val SAMPLING_BACKS_OFF_AFTER_MS = 1_600L
         const val BLOCK_GOES_STALE_AFTER_MS = 2_100L
         const val SOONER_THAN_A_BLOCK_GOES_STALE_MS = 1_000L
-        const val AWAIT_TIMEOUT_MS = 5_000L
     }
 }

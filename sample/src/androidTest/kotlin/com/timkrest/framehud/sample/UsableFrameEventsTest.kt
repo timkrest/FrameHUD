@@ -1,13 +1,14 @@
 package com.timkrest.framehud.sample
 
 import android.os.Build
-import android.os.SystemClock
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
 import com.timkrest.framehud.instrumentation.FrameHudResetRule
+import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.runOnMain
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -16,7 +17,6 @@ import org.junit.runner.RunWith
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.test.fail
 
 @RunWith(AndroidJUnit4::class)
 class UsableFrameEventsTest {
@@ -37,9 +37,9 @@ class UsableFrameEventsTest {
         )
 
         ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
 
-            val usable = awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
+            val usable = events.awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
             assertEquals(ReportingProbeActivity::class.java.simpleName, usable.screen)
             assertTrue(usable.timeToUsableMs > 0f, "usable in ${usable.timeToUsableMs} ms")
         }
@@ -48,11 +48,11 @@ class UsableFrameEventsTest {
     @Test
     fun reportUsableEndsTheMeasurementOnTheNextFrame() {
         ActivityScenario.launch(SilentProbeActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
             FrameHud.reportUsable()
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
 
-            val usable = awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
+            val usable = events.awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
             assertEquals(SilentProbeActivity::class.java.simpleName, usable.screen)
         }
     }
@@ -60,32 +60,32 @@ class UsableFrameEventsTest {
     @Test
     fun aScreenMeasuresUsableOnce() {
         ActivityScenario.launch(SilentProbeActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
             FrameHud.reportUsable()
-            scenario.renderFrames()
-            awaitEvents<FrameHudEvent.UsableFrame>(count = 1)
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
+            events.awaitEvents<FrameHudEvent.UsableFrame>(count = 1)
 
             FrameHud.reportUsable()
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
         }
 
-        awaitEvents<FrameHudEvent.ScreenEnded>(count = 1)
+        events.awaitEvents<FrameHudEvent.ScreenEnded>(count = 1)
         assertEquals(1, events.filterIsInstance<FrameHudEvent.UsableFrame>().size, "the screen measured usable twice")
     }
 
     @Test
     fun aRenamedScreenMeasuresUsableAgain() {
         ActivityScenario.launch(SilentProbeActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
             FrameHud.reportUsable()
-            scenario.renderFrames()
-            awaitEvents<FrameHudEvent.UsableFrame>(count = 1)
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
+            events.awaitEvents<FrameHudEvent.UsableFrame>(count = 1)
 
             runOnMain { FrameHud.screen = "checkout" }
             FrameHud.reportUsable()
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
 
-            val usable = awaitEvents<FrameHudEvent.UsableFrame>(count = 2).last()
+            val usable = events.awaitEvents<FrameHudEvent.UsableFrame>(count = 2).last()
             assertEquals("checkout", usable.screen)
         }
     }
@@ -105,23 +105,8 @@ class UsableFrameEventsTest {
             FrameHud.reportUsable()
             scenario.renderCollectedFrames()
 
-            val usable = awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
+            val usable = events.awaitEvents<FrameHudEvent.UsableFrame>(count = 1).single()
             assertEquals("checkout", usable.screen)
         }
-    }
-
-    private inline fun <reified T : FrameHudEvent> awaitEvents(count: Int): List<T> {
-        val deadlineMs = SystemClock.elapsedRealtime() + EVENT_TIMEOUT_MS
-        while (SystemClock.elapsedRealtime() < deadlineMs) {
-            val matching = events.filterIsInstance<T>()
-            if (matching.size >= count) return matching.take(count)
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        fail("Expected $count ${T::class.java.simpleName} events, saw ${events.map { it.summary }}")
-    }
-
-    private companion object {
-        const val EVENT_TIMEOUT_MS = 5_000L
-        const val POLL_INTERVAL_MS = 50L
     }
 }

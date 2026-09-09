@@ -3,6 +3,9 @@ package com.timkrest.framehud.sample
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.FrameHud
+import com.timkrest.framehud.shared.await
+import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.runOnMain
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,11 +20,11 @@ class MetricsThreadTest {
     @Test
     fun renamingTheMetricsThreadKeepsCollecting() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
             runOnMain { FrameHud.config = FrameHud.config.copy(metricsThreadName = RENAMED_THREAD) }
             FrameHud.reset()
 
-            scenario.renderFrames()
+            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
 
             val stats = await { FrameHud.sessionStats() }
             assertTrue(stats.frames > 0, "no frames reached the renamed thread")

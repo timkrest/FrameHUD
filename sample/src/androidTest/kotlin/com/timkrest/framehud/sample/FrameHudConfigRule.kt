@@ -2,6 +2,7 @@ package com.timkrest.framehud.sample
 
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.FrameHudConfig
+import com.timkrest.framehud.shared.runOnMain
 import org.junit.rules.ExternalResource
 
 class FrameHudConfigRule(private val configure: (FrameHudConfig) -> FrameHudConfig = { it }) : ExternalResource() {

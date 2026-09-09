@@ -1,4 +1,4 @@
-package com.timkrest.framehud
+package com.timkrest.framehud.shared
 
 import android.app.Activity
 

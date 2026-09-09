@@ -2,21 +2,20 @@ package com.timkrest.framehud.internal
 
 import android.app.Dialog
 import android.content.Context
-import android.os.SystemClock
 import android.view.Window
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import com.timkrest.framehud.BlankActivity
 import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHudConfig
 import com.timkrest.framehud.FrameHudEvent
 import com.timkrest.framehud.FrameHudEventListener
 import com.timkrest.framehud.IntervalId
-import com.timkrest.framehud.await
-import com.timkrest.framehud.awaitFrames
-import com.timkrest.framehud.postFrames
+import com.timkrest.framehud.shared.BlankActivity
+import com.timkrest.framehud.shared.await
+import com.timkrest.framehud.shared.awaitFrames
+import com.timkrest.framehud.shared.postFrames
+import com.timkrest.framehud.shared.runOnMain
 import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Test
@@ -55,7 +54,7 @@ class MetricsEngineTest {
 
     @After
     fun stopEngine() {
-        onMainThread { engine.stop() }
+        runOnMain { engine.stop() }
     }
 
     @Test
@@ -65,20 +64,20 @@ class MetricsEngineTest {
 
     @Test
     fun theAggregatesStayReadableAfterStop() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         assertNotNull(await { engine.sessionStats() }, "nothing was collecting")
 
-        onMainThread { engine.stop() }
+        runOnMain { engine.stop() }
 
         assertNotNull(await { engine.sessionStats() }, "the aggregates went away with the last activity")
     }
 
     @Test
     fun aMarkBegunBeforeTheFirstScreenSurvivesTheFocusSwapThatStartsCollection() {
-        onMainThread { engine.setMark(MARK) }
-        onMainThread { engine.unbindWindow() }
-        onMainThread { engine.start(context) }
-        onMainThread { engine.setMark(null) }
+        runOnMain { engine.setMark(MARK) }
+        runOnMain { engine.unbindWindow() }
+        runOnMain { engine.start(context) }
+        runOnMain { engine.setMark(null) }
         awaitMetricsThread()
 
         val ended = assertIs<FrameHudEvent.MarkEnded>(events.single())
@@ -87,9 +86,9 @@ class MetricsEngineTest {
 
     @Test
     fun settingTheSameMarkAgainLeavesTheIntervalRunning() {
-        onMainThread { engine.start(context) }
-        onMainThread { engine.setMark(MARK) }
-        onMainThread { engine.setMark(MARK) }
+        runOnMain { engine.start(context) }
+        runOnMain { engine.setMark(MARK) }
+        runOnMain { engine.setMark(MARK) }
         awaitMetricsThread()
 
         assertTrue(events.isEmpty(), "the interval was cut in two: $events")
@@ -97,8 +96,8 @@ class MetricsEngineTest {
 
     @Test
     fun aMarkEndedBeforeTheStartStillReachesListenersOnTheMetricsThread() {
-        onMainThread { engine.setMark(MARK) }
-        onMainThread { engine.setMark(null) }
+        runOnMain { engine.setMark(MARK) }
+        runOnMain { engine.setMark(null) }
         awaitMetricsThread()
 
         assertIs<FrameHudEvent.MarkEnded>(events.single())
@@ -107,13 +106,13 @@ class MetricsEngineTest {
 
     @Test
     fun onceTheScreenIsGoneItNamesTheNumbersItLeftBehindAndNothingElse() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
-            onMainThread { engine.unbindWindow() }
+            runOnMain { engine.unbindWindow() }
         }
-        onMainThread { engine.setMark(MARK) }
-        onMainThread { engine.setMark(null) }
+        runOnMain { engine.setMark(MARK) }
+        runOnMain { engine.setMark(null) }
         awaitMetricsThread()
 
         val export = assertNotNull(await { engine.exportStats() }, "the metrics thread never answered")
@@ -124,14 +123,14 @@ class MetricsEngineTest {
 
     @Test
     fun aScreenTheAppNamedItselfIsNoLongerActiveOnceItsWindowIsGone() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
-            onMainThread { engine.setScreen(SCREEN) }
+            runOnMain { engine.setScreen(SCREEN) }
             scenario.onActivity { engine.bindWindow(it.window, screen = "BlankActivity", start = null) }
-            onMainThread { engine.unbindWindow() }
+            runOnMain { engine.unbindWindow() }
         }
-        onMainThread { engine.setMark(MARK) }
-        onMainThread { engine.setMark(null) }
+        runOnMain { engine.setMark(MARK) }
+        runOnMain { engine.setMark(null) }
         awaitMetricsThread()
 
         val ended = events.filterIsInstance<FrameHudEvent.MarkEnded>().single()
@@ -141,7 +140,7 @@ class MetricsEngineTest {
 
     @Test
     fun aWindowTheAppHandsOverIsMeasuredAsAScreenOfItsOwn() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
             lateinit var dialog: Dialog
@@ -155,7 +154,7 @@ class MetricsEngineTest {
             awaitFrames(drawn, DRAWN_FRAMES)
             awaitMetricsThread()
             val intervals = assertNotNull(await { engine.intervals() }, "the metrics thread never answered")
-            onMainThread { dialog.dismiss() }
+            runOnMain { dialog.dismiss() }
 
             val measured = assertNotNull(
                 intervals.firstOrNull { it.id == IntervalId.Screen(WINDOW) },
@@ -167,7 +166,7 @@ class MetricsEngineTest {
 
     @Test
     fun aWindowTheAppTakesBackStopsCounting() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
             lateinit var window: Window
@@ -180,7 +179,7 @@ class MetricsEngineTest {
                 drawn = window.postFrames(DRAWN_FRAMES)
             }
             awaitFrames(drawn, DRAWN_FRAMES)
-            onMainThread { engine.forgetWindow(window) }
+            runOnMain { engine.forgetWindow(window) }
             awaitMetricsThread()
             val measured = framesOn(IntervalId.Screen(WINDOW))
             assertTrue(measured > 0, "the window the app handed over drew nothing FrameHud saw")
@@ -188,7 +187,7 @@ class MetricsEngineTest {
             scenario.onActivity { drawn = window.postFrames(DRAWN_FRAMES) }
             awaitFrames(drawn, DRAWN_FRAMES)
             awaitMetricsThread()
-            onMainThread { dialog.dismiss() }
+            runOnMain { dialog.dismiss() }
 
             assertEquals(measured, framesOn(IntervalId.Screen(WINDOW)), "a window the app took back kept counting")
         }
@@ -197,13 +196,13 @@ class MetricsEngineTest {
     @Test
     fun whatTheAppWritesToACounterReachesTheReadingsThePanelCollects() {
         engine.counter(COUNTER).set(7)
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             scenario.onActivity { engine.bindWindow(it.window, screen = SCREEN, start = null) }
 
             val readings = await { engine.counters.first { it.isNotEmpty() } }
 
-            onMainThread { engine.unbindWindow() }
+            runOnMain { engine.unbindWindow() }
             assertEquals(listOf(CounterReading.of(COUNTER, value = 7, peakSinceReset = 7)), readings)
         }
     }
@@ -211,11 +210,11 @@ class MetricsEngineTest {
     @Test
     fun anEngineConfiguredBeforeTheStartRunsNoMetricsThread() {
         engine.reset()
-        onMainThread { engine.applyConfig(config) }
+        runOnMain { engine.applyConfig(config) }
 
         assertEquals(0, threadsNamed(threadName), "a metrics thread was started before the panel")
 
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         awaitMetricsThread()
 
         assertEquals(1, threadsNamed(threadName), "the engine is running more than one metrics thread")
@@ -223,11 +222,11 @@ class MetricsEngineTest {
 
     @Test
     fun renamingTheMetricsThreadRetiresTheOldOne() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         assertNotNull(await { engine.sessionStats() }, "nothing was collecting")
 
         config = config.copy(metricsThreadName = "$threadName-renamed")
-        onMainThread { engine.applyConfig(config) }
+        runOnMain { engine.applyConfig(config) }
 
         assertNotNull(await { engine.sessionStats() }, "the renamed thread answers nothing")
         assertTrue(awaitThreadGone(threadName), "the retired metrics thread is still running")
@@ -240,7 +239,7 @@ class MetricsEngineTest {
 
     @Test
     fun aFailureOfItsOwnReachesListenersOnceForEachCallItFailedIn() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
 
         engine.onInternalFailure(FAILED_AT, NoSuchMethodError())
         engine.onInternalFailure(FAILED_AT, NoSuchMethodError())
@@ -253,7 +252,7 @@ class MetricsEngineTest {
 
     @Test
     fun aResetLetsTheSameFailureBeHeardAgain() {
-        onMainThread { engine.start(context) }
+        runOnMain { engine.start(context) }
         engine.onInternalFailure(FAILED_AT, NoSuchMethodError())
         awaitMetricsThread()
 
@@ -264,23 +263,8 @@ class MetricsEngineTest {
         assertEquals(2, events.filterIsInstance<FrameHudEvent.InternalFailure>().size, "$events")
     }
 
-    private fun onMainThread(action: () -> Unit) {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync(action)
-    }
-
     private fun awaitMetricsThread() {
         assertNotNull(await { engine.sessionStats() }, "the metrics thread never answered")
-    }
-
-    private fun threadsNamed(name: String): Int = Thread.getAllStackTraces().keys.count { it.name == name }
-
-    private fun awaitThreadGone(name: String): Boolean {
-        val deadlineMs = SystemClock.elapsedRealtime() + TIMEOUT_MS
-        while (SystemClock.elapsedRealtime() < deadlineMs) {
-            if (Thread.getAllStackTraces().keys.none { it.name == name }) return true
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        return false
     }
 
     private companion object {
@@ -293,7 +277,5 @@ class MetricsEngineTest {
         const val DRAWN_FRAMES = 20
         const val FAILED_AT = "reading frame metrics"
         const val FAILED_AT_ANOTHER_CALL = "sampling the main thread"
-        const val TIMEOUT_MS = 5_000L
-        const val POLL_INTERVAL_MS = 10L
     }
 }

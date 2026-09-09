@@ -7,6 +7,7 @@ import com.timkrest.framehud.instrumentation.DetectJankAfterTestSuccess
 import com.timkrest.framehud.instrumentation.JankThresholds
 import com.timkrest.framehud.instrumentation.OnInconclusive
 import com.timkrest.framehud.instrumentation.SkipJankDetection
+import com.timkrest.framehud.shared.drawFrames
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,7 +23,7 @@ class JankGateTest {
 
     @Test
     fun theGateSeesTheFramesATestDrew() {
-        ActivityScenario.launch(MainActivity::class.java).use { it.renderFrames(FRAMES_THE_GATE_NEEDS) }
+        ActivityScenario.launch(MainActivity::class.java).use { it.drawFrames(FRAMES_THE_GATE_NEEDS) }
     }
 
     @Test

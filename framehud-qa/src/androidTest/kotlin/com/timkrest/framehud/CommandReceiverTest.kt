@@ -8,6 +8,10 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.internal.baselineFile
+import com.timkrest.framehud.shared.BlankActivity
+import com.timkrest.framehud.shared.awaitCollectorStarted
+import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.runOnMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -32,7 +36,7 @@ class CommandReceiverTest {
 
     @After
     fun clearDebugState() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        runOnMain {
             FrameHud.screen = null
             FrameHud.mark = null
             FrameHud.context = emptyMap()
@@ -54,7 +58,7 @@ class CommandReceiverTest {
 
     @Test
     fun aNameNoTraceCouldTellApartIsReportedBackAndLeavesTheNameAlone() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync { FrameHud.screen = "cart" }
+        runOnMain { FrameHud.screen = "cart" }
 
         listOf(" ", "q".repeat(TOO_LONG_FOR_A_TRACE)).forEach { name ->
             val result = assertNotNull(

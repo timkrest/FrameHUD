@@ -6,6 +6,11 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.internal.historyFile
+import com.timkrest.framehud.shared.AWAIT_TIMEOUT_MS
+import com.timkrest.framehud.shared.BlankActivity
+import com.timkrest.framehud.shared.await
+import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.runOnMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -38,7 +43,7 @@ class PastRunsTest {
         ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
             scenario.drawFrames(FRAMES)
         }
-        InstrumentationRegistry.getInstrumentation().runOnMainSync { FrameHud.reset() }
+        runOnMain { FrameHud.reset() }
 
         val previous = awaitRecordedRun()
         val session = assertNotNull(previous.interval(IntervalId.Session), "the run recorded no session")
@@ -46,7 +51,7 @@ class PastRunsTest {
     }
 
     private fun setKeptRuns(kept: Int) {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        runOnMain {
             FrameHud.config = FrameHud.config.copy(keptRuns = kept)
         }
     }

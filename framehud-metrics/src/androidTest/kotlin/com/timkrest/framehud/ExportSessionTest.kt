@@ -5,6 +5,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.internal.exportAuthority
+import com.timkrest.framehud.shared.BlankActivity
+import com.timkrest.framehud.shared.await
+import com.timkrest.framehud.shared.runOnMain
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,7 +37,7 @@ class ExportSessionTest {
 
     @Test
     fun anExportWritesBothReportsUnderTheAppFiles() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        runOnMain {
             FrameHud.screen = "checkout"
             FrameHud.context = mapOf("scenario" to "smoke")
         }
@@ -48,7 +51,7 @@ class ExportSessionTest {
                 assertContains(export.json.readText(), "\"packageName\":\"$packageName\"")
             }
         } finally {
-            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            runOnMain {
                 FrameHud.screen = null
                 FrameHud.context = emptyMap()
             }

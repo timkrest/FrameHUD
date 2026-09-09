@@ -114,25 +114,11 @@ class MetricsSamplerTest {
         assertTrue(ticks.get() >= atLeast, "the tick never ran")
     }
 
-    private fun awaitThreadGone(name: String): Boolean =
-        awaitUntil { Thread.getAllStackTraces().keys.none { it.name == name } }
-
-    private fun awaitUntil(condition: () -> Boolean): Boolean {
-        val deadlineMs = SystemClock.elapsedRealtime() + TIMEOUT_MS
-        while (SystemClock.elapsedRealtime() < deadlineMs) {
-            if (condition()) return true
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        return condition()
-    }
-
     private companion object {
         val NEXT_ID = AtomicInteger()
         val IDLE_LISTENER = Window.OnFrameMetricsAvailableListener { _, _, _ -> }
 
         const val TICK_INTERVAL_MS = 25L
         const val HANDOVER_WORK_MS = 150L
-        const val TIMEOUT_MS = 5_000L
-        const val POLL_INTERVAL_MS = 10L
     }
 }

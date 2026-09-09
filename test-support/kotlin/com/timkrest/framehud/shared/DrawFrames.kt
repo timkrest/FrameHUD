@@ -1,4 +1,4 @@
-package com.timkrest.framehud
+package com.timkrest.framehud.shared
 
 import android.app.Activity
 import android.view.Choreographer
@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
 
-internal fun <A : Activity> ActivityScenario<A>.drawFrames(count: Int) {
+internal fun ActivityScenario<out Activity>.drawFrames(count: Int) {
     lateinit var drawn: CountDownLatch
     onActivity { drawn = it.window.postFrames(count) }
     awaitFrames(drawn, count)

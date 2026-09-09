@@ -7,6 +7,11 @@ android {
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    sourceSets.getByName("androidTest") {
+        kotlin.srcDir(rootProject.file("test-support/kotlin"))
+        kotlin.srcDir(rootProject.file("test-support/activity"))
+    }
 }
 
 dependencies {

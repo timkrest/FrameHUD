@@ -5,6 +5,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.internal.baselineFile
+import com.timkrest.framehud.shared.BlankActivity
+import com.timkrest.framehud.shared.await
+import com.timkrest.framehud.shared.drawFrames
 import org.junit.After
 import org.junit.Before
 import org.junit.Test

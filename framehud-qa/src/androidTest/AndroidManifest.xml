@@ -3,7 +3,7 @@
 
     <application>
         <activity
-            android:name="com.timkrest.framehud.BlankActivity"
+            android:name="com.timkrest.framehud.shared.BlankActivity"
             android:exported="false" />
     </application>
 

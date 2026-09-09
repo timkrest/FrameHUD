@@ -27,6 +27,10 @@ android {
     lint {
         disable += setOf("MissingApplicationIcon", "DataExtractionRules")
     }
+
+    sourceSets.getByName("androidTest") {
+        kotlin.srcDir(rootProject.file("test-support/kotlin"))
+    }
 }
 
 dependencies {

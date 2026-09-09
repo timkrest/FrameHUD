@@ -14,6 +14,11 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+
+    sourceSets.getByName("androidTest") {
+        kotlin.srcDir(rootProject.file("test-support/kotlin"))
+        kotlin.srcDir(rootProject.file("test-support/activity"))
+    }
 }
 
 dependencies {
