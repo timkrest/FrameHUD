@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.ReportDrawn
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.MaterialTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -15,7 +14,7 @@ class MainActivity : ComponentActivity() {
         SampleFrameHud.listen()
         setContent {
             ReportDrawn()
-            MaterialTheme {
+            SampleTheme {
                 SampleApp(onOpenRow = ::openRow)
             }
         }
