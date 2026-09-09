@@ -27,8 +27,6 @@ internal fun parseHistory(text: String): Parsed<List<StoredRun>> {
     return Parsed.Read(runs)
 }
 
-private fun rejected(reason: String): Parsed<Nothing> = Parsed.Rejected(reason)
-
 private fun JsonObjectScope.putRun(stored: StoredRun) {
     val run = stored.run
     put(RUN_ID, stored.runId)

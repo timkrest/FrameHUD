@@ -17,6 +17,8 @@ internal sealed interface Parsed<out T> {
     class Rejected(val reason: String) : Parsed<Nothing>
 }
 
+internal fun rejected(reason: String): Parsed<Nothing> = Parsed.Rejected(reason)
+
 @WorkerThread
 internal fun <T> readJson(file: File, maxBytes: Long, empty: T, parse: (String) -> Parsed<T>): Stored<T> {
     try {

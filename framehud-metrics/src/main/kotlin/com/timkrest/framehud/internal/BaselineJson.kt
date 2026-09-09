@@ -61,8 +61,6 @@ internal fun parseBaseline(text: String): Parsed<Baseline?> {
     return Parsed.Read(Baseline(environment = environment, entries = entries))
 }
 
-private fun rejected(reason: String): Parsed<Nothing> = Parsed.Rejected(reason)
-
 private fun JsonValue.entry(): BaselineEntry? = readOrNull {
     val candidateBudget = when (val candidate = member(CANDIDATE_BUDGET)) {
         null -> null
