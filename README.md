@@ -10,7 +10,7 @@
 A draggable debug panel that shows how long each stage of a frame takes, and which one is slowing
 you down.
 
-<img src="docs/panel.png" alt="The panel over the sample app while scrolling a list at 120 Hz" width="420">
+<img src="docs/panel.png" alt="The panel over the sample app while scrolling a list" width="420">
 
 - **A row per stage.** `input`, `anim`, `layout`, `draw` on the main thread, then `sync`, `command`,
   `swap` on the render thread, and `gpu`
