@@ -26,6 +26,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      - name: Licence headers
+        run: .github/scripts/check-license-headers.sh
+
       - name: Build, test and verify API
         run: ./gradlew build --stacktrace
 

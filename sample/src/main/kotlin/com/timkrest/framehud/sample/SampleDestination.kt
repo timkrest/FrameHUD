@@ -1,3 +1,5 @@
+// Copyright 2026 Timofey Krestyanov
+// SPDX-License-Identifier: Apache-2.0
 package com.timkrest.framehud.sample
 
 enum class SampleDestination(val screen: String, val title: String, val subtitle: String) {
