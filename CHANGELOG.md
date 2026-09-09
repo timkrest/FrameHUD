@@ -9,10 +9,21 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- A tap on the panel steps through how much it shows: every row, the frame rows on their own, and
+  one line. The collapse arrow is gone, and the screens view moved from a tap on the header to a
+  `▤` button beside the reset one.
+- The frame rows on their own leave out the render and GPU stages, `over` and `pipe`. What stays is
+  what the app drives, and when one of the stages left out is what went wrong, the verdict on the
+  first line still names it.
 - Dragging the panel moves its window instead of stretching the window over the screen and shifting
   the panel inside it. Two sources of one position disagreed for a frame whenever the readings
   changed mid-drag, which showed as the panel blinking or jumping towards the corner, and the
   full-screen window dimmed the status bar and left a black band above the navigation buttons.
+
+### Fixed
+
+- The one-line panel reserves room for the phase it blames, so it stops widening and narrowing as
+  the verdict comes and goes.
 
 ## [0.17.0] - 2026-08-31
 

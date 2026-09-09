@@ -39,9 +39,7 @@ internal fun PanelHeader(
     actions: PanelActions,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .tapAndHold(onTap = actions.toggleView, onHold = actions.toggleFrozen),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (isEmulator) {
@@ -55,7 +53,7 @@ internal fun PanelHeader(
         if (canRequestOverlayPermission) {
             PanelIconButton(icon = ICON_DETACH, onClick = actions.requestOverlayPermission)
         }
-        PanelIconButton(icon = ICON_COLLAPSE, onClick = actions.toggleCollapsed)
+        PanelIconButton(icon = ICON_SCREENS, onClick = actions.toggleView)
         PanelIconButton(icon = ICON_RESET, onClick = actions.reset)
     }
 }

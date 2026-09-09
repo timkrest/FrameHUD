@@ -85,8 +85,9 @@ thr 38 ▲44 · fd 210 ▲260
 
 The header shows the main thread's Choreographer tick rate, the frame budget and FPS. The verdict
 under it names the row to look at, and `◀` marks that row. Columns read `now avg peak`: the current
-frame, the average over the window, and the peak since the last reset. Tapping the header switches
-to [the worst screens](docs/guide.md#screen-history) and back; holding it freezes the readings.
+frame, the average over the window, and the peak since the last reset. A tap steps through the three
+views — every row, the frame rows on their own, and one line; holding freezes the readings, and `▤`
+switches to [the worst screens](docs/guide.md#screen-history) and back.
 
 [Reading the panel](docs/metrics.md) explains every row and what to do when one turns red.
 

@@ -183,28 +183,42 @@ class PanelLinesTest {
         thermal: ThermalStats = ThermalStats.EMPTY,
         process: ProcessStats = ProcessStats.EMPTY,
         counters: List<CounterReading> = emptyList(),
+        detail: PanelDetail = PanelDetail.FULL,
     ): List<String> = buildPanelLines(
         metrics = metrics,
         memory = memory,
         thermal = thermal,
         process = process,
         counters = counters,
+        detail = detail,
     ).values.map { it.text }
 
     private fun List<String>.gpuRow(): String = single { it.startsWith(LABEL_GPU) }
 
     @Test
-    fun `the collapsed line keeps one width while the readings change`() {
-        val quiet = listOf(0, 60, 999).map { buildCollapsedLine(metrics(fps = it)).text }
-        assertEquals(setOf(COLLAPSED_WIDEST_READING.length), quiet.map { it.length }.toSet(), quiet.toString())
+    fun `the frames view keeps the phases the app owns and leaves the rest to the full one`() {
+        val frames = lines(metrics(gpuMs = 4f), detail = PanelDetail.FRAMES)
 
-        val attention = listOf(
+        assertEquals(
+            listOf(LABEL_INPUT, LABEL_ANIMATION, LABEL_LAYOUT, LABEL_DRAW, LABEL_DELAY, LABEL_OTHER, LABEL_TOTAL),
+            frames.mapNotNull { line -> APP_OWNED_LABELS.firstOrNull(line::startsWith) },
+        )
+        assertTrue(frames.last().startsWith(LABEL_WINDOW), frames.toString())
+        assertTrue(frames.none { line -> FULL_ONLY_LABELS.any(line::startsWith) }, frames.toString())
+    }
+
+    @Test
+    fun `the widest reading a verdict can add still fits the width the panel reserves`() {
+        val readings = listOf(
+            metrics(fps = 0),
+            metrics(fps = 60),
+            metrics(fps = 999),
             metrics(fps = 60, jankPercent = 50f, layoutMs = 9f),
             metrics(fps = 60, jankPercent = 50f, swapMs = 9f),
             metrics(fps = 60, jankPercent = 50f, gpuMs = 9f),
-        ).map { buildCollapsedLine(it).text }
-        assertEquals(1, attention.map { it.length }.distinct().size, attention.toString())
-        assertTrue(attention.all { it.length > COLLAPSED_WIDEST_READING.length }, attention.toString())
+        ).map { buildMiniLine(it).text }
+
+        assertEquals(MINI_WIDEST_READING.length, readings.maxOf { it.length }, readings.toString())
     }
 
     private fun metrics(
@@ -226,5 +240,24 @@ class PanelLinesTest {
 
     private companion object {
         const val TOLERANCE = 0.0001f
+
+        val APP_OWNED_LABELS = listOf(
+            LABEL_INPUT,
+            LABEL_ANIMATION,
+            LABEL_LAYOUT,
+            LABEL_DRAW,
+            LABEL_DELAY,
+            LABEL_OTHER,
+            LABEL_TOTAL,
+        )
+
+        val FULL_ONLY_LABELS = listOf(
+            LABEL_RENDER_SECTION,
+            LABEL_GPU_SECTION,
+            LABEL_OVERRUN,
+            LABEL_PIPE_CPU,
+            LABEL_SESSION,
+            LABEL_MEMORY,
+        )
     }
 }

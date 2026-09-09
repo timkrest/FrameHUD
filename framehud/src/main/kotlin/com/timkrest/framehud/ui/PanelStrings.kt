@@ -51,9 +51,9 @@ internal const val MARK_PREFIX = "▸ "
 internal const val ELLIPSIS = "…"
 
 internal const val ATTENTION_MARKER = " ◀"
-internal const val COLLAPSED_SEPARATOR = "  "
+internal const val MINI_SEPARATOR = "  "
 internal const val PART_SEPARATOR = " · "
 
 internal const val ICON_DETACH = "⧉"
-internal const val ICON_COLLAPSE = "▾"
+internal const val ICON_SCREENS = "▤"
 internal const val ICON_RESET = "×"

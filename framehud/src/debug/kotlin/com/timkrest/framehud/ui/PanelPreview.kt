@@ -17,16 +17,22 @@ import com.timkrest.framehud.ThermalStats
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
-@Preview(name = "Expanded", showBackground = true, backgroundColor = 0xFF202020)
+@Preview(name = "Full", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
-private fun PanelExpandedPreview() {
+private fun PanelFullPreview() {
     Panel(state = previewState(), actions = previewActions())
 }
 
-@Preview(name = "Collapsed", showBackground = true, backgroundColor = 0xFF202020)
+@Preview(name = "Frames", showBackground = true, backgroundColor = 0xFF202020)
 @Composable
-private fun PanelCollapsedPreview() {
-    Panel(state = previewState(isCollapsed = true), actions = previewActions())
+private fun PanelFramesPreview() {
+    Panel(state = previewState(detail = PanelDetail.FRAMES), actions = previewActions())
+}
+
+@Preview(name = "Mini", showBackground = true, backgroundColor = 0xFF202020)
+@Composable
+private fun PanelMiniPreview() {
+    Panel(state = previewState(detail = PanelDetail.MINI), actions = previewActions())
 }
 
 @Preview(name = "Frozen", showBackground = true, backgroundColor = 0xFF202020)
@@ -56,7 +62,7 @@ private fun PanelScreensPreview() {
 private fun previewState(
     activeMark: String? = null,
     view: PanelView = PanelView.METRICS,
-    isCollapsed: Boolean = false,
+    detail: PanelDetail = PanelDetail.FULL,
     isFrozen: Boolean = false,
     isEmulator: Boolean = false,
 ) = PanelState(
@@ -69,14 +75,14 @@ private fun previewState(
     activeMark = MutableStateFlow(activeMark),
     view = MutableStateFlow(view),
     screens = flowOf(PREVIEW_SCREENS),
-    isCollapsed = MutableStateFlow(isCollapsed),
+    detail = MutableStateFlow(detail),
     isFrozen = MutableStateFlow(isFrozen),
     canRequestOverlayPermission = true,
     isEmulator = isEmulator,
 )
 
 private fun previewActions() = PanelActions(
-    toggleCollapsed = {},
+    showNextDetail = {},
     toggleView = {},
     toggleFrozen = {},
     reset = {},

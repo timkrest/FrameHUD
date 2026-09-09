@@ -4,32 +4,33 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.timkrest.framehud.CounterReading
-import com.timkrest.framehud.MemoryStats
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.timkrest.framehud.PerformanceMetrics
-import com.timkrest.framehud.ProcessStats
-import com.timkrest.framehud.ThermalStats
 
 @Composable
-internal fun PanelExpandedContent(
+internal fun PanelMetricsContent(
+    state: PanelState,
     metrics: PerformanceMetrics,
-    memory: MemoryStats,
-    thermal: ThermalStats,
-    process: ProcessStats,
-    counters: List<CounterReading>,
-    isEmulator: Boolean,
+    detail: PanelDetail,
     modifier: Modifier = Modifier,
 ) {
-    val lines = remember(metrics, memory, thermal, process, counters, isEmulator) {
+    val memory by state.memory.collectAsStateWithLifecycle()
+    val thermal by state.thermal.collectAsStateWithLifecycle()
+    val process by state.process.collectAsStateWithLifecycle()
+    val counters by state.counters.collectAsStateWithLifecycle()
+
+    val lines = remember(metrics, memory, thermal, process, counters, state.isEmulator, detail) {
         buildPanelLines(
             metrics = metrics,
             memory = memory,
             thermal = thermal,
             process = process,
             counters = counters,
-            isEmulator = isEmulator,
+            isEmulator = state.isEmulator,
+            detail = detail,
         )
     }
     Column(modifier = modifier) {

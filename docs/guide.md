@@ -254,7 +254,8 @@ marks and jank events stay with the activity, because that is the window the pan
 ## Screen history
 
 Walk through the app first, then look at which screens were worst instead of reading each one live.
-Tap the panel header to switch between the metrics and the screens, and tap it again to switch back.
+Tap `▤` in the panel header to switch between the metrics and the screens, and tap it again to
+switch back.
 
 ```
 SCREENS                  118 FPS
@@ -703,7 +704,7 @@ breaking anyone. Something on its way out is deprecated first, for at least one 
 - The panel in release builds. It is a debug tool, and `framehud-noop` exists so release code
   compiles without it.
 - FPS in a notification. An app in the background draws no frames, so there is nothing to show. When
-  the panel covers what you are testing, collapse it or read logcat.
+  the panel covers what you are testing, tap it down to one line or read logcat.
 - Uploading anything anywhere. Measurements stay on the device.
 - Process startup and production aggregates. FrameHUD times the screen in front of you, first frame
   and usable frame included; a cold start belongs to Macrobenchmark, and an installed base to Play

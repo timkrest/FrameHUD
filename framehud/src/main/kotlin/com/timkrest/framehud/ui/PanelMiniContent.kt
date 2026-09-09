@@ -15,13 +15,13 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import com.timkrest.framehud.PerformanceMetrics
 
 @Composable
-internal fun PanelCollapsedContent(metrics: PerformanceMetrics, isEmulator: Boolean, actions: PanelActions) {
-    val summary = remember(metrics, isEmulator) { buildCollapsedLine(metrics = metrics, isEmulator = isEmulator) }
+internal fun PanelMiniContent(metrics: PerformanceMetrics, isEmulator: Boolean) {
+    val summary = remember(metrics, isEmulator) { buildMiniLine(metrics = metrics, isEmulator = isEmulator) }
     val measurer = rememberTextMeasurer()
     val summaryWidth = with(LocalDensity.current) {
         remember(measurer) {
             measurer.measure(
-                text = COLLAPSED_WIDEST_READING,
+                text = MINI_WIDEST_READING,
                 style = PanelTextStyle,
                 softWrap = false,
                 maxLines = 1,
@@ -29,9 +29,7 @@ internal fun PanelCollapsedContent(metrics: PerformanceMetrics, isEmulator: Bool
         }.toDp()
     }
     Row(
-        modifier = Modifier
-            .height(CollapsedRowHeight)
-            .tapAndHold(onTap = actions.toggleCollapsed, onHold = actions.toggleFrozen),
+        modifier = Modifier.height(MiniRowHeight),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FrameSparkline(

@@ -15,6 +15,7 @@ import com.timkrest.framehud.FrameHudPanel
 import com.timkrest.framehud.OverlayMode
 import com.timkrest.framehud.ui.Panel
 import com.timkrest.framehud.ui.PanelActions
+import com.timkrest.framehud.ui.PanelDetail
 import com.timkrest.framehud.ui.PanelDrag
 import com.timkrest.framehud.ui.PanelState
 import com.timkrest.framehud.ui.PanelView
@@ -31,7 +32,7 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
 
     private var hasLoggedAppWindowFallback = false
 
-    private val isCollapsed = MutableStateFlow(false)
+    private val detail = MutableStateFlow(PanelDetail.FULL)
 
     private val view = MutableStateFlow(PanelView.METRICS)
 
@@ -121,14 +122,14 @@ internal class PanelHost(private val application: Application) : FrameHudPanel {
         activeMark = FrameHud.activeMark,
         view = view,
         screens = FrameHud.metrics.map { FrameHud.screens() },
-        isCollapsed = isCollapsed,
+        detail = detail,
         isFrozen = FrameHud.isFrozen,
         canRequestOverlayPermission = canRequestOverlayPermission,
         isEmulator = isEmulatorDevice,
     )
 
     private fun panelActions(drag: PanelDrag) = PanelActions(
-        toggleCollapsed = { isCollapsed.value = !isCollapsed.value },
+        showNextDetail = { detail.value = detail.value.next() },
         toggleView = { view.value = view.value.next() },
         toggleFrozen = FrameHud::toggleFreeze,
         reset = FrameHud::reset,

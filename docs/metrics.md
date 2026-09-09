@@ -15,11 +15,21 @@ report.
 
 ## Controls
 
-Drag the panel with a finger. While you hold it, its window covers the screen, so a second finger
-lands on the panel and not on the app under it. Tap a collapsed panel to expand it, and tap the
-header of an expanded one to switch between the readings and the worst screens. Long-press to
-freeze: the readings hold still so you can read them while collection continues. `×` resets the
-window, the session and the peaks.
+Drag the panel with a finger. Tap it to step through the three views below, and long-press to
+freeze: the readings hold still so you can read them while collection continues.
+
+| View | What it shows |
+| --- | --- |
+| Full | Every row this page documents, down to the session, memory, thermals and your counters |
+| Frames | The verdict, the phases the app owns, `TOTAL` and the window summary |
+| One line | The sparkline, FPS, jank and the phase to blame |
+
+The frames view leaves out the render and GPU stages, `over` and `pipe`. The app does not drive
+those directly, and when one of them is what went wrong, the verdict on the first line says so.
+
+Three buttons sit in the header. `⧉` asks for the overlay permission, and shows up only while the
+panel is stuck inside the app window. `▤` switches between the readings and the worst screens.
+`×` resets the window, the session and the peaks.
 
 ## Header
 
@@ -104,7 +114,7 @@ The line under the header:
 
 - `✓ ok`: jank below 5%
 - `⚠ <phase> N ms`: the phase with the highest average, `delay` included; the same phase is marked
-  `◀` in the list. Yellow at 5–20% jank, red at 20% or more. Collapsed, it shows as a `⚠<phase>` badge
+  `◀` in the list. Yellow at 5–20% jank, red at 20% or more. In the one-line view it shows as a `⚠<phase>` badge
 
 ## Colors
 

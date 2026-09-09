@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.sp
 internal val PanelWidth = 250.dp
 internal val ItemSpacing = 6.dp
 internal val IconButtonSize = 26.dp
-internal val CollapsedRowHeight = 26.dp
+internal val MiniRowHeight = 26.dp
 internal val ButtonCornerRadius = 6.dp
 internal val PanelPadding = 8.dp
 internal val PanelCornerRadius = 8.dp
