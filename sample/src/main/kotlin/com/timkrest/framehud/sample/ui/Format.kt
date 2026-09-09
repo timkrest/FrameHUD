@@ -10,6 +10,10 @@ fun formatPercent(value: Float): String = String.format(Locale.US, "%.1f%%", val
 
 fun formatSeconds(durationMs: Long): String = String.format(Locale.US, "%.1f s", durationMs / MS_PER_SECOND)
 
+fun formatHertz(value: Float): String = String.format(Locale.US, "%.0f Hz", value)
+
+fun formatHeadroom(value: Float): String = String.format(Locale.US, "%.2f", value)
+
 fun Enum<*>.readable(): String = name.lowercase(Locale.US).replace('_', ' ')
 
 fun <T : Any> formatOrMissing(value: T?, format: (T) -> String): String =

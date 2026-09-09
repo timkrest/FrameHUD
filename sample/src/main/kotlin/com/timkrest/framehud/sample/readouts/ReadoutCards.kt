@@ -14,12 +14,13 @@ import com.timkrest.framehud.sample.ui.NOT_REPORTED
 import com.timkrest.framehud.sample.ui.SampleCard
 import com.timkrest.framehud.sample.ui.SampleLine
 import com.timkrest.framehud.sample.ui.SampleNote
+import com.timkrest.framehud.sample.ui.formatHeadroom
+import com.timkrest.framehud.sample.ui.formatHertz
 import com.timkrest.framehud.sample.ui.formatMs
 import com.timkrest.framehud.sample.ui.formatOrMissing
 import com.timkrest.framehud.sample.ui.formatPercent
 import com.timkrest.framehud.sample.ui.formatWithPeak
 import com.timkrest.framehud.sample.ui.readable
-import java.util.Locale
 
 @Composable
 fun WindowCard(window: FrameWindowStats) {
@@ -83,7 +84,7 @@ fun ThermalCard(thermal: ThermalStats) {
         SampleLine(label = "status", value = thermal.level.readable())
         SampleLine(
             label = "headroom",
-            value = formatOrMissing(thermal.headroom) { String.format(Locale.US, "%.2f", it) },
+            value = formatOrMissing(thermal.headroom, ::formatHeadroom),
         )
     }
 }
@@ -102,7 +103,7 @@ fun CountersCard(counters: List<CounterReading>) {
 fun CollectionCard(display: DisplayInfo, ticksPerSecond: Int, frozen: Boolean) {
     SampleCard(title = "Collection") {
         SampleLine(label = "choreographer ticks", value = "$ticksPerSecond per second")
-        SampleLine(label = "display", value = String.format(Locale.US, "%.0f Hz", display.refreshRateHz))
+        SampleLine(label = "display", value = formatHertz(display.refreshRateHz))
         SampleLine(label = "display deadline", value = formatMs(display.frameBudgetMs))
         SampleLine(label = "readings", value = if (frozen) "frozen" else "live")
     }
