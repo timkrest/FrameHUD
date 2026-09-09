@@ -40,6 +40,22 @@ class FrameWindowTest {
     }
 
     @Test
+    fun `the jank share counts the frames that overran, oldest evicted first`() {
+        repeat(4) { addFrame(totalMs = 10f, overrunMs = -1f) }
+        repeat(4) { addFrame(totalMs = 20f, overrunMs = 1f) }
+        assertEquals(50f, window.jankPercent(), TOLERANCE)
+
+        repeat(4) { addFrame(totalMs = 20f, overrunMs = 1f) }
+        assertEquals(100f, window.jankPercent(), TOLERANCE)
+    }
+
+    @Test
+    fun `a frame that exactly met its deadline is not janky`() {
+        addFrame(totalMs = 16f, overrunMs = 0f)
+        assertEquals(0f, window.jankPercent(), TOLERANCE)
+    }
+
+    @Test
     fun `clear drops accumulated frames`() {
         addFrame(totalMs = 10f, overrunMs = 1f, frameEndNs = 1L)
         window.clear()

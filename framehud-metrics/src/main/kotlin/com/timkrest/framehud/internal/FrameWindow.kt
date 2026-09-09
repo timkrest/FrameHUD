@@ -8,13 +8,13 @@ import com.timkrest.framehud.MetricValue
 internal class FrameWindow(size: Int) {
 
     private val phaseRings = PhaseRings(size)
-    private val jank = JankRatio(size)
+    private val jankFlags = RingBuffer(size)
     private val overruns = RingBuffer(size)
     private val timestamps = FrameTimestamps(capacity = MAX_TRACKED_REFRESH_RATE_HZ)
 
     fun add(durationsMs: FloatArray, overrunMs: Float, frameEndNs: Long) {
         phaseRings.add(durationsMs)
-        jank.add(isJanky = overrunMs > 0f)
+        jankFlags.add(if (overrunMs > 0f) 1f else 0f)
         overruns.add(overrunMs)
         timestamps.add(frameEndNs)
     }
@@ -37,7 +37,7 @@ internal class FrameWindow(size: Int) {
         overrun = overrunValue(),
     )
 
-    fun jankPercent(): Float = jank.percent()
+    fun jankPercent(): Float = jankFlags.average() * PERCENT
 
     fun fps(nowNs: Long): Int = timestamps.countSince(nowNs - NS_PER_SECOND)
 
@@ -56,14 +56,14 @@ internal class FrameWindow(size: Int) {
 
     fun resizeTo(size: Int) {
         phaseRings.resizeTo(size)
-        jank.resizeTo(size)
+        jankFlags.resizeTo(size)
         overruns.resizeTo(size)
         timestamps.clear()
     }
 
     fun clear() {
         phaseRings.clear()
-        jank.clear()
+        jankFlags.clear()
         overruns.clear()
         timestamps.clear()
     }
