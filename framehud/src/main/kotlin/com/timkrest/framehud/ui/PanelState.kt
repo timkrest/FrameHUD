@@ -1,7 +1,6 @@
 package com.timkrest.framehud.ui
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.geometry.Offset
 import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.MemoryStats
@@ -35,14 +34,6 @@ internal class PanelState(
     val canRequestOverlayPermission: Boolean,
     val isEmulator: Boolean,
 )
-
-internal interface PanelDrag {
-    fun grab(screen: Offset)
-
-    fun moveTo(screen: Offset)
-
-    fun release()
-}
 
 @Immutable
 internal class PanelActions(

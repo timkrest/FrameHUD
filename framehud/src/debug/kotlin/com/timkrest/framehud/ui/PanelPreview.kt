@@ -1,7 +1,6 @@
 package com.timkrest.framehud.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.tooling.preview.Preview
 import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.DisplayInfo
@@ -85,13 +84,7 @@ private fun previewActions() = PanelActions(
     requestOverlayPermission = {},
 )
 
-private val PREVIEW_DRAG = object : PanelDrag {
-    override fun grab(screen: Offset) = Unit
-
-    override fun moveTo(screen: Offset) = Unit
-
-    override fun release() = Unit
-}
+private val PREVIEW_DRAG = PanelDrag { GrabbedPanel {} }
 
 private val PREVIEW_COUNTERS = listOf(
     CounterReading.of(name = "decode queue", value = 4, peakSinceReset = 31),

@@ -7,6 +7,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Dragging the panel moves its window instead of stretching the window over the screen and shifting
+  the panel inside it. Two sources of one position disagreed for a frame whenever the readings
+  changed mid-drag, which showed as the panel blinking or jumping towards the corner, and the
+  full-screen window dimmed the status bar and left a black band above the navigation buttons.
+
 ## [0.17.0] - 2026-08-31
 
 ### Added
