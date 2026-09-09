@@ -5,11 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.timkrest.framehud.sample.load.ActiveLoads
-import com.timkrest.framehud.sample.load.BudgetSwitch
 import com.timkrest.framehud.sample.load.Load
 import com.timkrest.framehud.sample.load.LoadChips
 import com.timkrest.framehud.sample.load.RowCard
 import com.timkrest.framehud.sample.readouts.MetricsReadout
+import com.timkrest.framehud.sample.ui.SampleSwitch
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Preview(name = "Load chips", showBackground = true)
 @Composable
@@ -21,10 +22,15 @@ private fun LoadChipsPreview() {
     )
 }
 
-@Preview(name = "Budget switch", showBackground = true)
+@Preview(name = "Switch", showBackground = true)
 @Composable
-private fun BudgetSwitchPreview() {
-    BudgetSwitch()
+private fun SampleSwitchPreview() {
+    SampleSwitch(
+        title = "Judge frames by a budget",
+        subtitle = "The same frames, judged against a fixed budget instead of the display deadline.",
+        checked = MutableStateFlow(true),
+        onCheckedChange = {},
+    )
 }
 
 @Preview(name = "Row card", showBackground = true)

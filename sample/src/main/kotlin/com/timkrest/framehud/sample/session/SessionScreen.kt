@@ -12,10 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.sample.SampleDestination
+import com.timkrest.framehud.sample.SampleFrameHud
 import com.timkrest.framehud.sample.readouts.IntervalStatsCard
 import com.timkrest.framehud.sample.ui.SampleCard
 import com.timkrest.framehud.sample.ui.SampleHeader
 import com.timkrest.framehud.sample.ui.SampleNote
+import com.timkrest.framehud.sample.ui.SampleSwitch
 
 @Composable
 fun SessionScreen(
@@ -50,9 +52,32 @@ fun SessionScreen(
                 onRetainTrace = state::retainTrace,
             )
         }
-        item { FreezeSwitch() }
-        item { FlightRecorderSwitch() }
-        item { PastRunsSwitch() }
+        item {
+            SampleSwitch(
+                title = "Frozen readings",
+                subtitle = "The panel holds the numbers on screen while collection carries on underneath.",
+                checked = FrameHud.isFrozen,
+                onCheckedChange = { FrameHud.toggleFreeze() },
+            )
+        }
+        item {
+            SampleSwitch(
+                title = "Perfetto flight recorder",
+                subtitle = "An incident asks the ${SampleFrameHud.PERFETTO_TRIGGER} trace to keep the seconds " +
+                    "around it. Start that trace over adb first.",
+                checked = SampleFrameHud.flightRecorder,
+                onCheckedChange = SampleFrameHud::setFlightRecorder,
+            )
+        }
+        item {
+            SampleSwitch(
+                title = "Keep past runs",
+                subtitle = "Writes the last ${SampleFrameHud.KEPT_RUNS} runs to framehud/history.json every " +
+                    "time the app leaves the foreground. Switch it on, leave the app, come back and hit Reset.",
+                checked = SampleFrameHud.keepsRuns,
+                onCheckedChange = SampleFrameHud::setKeepsRuns,
+            )
+        }
         state.message?.let { text ->
             item { SampleCard(title = "Last action") { SampleNote(text = text) } }
         }

@@ -16,6 +16,7 @@ import com.timkrest.framehud.sample.SampleDestination
 import com.timkrest.framehud.sample.SampleFrameHud
 import com.timkrest.framehud.sample.readouts.MetricsReadout
 import com.timkrest.framehud.sample.ui.SampleHeader
+import com.timkrest.framehud.sample.ui.SampleSwitch
 
 @Composable
 fun LoadScreen(
@@ -47,7 +48,13 @@ fun LoadScreen(
             LoadChips(active = active, onToggle = onToggle, modifier = Modifier.fillMaxWidth())
         }
         item(contentType = ContentType.BUDGET) {
-            BudgetSwitch()
+            SampleSwitch(
+                title = "Judge frames by a budget",
+                subtitle = "The same frames, judged against ${SampleFrameHud.strictBudgetsLabel} " +
+                    "instead of the display deadline.",
+                checked = SampleFrameHud.strictBudgets,
+                onCheckedChange = SampleFrameHud::setStrictBudgets,
+            )
         }
         item(contentType = ContentType.READOUT) {
             MetricsReadout()
