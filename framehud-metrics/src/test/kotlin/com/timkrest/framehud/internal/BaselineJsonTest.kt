@@ -26,7 +26,7 @@ class BaselineJsonTest {
             ),
         )
 
-        assertEquals(baseline, read(baseline.toJson()))
+        assertEquals(baseline, parsedBaseline(baseline.toJson()))
     }
 
     @Test
@@ -42,21 +42,21 @@ class BaselineJsonTest {
             ),
         )
 
-        assertEquals(baseline, read(baseline.toJson()))
+        assertEquals(baseline, parsedBaseline(baseline.toJson()))
     }
 
     @Test
     fun `the frame budget and the candidate budget survive a round trip`() {
         val baseline = sessionBaseline(candidateEntry())
 
-        assertEquals(baseline, read(baseline.toJson()))
+        assertEquals(baseline, parsedBaseline(baseline.toJson()))
     }
 
     @Test
     fun `a missing GPU average stays missing`() {
         val baseline = sessionBaseline()
 
-        assertNull(read(baseline.toJson())?.entries?.getValue(IntervalId.Session)?.phases?.gpu)
+        assertNull(parsedBaseline(baseline.toJson())?.entries?.getValue(IntervalId.Session)?.phases?.gpu)
     }
 
     @Test
@@ -87,7 +87,7 @@ class BaselineJsonTest {
             ),
         ).toJson().replace(""""interval":"mark:fling"""", """"interval":"gesture:fling"""")
 
-        assertEquals(setOf(IntervalId.Session), read(json)?.entries?.keys)
+        assertEquals(setOf(IntervalId.Session), parsedBaseline(json)?.entries?.keys)
     }
 
     @Test
@@ -190,8 +190,6 @@ class BaselineJsonTest {
         assertIs<Parsed.Rejected>(parseBaseline("not json"))
     }
 
-    private fun read(json: String): Baseline? = (parseBaseline(json) as? Parsed.Read)?.value
-
     private fun sessionBaseline(entry: BaselineEntry = entry(p95FrameMs = 10f)): Baseline =
         Baseline(RECORDED_ENVIRONMENT, mapOf(IntervalId.Session to entry))
 
@@ -234,3 +232,5 @@ class BaselineJsonTest {
         )
     }
 }
+
+internal fun parsedBaseline(json: String): Baseline? = (parseBaseline(json) as? Parsed.Read)?.value

@@ -15,7 +15,7 @@ class HistoryStoreTest {
             storedRun(runId = "run:$index", recordedAtEpochMs = index + 1L, intervals = crowdedIntervals())
         }
 
-        val written = read(assertNotNull(runs.fittingHistoryJson()).decodeToString()).orEmpty()
+        val written = parsedRuns(assertNotNull(runs.fittingHistoryJson()).decodeToString()).orEmpty()
 
         assertTrue(written.size in 1..<RUNS, "kept ${written.size} of $RUNS runs")
         assertEquals(runs.take(written.size), written)
@@ -24,8 +24,6 @@ class HistoryStoreTest {
     private fun crowdedIntervals(): List<IntervalReport> =
         listOf(recordedInterval(IntervalId.Session)) +
             List(INTERVALS) { index -> recordedInterval(IntervalId.Mark("mark$index")) }
-
-    private fun read(json: String): List<StoredRun>? = (parseHistory(json) as? Parsed.Read)?.value
 
     private companion object {
         const val RUNS = 8

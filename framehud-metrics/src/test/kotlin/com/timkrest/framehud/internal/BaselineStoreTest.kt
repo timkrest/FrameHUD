@@ -23,7 +23,7 @@ class BaselineStoreTest {
             },
         )
 
-        val written = assertNotNull(read(assertNotNull(baseline.fittingJson()).decodeToString()))
+        val written = assertNotNull(parsedBaseline(assertNotNull(baseline.fittingJson()).decodeToString()))
 
         assertTrue(written.entries.size < baseline.entries.size, "nothing was dropped")
         assertEquals(
@@ -31,8 +31,6 @@ class BaselineStoreTest {
             written.entries.filterValues { it.runs == RUNS_A_LONG_HISTORY }.keys,
         )
     }
-
-    private fun read(json: String): Baseline? = (parseBaseline(json) as? Parsed.Read)?.value
 
     private fun entry(runs: Int): BaselineEntry = BaselineEntry.of(
         stats = IntervalStats.EMPTY.copy(frames = 100, p95FrameMs = 10f, phases = PhaseAverages.of(total = 12f)),

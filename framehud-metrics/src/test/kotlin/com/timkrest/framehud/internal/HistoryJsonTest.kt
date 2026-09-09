@@ -23,7 +23,7 @@ class HistoryJsonTest {
             storedRun(recordedAtEpochMs = 1_600_000_000_000L, appVersionName = null),
         )
 
-        assertEquals(runs, read(runs.toHistoryJson()))
+        assertEquals(runs, parsedRuns(runs.toHistoryJson()))
     }
 
     @Test
@@ -40,7 +40,7 @@ class HistoryJsonTest {
         )
         val runs = listOf(storedRun(intervals = listOf(recordedInterval(IntervalId.Session, recordedStats(issues = issues)))))
 
-        assertEquals(issues, read(runs.toHistoryJson())?.single()?.run?.interval(IntervalId.Session)?.stats?.confidence?.issues)
+        assertEquals(issues, parsedRuns(runs.toHistoryJson())?.single()?.run?.interval(IntervalId.Session)?.stats?.confidence?.issues)
     }
 
     @Test
@@ -72,6 +72,6 @@ class HistoryJsonTest {
 
         assertIs<Parsed.Rejected>(parseHistory(json))
     }
-
-    private fun read(json: String): List<StoredRun>? = (parseHistory(json) as? Parsed.Read)?.value
 }
+
+internal fun parsedRuns(json: String): List<StoredRun>? = (parseHistory(json) as? Parsed.Read)?.value
