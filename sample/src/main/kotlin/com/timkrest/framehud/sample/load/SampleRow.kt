@@ -12,7 +12,7 @@ fun SampleRow(index: Int, active: ActiveLoads, onOpen: () -> Unit) {
         remember(index, active) { List(ALLOCATION_SIZE) { "row $index allocation $it" } }
     }
     if (Load.HeavyLayout in active) {
-        NestedBoxes(depth = NESTING_DEPTH) { RowCard(index = index, active = active, onOpen = onOpen) }
+        IntrinsicPasses(passes = INTRINSIC_PASSES) { RowCard(index = index, active = active, onOpen = onOpen) }
     } else {
         RowCard(index = index, active = active, onOpen = onOpen)
     }
@@ -21,4 +21,4 @@ fun SampleRow(index: Int, active: ActiveLoads, onOpen: () -> Unit) {
 private val rowsComposed by lazy { FrameHud.counter("rows composed") }
 
 private const val ALLOCATION_SIZE = 2_000
-private const val NESTING_DEPTH = 40
+private const val INTRINSIC_PASSES = 40
