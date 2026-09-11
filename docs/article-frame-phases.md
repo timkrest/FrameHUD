@@ -52,6 +52,8 @@ reported 8.3 ms for a fifth of the frames, 16.7 for seven in ten and 25.0 or mor
 while the refresh rate never left 120 Hz. Judge every frame against one number derived from the
 refresh rate and you disagree with the system about which frames were late.
 
+![Per-frame deadlines over thirty frames, against a fixed 16.7 ms budget](frame-budget.svg)
+
 FrameHUD puts that breakdown on top of the running app and keeps statistics from it.
 
 ```kotlin
