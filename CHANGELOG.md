@@ -7,6 +7,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-09-11
+
+### Added
+
+- A `Freeze` load switch in the sample, holding the main thread 900 ms at a time so a frozen frame
+  and the stack sampled behind it can be seen without writing the stall yourself.
+
+### Changed
+
+- Dragging the panel asks the window manager to move its window once per frame instead of once per
+  pointer event. A finger that travels across twenty touch events now costs one window relayout
+  rather than twenty, each of which was a Binder round-trip into `system_server` on the main thread.
+
 ## [0.18.0] - 2026-09-09
 
 ### Changed
@@ -666,7 +679,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.18.1...HEAD
+[0.18.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.18.1
 [0.18.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.18.0
 [0.17.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.17.0
 [0.16.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.16.1
