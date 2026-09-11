@@ -216,7 +216,8 @@ library in and with it removed, comparing process CPU time from a trace. Until t
 read the paragraph above as a description of where the cost is, not a claim about its size.
 
 Release builds get nothing. `debugImplementation` keeps the panel, its provider and the
-`SYSTEM_ALERT_WINDOW` out, and `framehud-noop` exists only so calls outside `src/debug` still
+`SYSTEM_ALERT_WINDOW` out. The one line a release build can take is `framehud-noop`, a mirror of the
+API with empty bodies, and only if `FrameHud` is called outside `src/debug`, so those lines still
 compile.
 
 ## Limits
