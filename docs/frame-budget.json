@@ -1,0 +1,133 @@
+{
+ "device": "samsung SM-S938B, API 36",
+ "refreshRateHz": 120.00001,
+ "run": "scripted scroll with the Overdraw load, 2026-09-11",
+ "window": "the third incident of that session, its first 30 of 90 frames",
+ "confidence": {
+  "suspect": false,
+  "issues": []
+ },
+ "frameHudVersion": "0.18.0-SNAPSHOT",
+ "frames": [
+  {
+   "totalMs": 7.206611,
+   "deadlineMs": 16.631813
+  },
+  {
+   "totalMs": 7.825652,
+   "deadlineMs": 16.631989
+  },
+  {
+   "totalMs": 8.884559,
+   "deadlineMs": 16.63212
+  },
+  {
+   "totalMs": 7.431484,
+   "deadlineMs": 16.632195
+  },
+  {
+   "totalMs": 27.850092,
+   "deadlineMs": 16.632227
+  },
+  {
+   "totalMs": 32.453876,
+   "deadlineMs": 33.300957
+  },
+  {
+   "totalMs": 11.250488,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 23.626593,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 24.438915,
+   "deadlineMs": 24.978374
+  },
+  {
+   "totalMs": 5.718913,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 4.15133,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 7.11532,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 5.357664,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 5.618081,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 7.649153,
+   "deadlineMs": 8.333333
+  },
+  {
+   "totalMs": 14.560763,
+   "deadlineMs": 8.333334
+  },
+  {
+   "totalMs": 25.210886,
+   "deadlineMs": 16.656803
+  },
+  {
+   "totalMs": 31.271162,
+   "deadlineMs": 33.30307
+  },
+  {
+   "totalMs": 12.181848,
+   "deadlineMs": 16.654076
+  },
+  {
+   "totalMs": 7.077203,
+   "deadlineMs": 16.654076
+  },
+  {
+   "totalMs": 6.163259,
+   "deadlineMs": 16.647287
+  },
+  {
+   "totalMs": 10.393082,
+   "deadlineMs": 16.647469
+  },
+  {
+   "totalMs": 8.182524,
+   "deadlineMs": 16.648952
+  },
+  {
+   "totalMs": 6.362115,
+   "deadlineMs": 16.645493
+  },
+  {
+   "totalMs": 6.05897,
+   "deadlineMs": 16.649723
+  },
+  {
+   "totalMs": 9.667807,
+   "deadlineMs": 16.648186
+  },
+  {
+   "totalMs": 15.488921,
+   "deadlineMs": 16.649345
+  },
+  {
+   "totalMs": 10.697767,
+   "deadlineMs": 16.648455
+  },
+  {
+   "totalMs": 9.047846,
+   "deadlineMs": 16.651981
+  },
+  {
+   "totalMs": 7.957055,
+   "deadlineMs": 16.651371
+  }
+ ]
+}
