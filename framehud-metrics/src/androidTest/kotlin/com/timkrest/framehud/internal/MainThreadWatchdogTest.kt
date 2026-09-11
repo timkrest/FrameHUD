@@ -30,9 +30,6 @@ class MainThreadWatchdogTest {
 
     @Test
     fun aThreadThatStoppedDrawingIsSampledWhereItStands() {
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
-
         val block = awaitStackTakenHere()
 
         assertTrue(block.durationMs >= QUIET_FOR_MS, "the block lasted ${block.durationMs} ms")
@@ -52,8 +49,6 @@ class MainThreadWatchdogTest {
 
     @Test
     fun aStackTakenBeforeTheWatchStoppedNoLongerExplainsJank() {
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
         val block = awaitStackTakenHere()
 
         watchdog.stopWatching()
@@ -70,8 +65,6 @@ class MainThreadWatchdogTest {
 
     @Test
     fun aThreadThatDrewAgainStartsTheNextBlockOver() {
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
         awaitStackTakenHere()
 
         repeat(TICKS_TO_DRAW_AGAIN) {
@@ -91,8 +84,6 @@ class MainThreadWatchdogTest {
 
     @Test
     fun aDrawTheWatchSleptThroughStillEndsTheBlockBeforeIt() {
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
         awaitStackTakenHere()
         SystemClock.sleep(SAMPLING_BACKS_OFF_AFTER_MS)
 
@@ -103,8 +94,6 @@ class MainThreadWatchdogTest {
 
     @Test
     fun aWatchThatStartsAgainCarriesNothingOfTheStallItLeft() {
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
         val stalled = awaitStackTakenHere()
 
         watchdog.stopWatching()
@@ -121,8 +110,6 @@ class MainThreadWatchdogTest {
 
     @Test
     fun aWatchThatStartsAgainAnswersWithNoBlockOfTheOneItLeft() {
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
         awaitStackTakenHere()
 
         watchdog.stopWatching()
@@ -139,14 +126,10 @@ class MainThreadWatchdogTest {
 
     @Test
     fun aWatchdogThatGaveUpItsThreadTakesStacksAgainOnceItStartsOver() {
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
         awaitStackTakenHere()
 
         watchdog.stop()
         SystemClock.sleep(BLOCK_GOES_STALE_AFTER_MS)
-        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        watchdog.startWatching()
 
         awaitStackTakenHere()
     }
@@ -172,6 +155,9 @@ class MainThreadWatchdogTest {
     }
 
     private fun awaitStackTakenHere(): MainThreadBlock {
+        lastTickMs.set(SystemClock.uptimeMillis())
+        watchdog.startWatching()
+        lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
         val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
         while (SystemClock.uptimeMillis() < deadlineMs) {
             val block = watchdog.latestBlock
