@@ -58,16 +58,16 @@ class ScreenEventsTest {
     fun returningToAScreenDoesNotMeasureItAgain() {
         assumeFirstFramesAreReported()
         ActivityScenario.launch(ReportingProbeActivity::class.java).use { scenario ->
-            scenario.drawFrames(FRAMES_FOR_AN_EVENT)
-            events.awaitEvents<FrameHudEvent.FirstFrame>(count = 1)
-
+            scenario.renderCollectedFrames()
             scenario.moveToState(Lifecycle.State.CREATED)
             scenario.moveToState(Lifecycle.State.RESUMED)
             scenario.drawFrames(FRAMES_FOR_AN_EVENT)
         }
 
-        events.awaitEvents<FrameHudEvent.ScreenEnded>(count = 2)
-        assertEquals(1, events.filterIsInstance<FrameHudEvent.FirstFrame>().size, "the screen was measured twice")
+        val ended = events.awaitEvents<FrameHudEvent.ScreenEnded>(count = 2)
+        assumeTrue("the device dropped FrameMetrics reports", ended.all { it.stats.droppedReports == 0 })
+        val firstFrames = events.filterIsInstance<FrameHudEvent.FirstFrame>()
+        assertEquals(1, firstFrames.size, "first frames among ${events.map { it.summary }}")
     }
 
     @Test
