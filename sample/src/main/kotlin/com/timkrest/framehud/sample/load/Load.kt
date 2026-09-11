@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 
 enum class Load(val label: String) {
     BlockMainThread("Block main thread"),
+    Freeze("Freeze"),
     Overdraw("Overdraw"),
     Allocate("Allocate"),
     HeavyLayout("Heavy layout"),

@@ -8,6 +8,7 @@ import com.timkrest.framehud.FrameHud
 
 @Composable
 fun LoadEffects(active: ActiveLoads) {
+    if (Load.Freeze in active) Freeze()
     if (Load.GcChurn in active) GcChurn()
     if (Load.BackgroundDecode in active) DecodeQueue()
     LaunchedEffect(active) { FrameHud.context = active.asContext() }
