@@ -122,6 +122,8 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.18.1")
   делать, когда что-то красное
 - [Сравнение инструментов](docs/comparison.ru.md): чем FrameHUD отличается от JankStats,
   Macrobenchmark, Perfetto и Play Vitals
+- [Процент джанка не говорит, куда ушёл кадр](docs/article-frame-phases.ru.md): два бага
+  рендеринга, которые счётчик кадров показывает одинаково, замеры на Galaxy S25 Ultra
 - [Справочник API](https://javadoc.io/doc/com.timkrest/framehud-metrics): генерируется из исходников
   каждого релиза
 - [Список изменений](CHANGELOG.md): что поменялось в каждом релизе

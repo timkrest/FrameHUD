@@ -122,6 +122,8 @@ incidents, export.
   do when something turns red
 - [Comparing the tools](docs/comparison.md): how FrameHUD differs from JankStats, Macrobenchmark,
   Perfetto and Play Vitals
+- [A jank percentage doesn't say where the frame went](docs/article-frame-phases.md): two
+  rendering bugs that a frame counter reports as the same, measured on a Galaxy S25 Ultra
 - [API reference](https://javadoc.io/doc/com.timkrest/framehud-metrics): generated from the sources
   of each release
 - [Changelog](CHANGELOG.md): what changed in each release

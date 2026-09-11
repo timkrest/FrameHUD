@@ -58,5 +58,5 @@ Desktop.ini
 *.swp
 
 # Article drafts
-ARTICLE*.md
+/ARTICLE*.md
 article-assets/
