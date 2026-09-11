@@ -3,13 +3,12 @@
 [English](article-frame-phases.md) · [Русский](article-frame-phases.ru.md)
 
 Two runs of the same screen, same device, same scripted scroll. One of them has a rendering bug in
-it. By jank percentage they are indistinguishable.
+it. By jank percentage, the share of frames that finished late, they are indistinguishable.
 
-Galaxy S25 Ultra, Android 16, display pinned to 120 Hz. The same scripted fling every time, about 36
-seconds and ~3300 frames per run, two runs per column averaged, session exported after each one. No
-run reported a confidence issue. The two clean runs came out 0.06 jank points apart and the two
-overdraw runs 0.37 — the two sleep runs 1.3, already wider than the gap between the clean column and
-the overdraw one.
+The screen is a list from the sample app of FrameHUD, a debug overlay that shows the per-frame
+phase breakdown Android reports. Three versions of it: as written, with six milliseconds of
+`Thread.sleep` inside a `drawBehind`, and with sixty translucent layers drawn over every row. Each
+column averages two scripted 36-second scrolls on a Galaxy S25 Ultra at 120 Hz.
 
 | | clean | `Thread.sleep(6)` in `drawBehind` | 60 translucent layers |
 | --- | --- | --- | --- |
@@ -22,9 +21,9 @@ the overdraw one.
 | lost per run | 0.73 s | 1.17 s | **0.69 s** |
 | bottleneck stage | CPU | CPU | **GPU** |
 
-The right-hand column is sixty translucent layers stacked over every row of a list. Jank 4.3%
-against a clean run's 3.8% — 0.44 of a point, about what two runs of the same overdraw screen differ
-by. Lost time *lower* than the clean run. On this phone that screen ships.
+The right-hand column first. Jank 4.3% against a clean run's 3.8% — 0.44 of a point, about what two
+runs of the same overdraw screen differ by. Lost time *lower* than the clean run. On this phone that
+screen ships.
 
 The phases disagree. Averaged over the run a frame costs 55% more than a clean one, `command` more
 than doubled, and the GPU went from 1.67 ms to 4.32, two and a half times over, enough on its own to
@@ -35,10 +34,13 @@ The middle column is a different bug: half a millisecond added to `draw`, `comma
 untouched, 1.17 s of lost time. Jank noticed that one. It still would not have said which of the two
 screens to open, or which file to open in it.
 
-Both bugs are mine — they are load switches in the sample app, and this is a demo, so the method is
-spelled out above rather than summarised. What the table is evidence for is narrower than "the
-library works": a per-frame phase breakdown separates two cases that a frame counter reports as the
-same.
+Both bugs are mine, load switches in the sample app, so the method is spelled out rather than
+summarised. Android 16, display pinned to 120 Hz, the same scripted fling every time, about 36
+seconds and ~3300 frames per run, session exported after each one. No run reported a confidence
+issue. The two clean runs came out 0.06 jank points apart and the two overdraw runs 0.37; the two
+sleep runs 1.3, already wider than the gap between the clean column and the overdraw one. What the
+table is evidence for is narrower than "the library works": a per-frame phase breakdown separates
+two cases that a frame counter reports as the same.
 
 ## Where the numbers come from
 
