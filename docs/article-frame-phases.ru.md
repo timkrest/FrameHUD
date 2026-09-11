@@ -65,7 +65,7 @@ debugImplementation("com.timkrest:framehud:0.18.1")
 которой фокус. `minSdk` 24, Apache 2.0,
 [github.com/timkrest/FrameHUD](https://github.com/timkrest/FrameHUD).
 
-![Панель поверх скроллящегося списка на Galaxy S25 Ultra](panel-over-list.png)
+<img src="panel-over-list.png" alt="Панель поверх скроллящегося списка на S25 Ultra" width="420">
 
 ## Панель
 
@@ -240,7 +240,7 @@ GPU, тогда как главный поток и процент джанка 
   на API 30: строки `gpu` нет вовсе, и `pipe` физически может обвинить только CPU или render-поток.
   Скролл, обходящийся ему в 21.8 мс на кадр, не получает к этому никакого показания GPU.
 
-![Панель на эмуляторе, host-строки притушены](panel-emulator.png)
+<img src="panel-emulator.png" alt="Панель на эмуляторе, host-строки притушены" width="420">
 
 Одно сравнение, которого делать не надо: p95 отсюда против p95 из Macrobenchmark. Это разные
 величины — целый кадр против CPU duration, ручной проход против повторяемых итераций.

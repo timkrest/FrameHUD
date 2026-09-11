@@ -66,7 +66,7 @@ Nothing to call. A `ContentProvider` brings the panel up at startup and it follo
 activity has focus. `minSdk` 24, Apache 2.0,
 [github.com/timkrest/FrameHUD](https://github.com/timkrest/FrameHUD).
 
-![The panel over a scrolling list on a Galaxy S25 Ultra](panel-over-list.png)
+<img src="panel-over-list.png" alt="The panel over a scrolling list on an S25 Ultra" width="420">
 
 ## The panel
 
@@ -241,7 +241,7 @@ never whether the app is busy.
   9C: no `gpu` row at all, and `pipe` can only ever blame the CPU or the render thread. A scroll
   that costs it 21.8 ms a frame gets no GPU reading to go with that.
 
-![The panel on an emulator, host rows dimmed](panel-emulator.png)
+<img src="panel-emulator.png" alt="The panel on an emulator, host rows dimmed" width="420">
 
 One comparison not to make: a p95 from here against a p95 from Macrobenchmark. Different quantities,
 a whole frame against CPU duration, a manual pass against repeated iterations.
