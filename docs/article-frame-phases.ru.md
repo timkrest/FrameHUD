@@ -267,3 +267,5 @@ debugImplementation("com.timkrest:framehud:0.18.1")
 
 Какой строки вам на этой панели не хватает? У меня есть кандидаты и никакой возможности расставить
 их по важности, имея S25 Ultra и Redmi 9C.
+
+Ответы — [в этом треде](https://github.com/timkrest/FrameHUD/discussions/5).

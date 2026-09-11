@@ -268,3 +268,5 @@ instead of whatever went away.
 
 Which row is missing from this panel for you? I have candidates and no way to rank them from an S25
 Ultra and a Redmi 9C.
+
+Answers go in [this thread](https://github.com/timkrest/FrameHUD/discussions/5).
