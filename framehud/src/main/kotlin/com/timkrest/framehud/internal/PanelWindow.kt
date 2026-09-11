@@ -71,6 +71,13 @@ internal class PanelWindow(
         }
     }
 
+    private var moveScheduled = false
+
+    private val moveWindow = Runnable {
+        moveScheduled = false
+        guarded("moving the panel window") { windowManager.updateViewLayout(view, layoutParams) }
+    }
+
     private val configurationCallbacks = object : ComponentCallbacks {
         override fun onConfigurationChanged(newConfig: Configuration) = keepInsideHost()
 
@@ -102,6 +109,7 @@ internal class PanelWindow(
 
     fun dismiss() {
         context.unregisterComponentCallbacks(configurationCallbacks)
+        view.removeCallbacks(moveWindow)
         if (view.isAttachedToWindow) {
             guarded("removing the panel window") { windowManager.removeViewImmediate(view) }
         }
@@ -114,7 +122,13 @@ internal class PanelWindow(
         val host = hostSize()
         layoutParams.x = x.roundToInt().insideHost(host.width, view.width)
         layoutParams.y = y.roundToInt().insideHost(host.height, view.height)
-        guarded("moving the panel window") { windowManager.updateViewLayout(view, layoutParams) }
+        scheduleMove()
+    }
+
+    private fun scheduleMove() {
+        if (moveScheduled) return
+        moveScheduled = true
+        view.postOnAnimation(moveWindow)
     }
 
     private fun hostSize(): IntSize {

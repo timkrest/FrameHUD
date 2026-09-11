@@ -22,6 +22,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.ui.dragHandle
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -59,16 +61,15 @@ class PanelWindowTest {
     }
 
     @Test
-    fun aDragNeverResizesTheWindow() {
+    fun everyMoveWithinOneFrameCostsASingleRelayout() {
         onShownPanel { window, panel ->
             panel.dragFrom(window)
             repeat(MOVES) { step ->
                 panel.touch(MotionEvent.ACTION_MOVE, x = GRABBED_X - step, y = GRABBED_Y + SLOP_ROOM + step)
             }
-
-            assertTrue(relayouts.isNotEmpty(), "the panel never moved")
-            assertTrue(relayouts.all { it == WRAPPED }, relayouts.toString())
         }
+
+        assertEquals(listOf(WRAPPED), relayouts)
     }
 
     private fun View.dragFrom(window: PanelWindow): PanelPosition {
@@ -102,10 +103,17 @@ class PanelWindowTest {
             val view = awaitLaidOutPanel()
             try {
                 scenario.onActivity { block(panel.get(), view) }
+                view.awaitFrame()
             } finally {
                 scenario.onActivity { panel.get().dismiss() }
             }
         }
+    }
+
+    private fun View.awaitFrame() {
+        val drawn = CountDownLatch(1)
+        postOnAnimation { drawn.countDown() }
+        assertTrue(drawn.await(LAYOUT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "no frame came")
     }
 
     private fun awaitLaidOutPanel(): View {
