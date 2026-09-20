@@ -7,10 +7,14 @@
 
 [English](README.md) · [Русский](README.ru.md)
 
-Перетаскиваемая debug-панель: показывает, сколько занимает каждая стадия кадра и какая из них вас
+Debug-панель поверх работающего приложения: разбирает каждый кадр по стадиям и называет ту, что вас
 тормозит.
 
-<img src="docs/panel.png" alt="Панель поверх примера при скролле списка" width="420">
+<img src="docs/panel-scroll.gif" alt="Панель поверх примера при скролле списка" width="420">
+
+JankStats отдаёт колбэк на каждый кадр. FrameHUD — это то, что вы бы поверх него написали: панель,
+статистика по экранам и сессии, jank-гейт для тестов. [Чем отличается](docs/comparison.ru.md) от
+Macrobenchmark, Perfetto и Play Vitals.
 
 - **Строка на каждую стадию**. `input`, `anim`, `layout`, `draw` на main thread, затем `sync`,
   `command`, `swap` на render thread, и `gpu`
