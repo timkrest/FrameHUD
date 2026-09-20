@@ -12,5 +12,5 @@ is slowing you down. It installs as `debugImplementation` and leaves nothing in 
   when something turns red
 - [Comparing the tools](comparison.md): how FrameHUD differs from JankStats, Macrobenchmark,
   Perfetto and Play Vitals
-- [A jank percentage doesn't say where the frame went](article-frame-phases.md): two rendering bugs
-  that a frame counter reports as the same, measured on a Galaxy S25 Ultra
+- [How to tell which stage of the frame is making your app janky](article-frame-phases.md): two
+  rendering bugs that a frame counter reports as the same, measured on a Galaxy S25 Ultra

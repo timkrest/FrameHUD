@@ -1,4 +1,4 @@
-# A jank percentage doesn't say where the frame went
+# How to tell which stage of the frame is making your app janky
 
 [English](article-frame-phases.md) · [Русский](article-frame-phases.ru.md)
 
