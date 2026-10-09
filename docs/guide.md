@@ -312,6 +312,22 @@ try {
 Clear it in a `finally`: a mark left behind keeps taking the frames after the interaction, and a
 scroll that is cancelled halfway never reaches the line below it.
 
+A scroll under the user's finger has no line to wrap. `framehud-compose` marks a list for as long as
+it scrolls:
+
+```kotlin
+implementation("com.timkrest:framehud-compose:0.18.1")
+```
+
+```kotlin
+val listState = rememberLazyListState()
+MarkWhileScrolling(listState, name = "feed")
+```
+
+It takes any `ScrollableState`, and leaves alone a mark set elsewhere while the list stands still.
+It needs Compose 1.7 or later and runs on whichever FrameHUD build the variant has, so a release
+build that calls it needs `framehud-noop`.
+
 Frames drawn while the mark is set belong to it. The header reads `▸ scroll` instead of the timing
 and every event fired meanwhile carries the name; clearing the mark reports a `MarkEnded` whose
 stats cover that stretch alone. The panel's own rows keep covering the usual window and session, and

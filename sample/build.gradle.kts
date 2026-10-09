@@ -36,6 +36,7 @@ android {
 dependencies {
     debugImplementation(project(":framehud"))
     releaseImplementation(project(":framehud-noop"))
+    implementation(project(":framehud-compose"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)

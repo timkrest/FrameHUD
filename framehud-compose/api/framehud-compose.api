@@ -1,0 +1,4 @@
+public final class com/timkrest/framehud/compose/MarkWhileScrollingKt {
+	public static final fun MarkWhileScrolling (Landroidx/compose/foundation/gestures/ScrollableState;Ljava/lang/String;Landroidx/compose/runtime/Composer;I)V
+}
+

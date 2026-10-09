@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.timkrest.framehud.FrameHud
+import com.timkrest.framehud.compose.MarkWhileScrolling
 import com.timkrest.framehud.sample.SampleDestination
 import com.timkrest.framehud.sample.SampleFrameHud
 import com.timkrest.framehud.sample.readouts.MetricsReadout
@@ -31,11 +29,7 @@ fun LoadScreen(
 ) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }.collect { isScrolling ->
-            FrameHud.mark = if (isScrolling) SampleFrameHud.SCROLL_MARK else null
-        }
-    }
+    MarkWhileScrolling(listState, SampleFrameHud.SCROLL_MARK)
 
     LazyColumn(
         state = listState,
