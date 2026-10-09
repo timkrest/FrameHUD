@@ -3,15 +3,14 @@
 package com.timkrest.framehud
 
 import android.app.Application
-import android.os.SystemClock
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.internal.historyFile
-import com.timkrest.framehud.shared.AWAIT_TIMEOUT_MS
 import com.timkrest.framehud.shared.BlankActivity
 import com.timkrest.framehud.shared.await
 import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.pollFor
 import com.timkrest.framehud.shared.runOnMain
 import org.junit.After
 import org.junit.Before
@@ -58,18 +57,11 @@ class PastRunsTest {
         }
     }
 
-    private fun awaitRecordedRun(): RecordedRun {
-        val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
-        while (SystemClock.uptimeMillis() < deadlineMs) {
-            await { FrameHud.history() }.firstOrNull()?.let { return it }
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        fail("the run that ended is not history")
-    }
+    private fun awaitRecordedRun(): RecordedRun =
+        pollFor { await { FrameHud.history() }.firstOrNull() } ?: fail("the run that ended is not history")
 
     private companion object {
         const val FRAMES = 30
         const val KEPT_RUNS = 5
-        const val POLL_INTERVAL_MS = 50L
     }
 }

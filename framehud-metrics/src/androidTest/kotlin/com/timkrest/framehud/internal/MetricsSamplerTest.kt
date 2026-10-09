@@ -5,6 +5,8 @@ package com.timkrest.framehud.internal
 import android.os.SystemClock
 import android.view.Window
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.framehud.shared.AWAIT_TIMEOUT_MS
+import com.timkrest.framehud.shared.awaitUntil
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +37,7 @@ class MetricsSamplerTest {
 
         assertTrue(sampler.post { ranOn.put(Thread.currentThread().name) }, "the task was rejected")
 
-        assertEquals(uniqueThreadName, ranOn.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+        assertEquals(uniqueThreadName, ranOn.poll(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
     }
 
     @Test
@@ -46,7 +48,7 @@ class MetricsSamplerTest {
         val survived = CountDownLatch(1)
         sampler.post(survived::countDown)
 
-        assertTrue(survived.await(TIMEOUT_MS, TimeUnit.MILLISECONDS), "the thread died with the failing task")
+        assertTrue(survived.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "the thread died with the failing task")
     }
 
     @Test
@@ -83,7 +85,7 @@ class MetricsSamplerTest {
             ran.countDown()
         }
 
-        assertTrue(ran.await(TIMEOUT_MS, TimeUnit.MILLISECONDS), "the replacement never ran")
+        assertTrue(ran.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "the replacement never ran")
         assertEquals(listOf("old", "new"), order.toList(), "the two metrics threads overlapped")
     }
 
@@ -95,7 +97,7 @@ class MetricsSamplerTest {
 
         sampler.quit()
 
-        assertTrue(ran.await(TIMEOUT_MS, TimeUnit.MILLISECONDS), "queued work was dropped")
+        assertTrue(ran.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "queued work was dropped")
         assertTrue(awaitThreadGone(uniqueThreadName), "the metrics thread outlived quit()")
     }
 

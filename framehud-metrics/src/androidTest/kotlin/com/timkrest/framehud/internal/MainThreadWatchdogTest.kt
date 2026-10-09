@@ -5,7 +5,7 @@ package com.timkrest.framehud.internal
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.MainThreadBlock
-import com.timkrest.framehud.shared.AWAIT_TIMEOUT_MS
+import com.timkrest.framehud.shared.pollFor
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -134,37 +134,20 @@ class MainThreadWatchdogTest {
         awaitStackTakenHere()
     }
 
-    private fun awaitBlockOtherThan(block: MainThreadBlock): MainThreadBlock {
-        val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
-        while (SystemClock.uptimeMillis() < deadlineMs) {
-            val latest = watchdog.latestBlock
-            if (latest != block) return latest
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        error("the watch took no stack of the thread it left quiet for $SHORT_STALL_MS ms")
-    }
+    private fun awaitBlockOtherThan(block: MainThreadBlock): MainThreadBlock =
+        pollFor { watchdog.latestBlock.takeIf { it != block } }
+            ?: error("the watch took no stack of the thread it left quiet for $SHORT_STALL_MS ms")
 
-    private fun awaitBlockShorterThan(limitMs: Long): MainThreadBlock {
-        val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
-        while (SystemClock.uptimeMillis() < deadlineMs) {
-            val latest = watchdog.latestBlock
-            if (latest != MainThreadBlock.NONE && latest.durationMs < limitMs) return latest
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        error("the watch carried the stall before the draw into the $SHORT_STALL_MS ms one after it")
-    }
+    private fun awaitBlockShorterThan(limitMs: Long): MainThreadBlock =
+        pollFor { watchdog.latestBlock.takeIf { it != MainThreadBlock.NONE && it.durationMs < limitMs } }
+            ?: error("the watch carried the stall before the draw into the $SHORT_STALL_MS ms one after it")
 
     private fun awaitStackTakenHere(): MainThreadBlock {
         lastTickMs.set(SystemClock.uptimeMillis())
         watchdog.startWatching()
         lastTickMs.set(SystemClock.uptimeMillis() - QUIET_FOR_MS)
-        val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
-        while (SystemClock.uptimeMillis() < deadlineMs) {
-            val block = watchdog.latestBlock
-            if (block.calls.any { it.name.contains(TAKEN_HERE) }) return block
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        error("no stack the watch took names $TAKEN_HERE, where this thread stood")
+        return pollFor { watchdog.latestBlock.takeIf { block -> block.calls.any { it.name.contains(TAKEN_HERE) } } }
+            ?: error("no stack the watch took names $TAKEN_HERE, where this thread stood")
     }
 
     private companion object {

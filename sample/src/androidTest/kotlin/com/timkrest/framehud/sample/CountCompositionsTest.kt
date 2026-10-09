@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.framehud.sample
 
-import android.os.SystemClock
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.FrameHud
 import com.timkrest.framehud.instrumentation.FrameHudResetRule
 import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.pollFor
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,21 +34,12 @@ class CountCompositionsTest {
         }
     }
 
-    private fun awaitCount(done: (Int) -> Boolean): Int {
-        val deadlineMs = SystemClock.elapsedRealtime() + TIMEOUT_MS
-        var count = 0
-        while (SystemClock.elapsedRealtime() < deadlineMs) {
-            count = FrameHud.counters.value.firstOrNull { it.name == PROBE_COMPOSITIONS }?.value ?: 0
-            if (done(count)) return count
-            SystemClock.sleep(POLL_MS)
-        }
-        return count
-    }
+    private fun awaitCount(done: (Int) -> Boolean): Int = pollFor { compositions().takeIf(done) } ?: compositions()
+
+    private fun compositions(): Int = FrameHud.counters.value.firstOrNull { it.name == PROBE_COMPOSITIONS }?.value ?: 0
 
     private companion object {
         const val CHANGES = 3
         const val FRAMES_TO_SETTLE = 3
-        const val TIMEOUT_MS = 5_000L
-        const val POLL_MS = 50L
     }
 }
