@@ -11,7 +11,7 @@
 объединённый манифест.
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-metrics:0.18.1")
+qaImplementation("com.timkrest:framehud-metrics:0.19.0")
 ```
 
 `FrameHud` — тот же объект, так что код вокруг остаётся прежним. `enabled` включает только сбор, а
@@ -313,7 +313,7 @@ try {
 Скролл пальцем обернуть нечем. `framehud-compose` ставит метку на список, пока тот скроллится:
 
 ```kotlin
-implementation("com.timkrest:framehud-compose:0.18.1")
+implementation("com.timkrest:framehud-compose:0.19.0")
 ```
 
 ```kotlin
@@ -376,7 +376,7 @@ adb pull /sdcard/Android/data/<package>/files/framehud/
 Команды лежат в отдельном артефакте, который `framehud` уже тянет за собой:
 
 ```kotlin
-qaImplementation("com.timkrest:framehud-qa:0.18.1")
+qaImplementation("com.timkrest:framehud-qa:0.19.0")
 ```
 
 Сборка с ним отвечает на броадкасты, так что QA-сборка начинает отчитываться, помечает сценарий и
@@ -627,7 +627,7 @@ adb shell -T "run-as <package> sh -c 'cat > files/framehud/baseline.json'" < bas
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.18.1")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.19.0")
 ```
 
 ```kotlin
