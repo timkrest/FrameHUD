@@ -7,6 +7,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `ProcessExit.mainThreadStack`: for an ANR, the main thread's frames from the trace the system
+  dumped, top first, with the lock it waited on.
+- `CountCompositions` in `framehud-compose`, a counter that goes up each time the composable calling
+  it recomposes.
+- A `HISTORY` adb command. It answers with the path of `history.json` after filling in how the
+  earlier runs ended.
+
+### Changed
+
+- `JankCause.Gc.timeShare` (0..1) is now `timePercent` (0..100), like every other share in the API.
+  The export schema is 8 for the renamed key.
+
+### Fixed
+
+- The README did not say that a release build using `framehud-compose` needs `framehud-noop`.
+
 ## [0.19.0] - 2026-10-09
 
 ### Added

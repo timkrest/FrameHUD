@@ -22,6 +22,10 @@ with Macrobenchmark, Perfetto and Play Vitals.
 - **Keeps the case, not just the number.** A jank burst or a frozen frame is saved with the frames
   around it and the readings of that moment, and with the stack the main thread stood in when it was
   the one stuck
+- **Knows how the last run ended.** An ANR, a crash or memory reclaimed, with the screen it happened
+  on and, for an ANR, where the main thread stood
+- **Names screens for you.** After the activity, the fragment, or the Navigation destination on
+  screen
 - **Measures your app, not itself.** The panel draws in its own window
 - **Fails tests on jank.** A JUnit rule with thresholds
 - **Compares with earlier runs.** A baseline per device, so a gate checks the delta instead of a
@@ -47,13 +51,25 @@ has focus.
 Requires `minSdk` 24. Frame phases come from `FrameMetrics`; GPU timings need API 31+ and a driver
 that reports them.
 
-`debugImplementation` already keeps everything out of a release build. Add `framehud-noop` only if
-you call `FrameHud` outside `src/debug`, because a release build still has to compile those lines.
-It mirrors the API with empty bodies:
+`debugImplementation` already keeps everything out of a release build. Add `framehud-noop` if you
+call `FrameHud` outside `src/debug`, or use `framehud-compose`, which calls it for you. A release
+build has to compile and run those calls, and without noop it has no `FrameHud` class at all. Noop
+mirrors the API with empty bodies:
 
 ```kotlin
 releaseImplementation("com.timkrest:framehud-noop:0.19.0")
 ```
+
+## Modules
+
+| Artifact | What it is | Add it as |
+| --- | --- | --- |
+| `framehud` | The panel, with everything below it and the adb commands | `debugImplementation` |
+| `framehud-metrics` | Collection, events and exports, with no window | a QA flavour, e.g. `qaImplementation` |
+| `framehud-qa` | The adb commands for a build on `framehud-metrics` | next to `framehud-metrics` |
+| `framehud-compose` | `MarkWhileScrolling` and `CountCompositions` | `implementation`, with `framehud-noop` in release |
+| `framehud-instrumentation` | The jank gate and `FrameHudResetRule` | `androidTestImplementation` |
+| `framehud-noop` | The same API with empty bodies | `releaseImplementation` |
 
 ## What the panel shows
 
@@ -121,7 +137,8 @@ incidents, export.
 ## Documentation
 
 - [Guide](docs/guide.md): collection without the panel, configuration, events and incidents, the
-  Perfetto flight recorder, screens and marks, exports and adb, baselines and the jank gate
+  Perfetto flight recorder, screens and marks, exports and adb, baselines and the jank gate, and
+  what to check when something looks wrong
 - [Reading the panel](docs/metrics.md): what every row means, how to measure a screen, and what to
   do when something turns red
 - [Comparing the tools](docs/comparison.md): how FrameHUD differs from JankStats, Macrobenchmark,

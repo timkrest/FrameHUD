@@ -50,6 +50,11 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
+`config`, `screen`, `mark` and `context` are set on the main thread; elsewhere the setter throws
+`IllegalStateException`. Reading them works from any thread. A name that breaks
+[the trace rule](#in-a-system-trace) throws `IllegalArgumentException`. Only a build that collects
+throws: `framehud-noop` takes anything.
+
 `FrameHud.metrics`, `memoryStats`, `thermalStats`, `processStats`, `counters`,
 `choreographerTicksPerSecond` and `diagnosis` are plain `StateFlow`s, so the numbers are readable
 without the panel. A reading groups into
@@ -248,7 +253,8 @@ Use the pattern `product/{id}`, not `product/12345`, so every product page count
 A new name closes the stats of the previous screen and starts the next. The name holds until the
 next assignment, so an app that names screens must name every screen it shows. `null` returns to
 fragment and activity class names. A name has to stand apart [in a trace](#in-a-system-trace); a
-mark follows the same rule.
+mark follows the same rule. A type-safe route reads as the full name of its class, package
+included, so drop the package if that can run past 110 characters.
 
 A build R8 has been through names a fragment by what R8 left of its class. A QA flavour that wants
 the names it wrote keeps them:
@@ -391,6 +397,7 @@ adb shell am broadcast -a com.timkrest.framehud.CONTEXT --es scenario smoke <pac
 adb shell am broadcast -a com.timkrest.framehud.EXPORT <package>
 adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>
 adb shell am broadcast -a com.timkrest.framehud.RETAIN <package>
+adb shell am broadcast -a com.timkrest.framehud.HISTORY <package>
 ```
 
 `DISABLE` and `RESET` complete the set. Omitting `--es name` clears the screen or the mark, and
@@ -398,7 +405,9 @@ adb shell am broadcast -a com.timkrest.framehud.RETAIN <package>
 the one already set in place, so a script that passes an empty variable hears about it. `EXPORT`
 answers with the report's path in the broadcast result, and `BASELINE` with the path of the
 baseline it updated, so a script pulls whichever directory the device chose. `RETAIN` asks the
-[flight recorder](#perfetto-flight-recorder) to keep the trace.
+[flight recorder](#perfetto-flight-recorder) to keep the trace. `HISTORY` answers with the path of
+the [past runs](#past-runs) once it has filled in how they ended, so after an ANR a script pulls the
+file with the main thread's stack already in it.
 
 A release-signed QA flavour takes the artifact on its own, and the signing is what makes it worth
 doing: R8 has run, and the timings are the ones a user's device produces.
@@ -587,9 +596,11 @@ An ANR also keeps `mainThreadStack`: the main thread's frames from the trace the
 first, with the lock it waited on when there was one.
 
 ```kotlin
-val exit = FrameHud.history().firstOrNull()?.exit ?: return@launch
-if (exit.reason == ExitReason.ANR) {
-    Log.w("app", "ANR on ${exit.screen} at ${exit.mainThreadStack.firstOrNull()}")
+lifecycleScope.launch {
+    val exit = FrameHud.history().firstOrNull()?.exit ?: return@launch
+    if (exit.reason == ExitReason.ANR) {
+        Log.w("app", "ANR on ${exit.screen} at ${exit.mainThreadStack.firstOrNull()}")
+    }
 }
 ```
 
@@ -661,6 +672,10 @@ The rule resets the collector before each test and checks the thresholds after t
 failing test keeps its own error. Session totals outlive the panel, so the numbers survive
 `ActivityScenario` closing the activity.
 
+With no arguments the rule allows 5% jank and no frozen frame. A test that draws no frame at all
+fails with `no frames were collected`, so a class that mixes UI tests with others marks the others
+`@SkipJankDetection`.
+
 A threshold whose figure a confidence issue taints cannot pass or fail honestly, so the gate calls
 the run inconclusive and reports both the figure and the issue. The default `OnInconclusive.FAIL`
 fails the test, `OnInconclusive.WARN` logs the message and lets it pass, and `OnInconclusive.SKIP`
@@ -675,6 +690,7 @@ past a share of the baseline for that device:
 @get:Rule val noJank = DetectJankAfterTestSuccess(JankThresholds.baselineOnly())
 ```
 
+By default it fails on 10% growth in p95, jank percent or lost time per frame.
 `baselineOnly` turns the fixed limits off and leaves the comparison. Passing `baseline` to
 `JankThresholds` yourself keeps both, and a test then has to clear the fixed limits as well.
 
@@ -699,6 +715,23 @@ main thread, whichever thread the test runs on.
 ```
 
 A rule that opens a mark belongs inside this one, because ending a mark reaches event listeners.
+
+## When something looks wrong
+
+- **No panel.** `enabled` is false, or the code runs in a secondary process: FrameHUD starts from a
+  `ContentProvider`, which Android creates in the main process only. Without the overlay permission
+  the panel lives in the app window and comes back on every activity, see
+  [Overlay permission](#overlay-permission)
+- **The numbers stand still.** Nothing is drawing. A static screen produces no frames to report
+- **`gpu` reads `n/a`.** The device or its driver does not report GPU time, see
+  [GPU](metrics.md#gpu)
+- **Render rows are grey and the header says `EMU`.** An emulator times the host's GPU, see
+  [On an emulator](metrics.md#on-an-emulator)
+- **Fragment screens are called `a` or `b`.** R8 renamed them, see the keep rule in
+  [Naming screens](#naming-screens)
+- **`history()` is empty.** `keptRuns` is 0 unless set, and the run in progress is never in it
+- **`exit` is null.** Below API 30, or the run was killed before it first left the foreground
+- **The jank gate says no frames were collected.** The test drew nothing while the rule watched
 
 ## Overlay permission
 

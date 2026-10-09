@@ -50,6 +50,11 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 
 `show()`, `hide()` и `toggle()` — сокращения для `enabled`.
 
+`config`, `screen`, `mark` и `context` задаются на main thread, в другом потоке сеттер бросает
+`IllegalStateException`. Читать их можно из любого потока. Имя, нарушающее
+[правило трейса](#в-системном-трейсе), бросает `IllegalArgumentException`. Бросает только сборка,
+которая собирает метрики: `framehud-noop` принимает всё.
+
 `FrameHud.metrics`, `memoryStats`, `thermalStats`, `processStats`, `counters`,
 `choreographerTicksPerSecond` и `diagnosis` — обычные `StateFlow`, так что метрики читаются и без
 панели. Показание разложено на `phases`
@@ -246,7 +251,9 @@ navController.addOnDestinationChangedListener { _, destination, _ ->
 одним экраном. Новое имя закрывает статистику предыдущего экрана и начинает следующий. Имя действует
 до следующего присваивания, поэтому приложение, которое называет экраны, должно называть каждый
 показанный экран. `null` возвращает имена по классам фрагментов и activity. Имя должно отличаться от
-других [в трейсе](#в-системном-трейсе); метка следует тому же правилу.
+других [в трейсе](#в-системном-трейсе); метка следует тому же правилу. Type-safe маршрут читается
+как полное имя его класса вместе с пакетом, так что пакет стоит отрезать, если имя может выйти
+за 110 символов.
 
 Сборка, через которую прошёл R8, называет фрагмент тем, что R8 оставил от его класса. QA-флейвор,
 которому нужны исходные имена, сохраняет их:
@@ -390,6 +397,7 @@ adb shell am broadcast -a com.timkrest.framehud.CONTEXT --es scenario smoke <pac
 adb shell am broadcast -a com.timkrest.framehud.EXPORT <package>
 adb shell am broadcast -a com.timkrest.framehud.BASELINE <package>
 adb shell am broadcast -a com.timkrest.framehud.RETAIN <package>
+adb shell am broadcast -a com.timkrest.framehud.HISTORY <package>
 ```
 
 `DISABLE` и `RESET` дополняют набор. Без `--es name` экран или метка сбрасываются, `CONTEXT` без
@@ -397,7 +405,9 @@ extras очищает контекст. Имя, которое FrameHUD отве
 прежнее на месте, так что скрипт с пустой переменной об этом узнает. `EXPORT` отвечает путём к
 отчёту в результате броадкаста, а `BASELINE` — путём к обновлённому базлайну, так что скрипт
 забирает тот каталог, который выбрало устройство. `RETAIN` просит
-[flight recorder](#perfetto-flight-recorder) сохранить трейс.
+[flight recorder](#perfetto-flight-recorder) сохранить трейс. `HISTORY` отвечает путём к
+[прошлым прогонам](#прошлые-прогоны), когда уже дописал, чем они кончились, так что после ANR скрипт
+забирает файл сразу со стеком главного потока.
 
 QA-флейвор с релизной подписью подключает артефакт сам, и подпись — как раз то, ради чего это
 делается: R8 отработал, и тайминги те же, что получит устройство пользователя.
@@ -587,9 +597,11 @@ lifecycleScope.launch {
 вниз, вместе с блокировкой, которую поток ждал, если такая была.
 
 ```kotlin
-val exit = FrameHud.history().firstOrNull()?.exit ?: return@launch
-if (exit.reason == ExitReason.ANR) {
-    Log.w("app", "ANR на ${exit.screen} в ${exit.mainThreadStack.firstOrNull()}")
+lifecycleScope.launch {
+    val exit = FrameHud.history().firstOrNull()?.exit ?: return@launch
+    if (exit.reason == ExitReason.ANR) {
+        Log.w("app", "ANR на ${exit.screen} в ${exit.mainThreadStack.firstOrNull()}")
+    }
 }
 ```
 
@@ -662,6 +674,10 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.19.0")
 что упавший тест остаётся со своей ошибкой. Итоги сессии переживают закрытие панели, поэтому цифры
 остаются и после того, как `ActivityScenario` закрыл activity.
 
+Без аргументов правило допускает 5% jank и ни одного замороженного кадра. Тест, который не нарисовал
+ни кадра, падает с `no frames were collected`, поэтому в классе, где UI-тесты перемешаны с другими,
+остальные помечают `@SkipJankDetection`.
+
 Порог, чью цифру портит проблема достоверности, не может честно ни пройти, ни упасть, поэтому гейт
 считает прогон inconclusive и пишет и саму цифру, и проблему. По умолчанию `OnInconclusive.FAIL`
 валит тест, `OnInconclusive.WARN` пишет сообщение в лог и пропускает, а `OnInconclusive.SKIP`
@@ -676,6 +692,7 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.19.0")
 @get:Rule val noJank = DetectJankAfterTestSuccess(JankThresholds.baselineOnly())
 ```
 
+По умолчанию он роняет тест при росте p95, доли jank или потерянного времени на кадр на 10%.
 `baselineOnly` выключает фиксированные пороги и оставляет сравнение. Если передать `baseline` в
 `JankThresholds` самому, останется и то и другое, и тест должен пройти ещё и по фиксированным
 порогам.
@@ -702,6 +719,23 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.19.0")
 ```
 
 Правило, открывающее метку, должно быть внутри этого: закрытие метки доходит до слушателей событий.
+
+## Если что-то не так
+
+- **Панели нет**. `enabled` выключен, или код работает во втором процессе: FrameHUD стартует из
+  `ContentProvider`, а Android создаёт его только в главном процессе. Без разрешения на оверлей
+  панель живёт в окне приложения и поднимается заново на каждой activity, см.
+  [Разрешение на оверлей](#разрешение-на-оверлей)
+- **Цифры стоят на месте**. Ничего не рисуется: статичный экран не даёт кадров
+- **В строке `gpu` стоит `n/a`**. Устройство или драйвер не отдают время GPU, см.
+  [GPU](metrics.ru.md#gpu)
+- **Строки рендера серые, в шапке `EMU`**. Эмулятор меряет GPU хоста, см.
+  [На эмуляторе](metrics.ru.md#на-эмуляторе)
+- **Экраны-фрагменты называются `a` или `b`**. Их переименовал R8, см. keep-правило в
+  [Именах экранов](#имена-экранов)
+- **`history()` пустой**. `keptRuns` по умолчанию 0, а текущего прогона в нём не бывает никогда
+- **`exit` равен null**. API ниже 30, или прогон убили до того, как приложение первый раз ушло в фон
+- **Jank-гейт пишет, что кадров не собрано**. Тест ничего не нарисовал, пока правило следило
 
 ## Разрешение на оверлей
 

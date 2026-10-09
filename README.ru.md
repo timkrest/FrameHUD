@@ -22,6 +22,9 @@ Macrobenchmark, Perfetto и Play Vitals.
 - **Хранит сам случай, а не только цифру**. Всплеск jank или замороженный кадр сохраняется вместе с
   кадрами вокруг него и показаниями на тот момент, а если вставал главный поток — то и со стеком, в
   котором он стоял
+- **Знает, чем кончился прошлый запуск**. ANR, краш или память, которую забрала система, на каком
+  экране, а для ANR — где стоял главный поток
+- **Сам называет экраны**. По activity, по фрагменту или по destination в Navigation
 - **Меряет приложение, а не себя**. Панель рисуется в своём окне
 - **Роняет тесты из-за jank**. JUnit-правило с порогами
 - **Сравнивает с прошлыми прогонами**. Базлайн на каждое устройство, и гейт проверяет дельту, а не
@@ -46,13 +49,25 @@ dependencies {
 Нужен `minSdk` 24. Фазы кадра приходят из `FrameMetrics`; тайминги GPU требуют API 31+ и драйвера,
 который их сообщает.
 
-`debugImplementation` уже не пускает ничего в релиз. `framehud-noop` нужен, только если вы вызываете
-`FrameHud` вне `src/debug`: релизной сборке всё равно надо скомпилировать эти строки. Он повторяет
-API с пустыми телами:
+`debugImplementation` уже не пускает ничего в релиз. `framehud-noop` нужен, если вы вызываете
+`FrameHud` вне `src/debug` или подключаете `framehud-compose`, который вызывает его за вас. Релизной
+сборке надо скомпилировать и выполнить эти вызовы, а без noop класса `FrameHud` в ней нет вовсе.
+Noop повторяет API с пустыми телами:
 
 ```kotlin
 releaseImplementation("com.timkrest:framehud-noop:0.19.0")
 ```
+
+## Модули
+
+| Артефакт | Что это | Как подключать |
+| --- | --- | --- |
+| `framehud` | Панель со всем, что ниже, и командами adb | `debugImplementation` |
+| `framehud-metrics` | Сбор, события и экспорт без окна | QA-флейвор, например `qaImplementation` |
+| `framehud-qa` | Команды adb для сборки на `framehud-metrics` | рядом с `framehud-metrics` |
+| `framehud-compose` | `MarkWhileScrolling` и `CountCompositions` | `implementation`, а в релизе `framehud-noop` |
+| `framehud-instrumentation` | Jank-гейт и `FrameHudResetRule` | `androidTestImplementation` |
+| `framehud-noop` | Тот же API с пустыми телами | `releaseImplementation` |
 
 ## Что показывает панель
 
@@ -121,7 +136,7 @@ androidTestImplementation("com.timkrest:framehud-instrumentation:0.19.0")
 ## Документация
 
 - [Руководство](docs/guide.ru.md): сбор без панели, настройка, события и инциденты, flight recorder
-  Perfetto, экраны и метки, экспорт и adb, базлайны и jank-гейт
+  Perfetto, экраны и метки, экспорт и adb, базлайны и jank-гейт, и что проверить, если что-то не так
 - [Как читать панель](docs/metrics.ru.md): что означает каждая строка, как замерять экран и что
   делать, когда что-то красное
 - [Сравнение инструментов](docs/comparison.ru.md): чем FrameHUD отличается от JankStats,
