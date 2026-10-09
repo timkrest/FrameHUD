@@ -10,7 +10,7 @@ missing=()
 
 while IFS= read -r file; do
     head -20 "$file" | grep -qF "$marker" || missing+=("$file")
-done < <(git ls-files | grep -E '/src/.*\.kts?$')
+done < <(git ls-files | grep -E '(/src/|^test-support/).*\.kts?$')
 
 if ((${#missing[@]} > 0)); then
     printf 'No licence header:\n'
