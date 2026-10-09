@@ -14,7 +14,7 @@ All notable changes to this project are documented here. The format follows
 - `CountCompositions` in `framehud-compose`, a counter that goes up each time the composable calling
   it recomposes.
 - A `HISTORY` adb command. It answers with the path of `history.json` after filling in how the
-  earlier runs ended.
+  earlier runs ended, or says why there is none.
 
 ### Changed
 
@@ -24,11 +24,13 @@ All notable changes to this project are documented here. The format follows
   `FrameHudEvent`, `JankCause` and `ConfidenceIssue` subtypes, `MeasurementConfidence`,
   `BaselineComparison.Compared` and `OtherEnvironment`, and `SessionExport`. They can now gain fields
   without breaking binary compatibility. A test that builds one uses its `of` factory under
-  `@OptIn(InternalFrameHudApi::class)`.
+  `@OptIn(InternalFrameHudApi::class)`. `IntervalStats()` as a placeholder becomes
+  `IntervalStats.EMPTY`.
 - Frame budgets are `Float` milliseconds everywhere: `FrameHudConfig.frameBudgetsMs`,
-  `IntervalReport.frameBudgetMs` and `BaselineEntry.frameBudgetMs`. An interval reports the mean of
-  the budgets that judged it, 16.7 ms on a 60 Hz display rather than 17. Budgets that round to the
-  same millisecond still count as the same, so saved baselines keep matching.
+  `IntervalReport.frameBudgetMs`, `BaselineEntry.frameBudgetMs` and the `frameBudgetMs` parameter of
+  `BaselineEntry.of`. An interval reports the mean of the budgets that judged it, 16.7 ms on a 60 Hz
+  display rather than 17. Budgets that round to the same millisecond still count as the same, so
+  saved baselines keep matching.
 - `FrameWindowStats.history` is now `frames`, as in `Incident`.
 - `MeasuredMetric` is now `IntervalFigure`: the figures of `IntervalStats` a confidence issue taints.
 

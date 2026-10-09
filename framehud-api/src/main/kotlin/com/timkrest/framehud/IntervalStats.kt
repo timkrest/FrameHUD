@@ -15,7 +15,7 @@ public data class IntervalStats private constructor(
     val p99FrameMs: Float,
     /** 0..100. */
     val jankPercent: Float,
-    /** Summed overrun of the frames that missed their deadline. */
+    /** Summed overrun of the frames that missed the budget in force. */
     val lostTimeMs: Float,
     val frozenFrames: Int,
     val maxJankStreak: Int,

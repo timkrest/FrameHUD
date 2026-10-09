@@ -438,7 +438,7 @@ same rule, and FrameHUD refuses a name that breaks it rather than let a trace me
 
 ## Lost time
 
-`IntervalStats.lostTimeMs` sums how far the late frames ran past their deadline. Jank percent counts
+`IntervalStats.lostTimeMs` sums how far the late frames ran past the budget in force. Jank percent counts
 every late frame as one bad frame however late it ran; lost time keeps the size of the miss, so two
 screens at the same 5% jank stop looking alike.
 
@@ -467,7 +467,8 @@ the baseline it is compared against.
 
 While such a screen is in focus the panel follows the same budget: the number in the header and the
 line across the sparkline. `IntervalReport.frameBudgetMs` says which budget judged a row, and both
-reports print it. An interval whose budget changed halfway through reports none.
+reports print it: the mean of the budgets that judged the interval, 16.7 on a 60 Hz display. An
+interval with no single budget, to the millisecond, behind 95% of its frames reports none.
 
 ## Where the time went
 
@@ -643,7 +644,8 @@ as a run twice as bad. A baseline recorded somewhere else is not compared at all
 says where it came from.
 
 Jank percent and lost time follow the frame budget that judged them. On a display that switches
-refresh rates they move and compare only between runs under the same budget, and three runs in a
+refresh rates they move and compare only between runs whose budgets round to the same millisecond,
+and three runs in a
 row under a new one restart them from the latest. Percentiles and phases are milliseconds and
 compare under any rate.
 
@@ -792,8 +794,9 @@ Before 1.0 the public API can change in a minor release; the changelog says what
 release may still make. Both are caught by the compiler, and rebuilding against the new version
 settles both:
 
-- `FrameHudConfig` gains an option, which changes the signature of its constructor and `copy`.
-  Building it is the point, so it stays public and grows with it.
+- An input you build gains a field, which changes the signature of its constructor and `copy`:
+  `FrameHudConfig` gains an option, or `Baseline`, `BaselineEnvironment` or an `IntervalId` grows.
+  Building them is the point, so they stay public and grow with it.
 - A sealed type gains a subtype: a new event, a new confidence issue, a new jank cause. A `when`
   over it that has no `else` stops compiling.
 

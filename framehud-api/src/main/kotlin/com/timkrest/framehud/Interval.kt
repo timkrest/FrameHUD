@@ -40,8 +40,11 @@ public sealed interface IntervalId {
 public data class IntervalReport private constructor(
     val id: IntervalId,
     val stats: IntervalStats,
-    /** Null when no single budget judged nearly every frame. */
-    val frameBudgetMs: Float? = null,
+    /**
+     * The mean of the budgets that judged the frames, or null when no budget, to the millisecond,
+     * judged 95% of them.
+     */
+    val frameBudgetMs: Float?,
 ) {
     init {
         require(frameBudgetMs == null || frameBudgetMs > 0f) {
