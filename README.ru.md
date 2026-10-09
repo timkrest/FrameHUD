@@ -39,7 +39,7 @@ Macrobenchmark, Perfetto и Play Vitals.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.19.0")
+    debugImplementation("com.timkrest:framehud:0.20.0")
 }
 ```
 
@@ -55,7 +55,7 @@ dependencies {
 Noop повторяет API с пустыми телами:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.19.0")
+releaseImplementation("com.timkrest:framehud-noop:0.20.0")
 ```
 
 ## Модули
@@ -112,7 +112,7 @@ thr 38 ▲44 · fd 210 ▲260
 ## Падение тестов из-за jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.19.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.20.0")
 ```
 
 ```kotlin

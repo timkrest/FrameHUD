@@ -59,7 +59,7 @@ refresh rate and you disagree with the system about which frames were late.
 FrameHUD puts that breakdown on top of the running app and keeps statistics from it.
 
 ```kotlin
-debugImplementation("com.timkrest:framehud:0.19.0")
+debugImplementation("com.timkrest:framehud:0.20.0")
 ```
 
 Nothing to call. A `ContentProvider` brings the panel up at startup and it follows whichever
@@ -253,7 +253,7 @@ API 24 and hands you a frame and a flag, with storage, aggregation and display l
 ## Links
 
 ```kotlin
-debugImplementation("com.timkrest:framehud:0.19.0")
+debugImplementation("com.timkrest:framehud:0.20.0")
 ```
 
 - [github.com/timkrest/FrameHUD](https://github.com/timkrest/FrameHUD)

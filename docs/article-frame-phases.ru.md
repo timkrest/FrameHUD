@@ -58,7 +58,7 @@ layout, запись отрисовки, синхронизация с render-п
 FrameHUD кладёт эту разбивку поверх работающего приложения и ведёт по ней статистику.
 
 ```kotlin
-debugImplementation("com.timkrest:framehud:0.19.0")
+debugImplementation("com.timkrest:framehud:0.20.0")
 ```
 
 Вызывать нечего: `ContentProvider` поднимает панель на старте, и она следует за той активити, у
@@ -252,7 +252,7 @@ GPU, тогда как главный поток и процент джанка 
 ## Ссылки
 
 ```kotlin
-debugImplementation("com.timkrest:framehud:0.19.0")
+debugImplementation("com.timkrest:framehud:0.20.0")
 ```
 
 - [github.com/timkrest/FrameHUD](https://github.com/timkrest/FrameHUD)

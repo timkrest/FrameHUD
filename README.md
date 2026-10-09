@@ -41,7 +41,7 @@ with Macrobenchmark, Perfetto and Play Vitals.
 
 ```kotlin
 dependencies {
-    debugImplementation("com.timkrest:framehud:0.19.0")
+    debugImplementation("com.timkrest:framehud:0.20.0")
 }
 ```
 
@@ -57,7 +57,7 @@ build has to compile and run those calls, and without noop it has no `FrameHud` 
 mirrors the API with empty bodies:
 
 ```kotlin
-releaseImplementation("com.timkrest:framehud-noop:0.19.0")
+releaseImplementation("com.timkrest:framehud-noop:0.20.0")
 ```
 
 ## Modules
@@ -114,7 +114,7 @@ switches to [the worst screens](docs/guide.md#screen-history) and back.
 ## Fail tests on jank
 
 ```kotlin
-androidTestImplementation("com.timkrest:framehud-instrumentation:0.19.0")
+androidTestImplementation("com.timkrest:framehud-instrumentation:0.20.0")
 ```
 
 ```kotlin
