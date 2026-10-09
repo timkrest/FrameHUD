@@ -46,6 +46,7 @@ FrameHud.config = FrameHud.config.copy(metricsSampleWindowFrames = 240)
 | `metricsThreadName` | `framehud-metrics` | Name of the collecting thread, as it shows up in traces. |
 | `perfettoTrigger` | `null` | Perfetto trigger an incident activates, so a ring-buffer trace keeps the seconds around it. |
 | `keptRuns` | `0` | Runs kept in `framehud/history.json`, the run in progress included. Zero writes no file. |
+| `nameScreensByFragment` | `true` | Names a screen after the fragment on it instead of its activity. |
 
 `show()`, `hide()` and `toggle()` are shortcuts for `enabled`.
 
@@ -89,8 +90,8 @@ API 26 drops, so on Android 7 `ReportDrawn`, `ReportDrawnWhen` and the rest of t
 nothing. There the launch needs a `FrameHud.reportUsable()` call of its own, or a direct
 `reportFullyDrawn()`, which reports on every version.
 
-Every other screen reports for itself: a screen renamed through `FrameHud.screen`, an Activity
-returned to, an Activity without the reporter.
+Every other screen reports for itself: a screen renamed through `FrameHud.screen` or by the next
+fragment, an Activity returned to, an Activity without the reporter.
 
 ```kotlin
 adapter.submitList(rows) { FrameHud.reportUsable() }
@@ -222,8 +223,20 @@ once as a `FrameHudEvent.InternalFailure` rather than on every incident.
 
 ## Naming screens
 
-Stats split by screen, and a screen is its activity class by default. In a single-activity app that
-leaves one screen for the whole session. Name the screen with a route instead:
+Stats split by screen. An activity that shows fragments is named after the fragment on screen, and
+any other activity after its own class.
+
+Navigation needs nothing more. With `app:defaultNavHost="true"` its host is the activity's primary
+navigation fragment and moves its own to each destination it shows, so a single-activity app gets a
+screen per destination. FrameHUD follows that chain of primary navigation fragments to its end and
+looks again whenever a fragment resumes. An app that swaps fragments itself marks the one on screen
+with `setPrimaryNavigationFragment` in the transaction that resumes it; `hide` and `show` leave
+every fragment resumed, so a swap made that way goes unseen and the app names its screens itself.
+An app without androidx.fragment keeps activity names and gains no dependency, and
+`nameScreensByFragment = false` in the config keeps one screen per activity in an app with it.
+
+A single-activity Compose app has no fragment to go by, and stays one screen for the whole session
+until it names its screens. Name them with the route:
 
 ```kotlin
 navController.addOnDestinationChangedListener { _, destination, _ ->
@@ -234,8 +247,15 @@ navController.addOnDestinationChangedListener { _, destination, _ ->
 Use the pattern `product/{id}`, not `product/12345`, so every product page counts as one screen.
 A new name closes the stats of the previous screen and starts the next. The name holds until the
 next assignment, so an app that names screens must name every screen it shows. `null` returns to
-activity class names. A name has to stand apart [in a trace](#in-a-system-trace); a mark follows the
-same rule.
+fragment and activity class names. A name has to stand apart [in a trace](#in-a-system-trace); a
+mark follows the same rule.
+
+A build R8 has been through names a fragment by what R8 left of its class. A QA flavour that wants
+the names it wrote keeps them:
+
+```
+-keepnames class * extends androidx.fragment.app.Fragment
+```
 
 ## Dialogs and second displays
 

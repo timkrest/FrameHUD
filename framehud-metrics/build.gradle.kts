@@ -7,6 +7,7 @@ android {
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "FRAMEHUD_VERSION", "\"${property("VERSION_NAME")}\"")
+        consumerProguardFiles("consumer-rules.pro")
     }
     buildFeatures {
         buildConfig = true
@@ -28,6 +29,7 @@ dependencies {
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.core)
     implementation(libs.androidx.tracing)
+    compileOnly(libs.androidx.fragment)
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.test)

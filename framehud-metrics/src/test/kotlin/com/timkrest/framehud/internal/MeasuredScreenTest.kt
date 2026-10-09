@@ -79,6 +79,46 @@ class MeasuredScreenTest {
     }
 
     @Test
+    fun `a fragment taking over the activity renames the bound screen`() {
+        screen.bind("Main")
+
+        val rename = assertIs<MeasuredScreen.Rename.Renamed>(screen.rebind("Cart"))
+
+        assertEquals("Main", rename.previous)
+        assertEquals("Cart", rename.current)
+        assertEquals("Cart", screen.active)
+    }
+
+    @Test
+    fun `rebinding to the name in effect changes nothing`() {
+        screen.bind("Cart")
+
+        assertIs<MeasuredScreen.Rename.None>(screen.rebind("Cart"))
+        assertEquals("Cart", screen.active)
+    }
+
+    @Test
+    fun `an override holds while the fragment under it changes, and clearing it returns to that fragment`() {
+        screen.bind("Cart")
+        screen.rename("checkout")
+
+        assertIs<MeasuredScreen.Rename.None>(screen.rebind("Payment"))
+        assertEquals("checkout", screen.active)
+
+        val rename = assertIs<MeasuredScreen.Rename.Renamed>(screen.rename(null))
+        assertEquals("checkout", rename.previous)
+        assertEquals("Payment", rename.current)
+    }
+
+    @Test
+    fun `rebinding with no window bound names nothing`() {
+        assertIs<MeasuredScreen.Rename.None>(screen.rebind("Cart"))
+
+        assertNull(screen.active)
+        assertEquals("Main", screen.bind("Main"))
+    }
+
+    @Test
     fun `a rename with no window bound names the next screen without activating one`() {
         assertIs<MeasuredScreen.Rename.WhileUnbound>(screen.rename("checkout"))
 

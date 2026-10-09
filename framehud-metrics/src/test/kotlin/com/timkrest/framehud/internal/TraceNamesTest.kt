@@ -5,6 +5,8 @@ package com.timkrest.framehud.internal
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class TraceNamesTest {
 
@@ -40,6 +42,14 @@ class TraceNamesTest {
     @Test
     fun `a name no report could tell apart is rejected where it is written`() {
         assertFailsWith<IllegalArgumentException> { requireNameStandsApart(WHAT, " ") }
+    }
+
+    @Test
+    fun `a name FrameHud picks itself is passed over where an app's would be rejected`() {
+        assertTrue(nameStandsApart("CartFragment"))
+        listOf("", " ", "decode|queue", "q".repeat(MAX_TRACE_NAME_LENGTH + 1)).forEach { name ->
+            assertFalse(nameStandsApart(name), "took \"$name\"")
+        }
     }
 
     private companion object {

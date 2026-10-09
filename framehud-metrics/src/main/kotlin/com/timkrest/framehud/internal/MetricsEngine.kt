@@ -193,6 +193,11 @@ internal class MetricsEngine(
         }
     }
 
+    fun rebindScreen(name: String?) {
+        val rename = measuredScreen.rebind(name) as? MeasuredScreen.Rename.Renamed ?: return
+        restartScreen(rename)
+    }
+
     private fun restartScreen(rename: MeasuredScreen.Rename.Renamed) {
         endMark(endedScreen = rename.previous)
         val sampler = metricsThread.started ?: return

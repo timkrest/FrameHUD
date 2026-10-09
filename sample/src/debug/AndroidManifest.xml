@@ -11,6 +11,10 @@
             android:name=".SilentProbeActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".FragmentProbeActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

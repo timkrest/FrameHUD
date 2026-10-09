@@ -42,6 +42,16 @@ internal class MeasuredScreen {
         return ended
     }
 
+    fun rebind(screen: String?): Rename {
+        val boundScreen = bound ?: return Rename.None
+        if (boundScreen.name == screen) return Rename.None
+        bound = BoundScreen(screen)
+        if (screenOverride != null) return Rename.None
+        val previous = active
+        active = screen
+        return if (screen == previous) Rename.None else Rename.Renamed(previous = previous, current = screen)
+    }
+
     fun rename(name: String?): Rename {
         if (screenOverride == name) return Rename.None
         val previous = active

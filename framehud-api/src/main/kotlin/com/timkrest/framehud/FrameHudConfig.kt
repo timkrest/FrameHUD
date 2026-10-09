@@ -29,6 +29,11 @@ public data class FrameHudConfig(
      * oldest go early once the file outgrows what FrameHUD reads back.
      */
     val keptRuns: Int = 0,
+    /**
+     * Names a screen after the fragment on it, the last primary navigation fragment, rather than its
+     * activity. Needs androidx.fragment in the app. A name assigned to `FrameHud.screen` overrides both.
+     */
+    val nameScreensByFragment: Boolean = true,
 ) {
     init {
         require(metricsSampleWindowFrames > 0) {

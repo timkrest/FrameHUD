@@ -19,10 +19,12 @@ import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
 import com.timkrest.framehud.internal.RunHistory
 import com.timkrest.framehud.internal.SavedBaseline
+import com.timkrest.framehud.internal.ScreenNames
 import com.timkrest.framehud.internal.ScreenStart
 import com.timkrest.framehud.internal.baselineFile
 import com.timkrest.framehud.internal.exportAuthority
 import com.timkrest.framehud.internal.exportDirectory
+import com.timkrest.framehud.internal.fragmentScreensOrNull
 import com.timkrest.framehud.internal.historyFile
 import com.timkrest.framehud.internal.measuredRun
 import com.timkrest.framehud.internal.oneAtATime
@@ -52,6 +54,10 @@ public object FrameHud {
     }
 
     private val activityTracker = ActivityTracker(onFocused = ::onActivityFocused, onLost = ::onActivityLost)
+
+    private val fragmentScreens = fragmentScreensOrNull(onShown = ::renameScreenOf)
+
+    private val screenNames = ScreenNames(config = ::currentConfig, fragmentOf = { fragmentScreens?.screenOf(it) })
 
     private val _isFrozen = MutableStateFlow(false)
 
@@ -114,11 +120,12 @@ public object FrameHud {
 
     /**
      * Names the screen the user sees — a route pattern like `product/{id}`, not `product/12345` —
-     * replacing the activity class in stats and events. A new name closes the stats of the previous
-     * screen and starts the next; the window stays bound. The name holds until the next assignment,
-     * even across activities, so an app that names screens must name every screen it shows. Null
-     * returns to naming screens by activity class. Rejects a name a trace could not tell apart from
-     * another: blank, over 110 characters, or carrying a `|` or a control character.
+     * replacing the fragment or activity class in stats and events. A new name closes the stats of
+     * the previous screen and starts the next; the window stays bound. The name holds until the next
+     * assignment, even across activities, so an app that names screens must name every screen it
+     * shows. Null returns to naming screens by class, as [FrameHudConfig.nameScreensByFragment]
+     * says. Rejects a name a trace could not tell apart from another: blank, over 110 characters, or
+     * carrying a `|` or a control character.
      */
     @get:AnyThread
     @set:MainThread
@@ -154,9 +161,9 @@ public object FrameHud {
      * `FullyDrawnReporter` reports for it and the `ReportDrawnWhen` an app already has for
      * Macrobenchmark covers the launch. Below API 26 a report made through the reporter never
      * lands, so the launch needs this call or a direct `reportFullyDrawn()`. Every other screen
-     * needs this call: a screen renamed through [screen], an Activity returned to, an Activity
-     * without the reporter. Repeating a report for the same screen changes nothing, and a new
-     * screen measures again.
+     * needs this call: a screen renamed through [screen] or by the next fragment, an Activity
+     * returned to, an Activity without the reporter. Repeating a report for the same screen changes
+     * nothing, and a new screen measures again.
      */
     @AnyThread
     public fun reportUsable() {
@@ -235,6 +242,7 @@ public object FrameHud {
         }
         this.application = application
         application.registerActivityLifecycleCallbacks(activityTracker)
+        fragmentScreens?.let(application::registerActivityLifecycleCallbacks)
     }
 
     @InternalFrameHudApi
@@ -410,7 +418,10 @@ public object FrameHud {
 
         if (!newConfig.enabled) stopCollecting()
         engine.applyConfig(newConfig)
-        if (newConfig.enabled) startCollecting()
+        if (newConfig.enabled) {
+            startCollecting()
+            activityTracker.focusedActivity?.let(::renameScreenOf)
+        }
         panel?.onConfigChanged()
     }
 
@@ -418,8 +429,13 @@ public object FrameHud {
         val application = application ?: return
         engine.start(application)
         val activity = activityTracker.focusedActivity ?: return
-        engine.bindWindow(window = activity.window, screen = activity.javaClass.simpleName, start = start)
+        engine.bindWindow(window = activity.window, screen = screenNames.of(activity), start = start)
         if (start != null) reportUsableWhenFullyDrawn(activity, start)
+    }
+
+    private fun renameScreenOf(activity: Activity) {
+        if (!currentConfig.enabled || activity !== activityTracker.focusedActivity) return
+        engine.rebindScreen(screenNames.of(activity))
     }
 
     private fun reportUsableWhenFullyDrawn(activity: Activity, start: ScreenStart) {

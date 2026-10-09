@@ -9,7 +9,7 @@ import java.util.Locale
 
 public sealed interface FrameHudEvent {
 
-    /** Screen in focus when the event fired: `FrameHud.screen` when set, the activity class otherwise. */
+    /** Screen in focus when the event fired: `FrameHud.screen` when set, the fragment or activity class otherwise. */
     public val screen: String?
 
     /** Interaction open when the event fired, from `FrameHud.mark`. */
