@@ -7,6 +7,33 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-09
+
+### Added
+
+- Screens are named after the visible fragment: the last fragment in the primary navigation
+  fragment chain, which is the destination `NavHostFragment` shows. Single-activity apps on
+  Navigation now get one screen per destination. Turn it off with
+  `FrameHudConfig.nameScreensByFragment`. `androidx.fragment` is not added as a dependency.
+- `framehud-compose` with `MarkWhileScrolling`, which sets a mark while a list is scrolling and
+  clears it when the scroll stops. Requires Compose 1.7 or later.
+- `RecordedRun.exit` on API 30+: how the run's process ended (ANR, crash, low memory, ...) and which
+  screen and mark were active at the time. Needs `keptRuns > 0`. FrameHUD uses
+  `setProcessStateSummary` for this, so it replaces any summary the app sets itself.
+
+### Changed
+
+- Apps that show fragments now report the fragment instead of the activity as the screen.
+  Baselines, `frameBudgetsMs` entries and other screen names keyed by the activity no longer match,
+  so save a new baseline after updating. A mark now ends when the fragment changes, as it does on
+  any screen change.
+- `history()` may rewrite `history.json` to store the exits it finds.
+
+### Fixed
+
+- The docs put recomposition under `layout`. It is reported under `anim`, and most Compose measure
+  and layout time under `draw`.
+
 ## [0.18.1] - 2026-09-11
 
 ### Added
@@ -679,7 +706,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.18.1...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.19.0
 [0.18.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.18.1
 [0.18.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.18.0
 [0.17.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.17.0
