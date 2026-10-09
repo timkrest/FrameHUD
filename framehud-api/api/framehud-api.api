@@ -764,7 +764,7 @@ public final class com/timkrest/framehud/JankCause$Gc : com/timkrest/framehud/Ja
 	public static synthetic fun copy$default (Lcom/timkrest/framehud/JankCause$Gc;FILjava/lang/Object;)Lcom/timkrest/framehud/JankCause$Gc;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getSummary ()Ljava/lang/String;
-	public final fun getTimeShare ()F
+	public final fun getTimePercent ()F
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

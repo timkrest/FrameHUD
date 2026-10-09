@@ -47,7 +47,7 @@ class JankDiagnosisTest {
             choreographerTicksPerSecond = 10,
         )
         val cause = assertIs<JankCause.Gc>(diagnosis.cause)
-        assertEquals(0.03f, cause.timeShare, TOLERANCE)
+        assertEquals(3f, cause.timePercent, TOLERANCE)
     }
 
     @Test

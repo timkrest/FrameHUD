@@ -36,7 +36,7 @@ class SessionJsonTest {
             """"jankPercent":0.0,"lostTimeMs":0.0,"frozenFrames":0,"maxJankStreak":0,"droppedReports":0,""" +
             """"phases":{$averages},"confidence":{"suspect":false,"issues":[]}"""
         val zeroPhase = """{"averageMs":0.0,"peakSinceResetMs":null}"""
-        val expected = """{"schema":7,""" +
+        val expected = """{"schema":8,""" +
             """"generatedAt":"2023-11-14T22:13:20.000Z","generatedAtMs":1700000000000,""" +
             """"frameHudVersion":"1.2.3",""" +
             """"app":{"packageName":"com.example.app","versionName":"9.9","versionCode":42},""" +

@@ -19,9 +19,9 @@ public sealed interface JankCause {
         override val summary: String get() = "thermal throttling (${level.name.lowercase(Locale.US)})"
     }
 
-    /** [timeShare] is the fraction of the session spent in GC pauses, 0..1. */
-    public data class Gc(val timeShare: Float) : JankCause {
-        override val summary: String get() = formatInvariant("GC pauses take %.1f%% of the session", timeShare * PERCENT)
+    /** [timePercent] is the share of the session spent in GC pauses, 0..100. */
+    public data class Gc(val timePercent: Float) : JankCause {
+        override val summary: String get() = formatInvariant("GC pauses take %.1f%% of the session", timePercent)
     }
 
     /** Ticks keep arriving on a still screen, so a low count means a blocked main thread, not an idle one. */
@@ -102,7 +102,7 @@ public data class JankDiagnosis private constructor(
             frameBudgetMs = frameBudgetMs,
         )
 
-        private const val MIN_GC_TIME_SHARE = 0.02f
+        private const val MIN_GC_TIME_PERCENT = 2f
 
         private const val VSYNC_STARVATION_RATIO = 0.7f
 
@@ -118,10 +118,10 @@ public data class JankDiagnosis private constructor(
 
             val phases = metrics.phases
             val refreshRateHz = metrics.display.refreshRateHz
-            val gcTimeShare = gcTimeShare(memory, metrics.session)
+            val gcTimePercent = gcTimePercent(memory, metrics.session)
             val cause = when {
                 thermal.level.isThrottling -> JankCause.Thermal(thermal.level)
-                gcTimeShare >= MIN_GC_TIME_SHARE -> JankCause.Gc(gcTimeShare)
+                gcTimePercent >= MIN_GC_TIME_PERCENT -> JankCause.Gc(gcTimePercent)
                 isVsyncStarved(choreographerTicksPerSecond, refreshRateHz) ->
                     JankCause.VsyncStarvation(choreographerTicksPerSecond, refreshRateHz)
 
@@ -139,8 +139,8 @@ public data class JankDiagnosis private constructor(
             )
         }
 
-        private fun gcTimeShare(memory: MemoryStats, session: IntervalStats): Float =
-            if (session.durationMs > 0L) memory.gcTimeMs.toFloat() / session.durationMs else 0f
+        private fun gcTimePercent(memory: MemoryStats, session: IntervalStats): Float =
+            if (session.durationMs > 0L) memory.gcTimeMs.toFloat() / session.durationMs * PERCENT else 0f
 
         private fun isVsyncStarved(choreographerTicksPerSecond: Int, refreshRateHz: Float): Boolean =
             choreographerTicksPerSecond > 0 &&

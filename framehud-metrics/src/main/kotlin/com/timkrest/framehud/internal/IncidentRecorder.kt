@@ -189,7 +189,7 @@ private fun FrameHudEvent.IncidentTrigger.groupKey() = IncidentKey(
 
 private fun JankCause.withoutReadings(): JankCause = when (this) {
     JankCause.None, is JankCause.Thermal -> this
-    is JankCause.Gc -> JankCause.Gc(timeShare = 0f)
+    is JankCause.Gc -> JankCause.Gc(timePercent = 0f)
     is JankCause.VsyncStarvation -> JankCause.VsyncStarvation(ticksPerSecond = 0, refreshRateHz = 0f)
     is JankCause.LateStart -> JankCause.LateStart(delayMs = 0f)
     is JankCause.Stage -> JankCause.Stage(stage = stage, averageMs = 0f)

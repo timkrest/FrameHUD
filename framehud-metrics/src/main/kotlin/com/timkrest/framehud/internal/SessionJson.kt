@@ -16,7 +16,7 @@ import com.timkrest.framehud.MetricValue
 import com.timkrest.framehud.ProcessStats
 import com.timkrest.framehud.ThermalStats
 
-internal const val EXPORT_SCHEMA_VERSION = 7
+internal const val EXPORT_SCHEMA_VERSION = 8
 
 internal fun SessionSnapshot.toJson(): String = buildJsonObject {
     put("schema", EXPORT_SCHEMA_VERSION)
@@ -156,7 +156,7 @@ private fun JsonObjectScope.putCause(cause: JankCause) {
         }
         is JankCause.Gc -> {
             put("type", "gc")
-            put("timeShare", cause.timeShare)
+            put("timePercent", cause.timePercent)
         }
         is JankCause.VsyncStarvation -> {
             put("type", "vsyncStarvation")
