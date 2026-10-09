@@ -15,6 +15,10 @@
             android:name=".FragmentProbeActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".CompositionProbeActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

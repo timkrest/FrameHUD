@@ -521,6 +521,20 @@ fun onDecodeQueued() {
 `FrameHud.counters` — тот же список как `StateFlow`, для приложения, которое читает числа без
 панели.
 
+В Compose `framehud-compose` считает, сколько раз composable компонуется. Добавьте одну строку в
+начало того, который подозреваете:
+
+```kotlin
+@Composable
+fun ProductRow(product: Product) {
+    CountCompositions("product rows")
+    // ...
+}
+```
+
+Каждая композиция добавляет единицу, первая тоже, так что счётчик, который растёт, пока на экране
+ничего не меняется, указывает на composable, который рекомпозируется больше, чем нужно.
+
 ## Достоверность замера
 
 `IntervalStats.confidence` перечисляет, что мешало сбору: потерянные отчёты `FrameMetrics`,

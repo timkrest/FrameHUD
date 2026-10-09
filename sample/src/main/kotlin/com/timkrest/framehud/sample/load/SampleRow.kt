@@ -3,13 +3,12 @@
 package com.timkrest.framehud.sample.load
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
-import com.timkrest.framehud.FrameHud
+import com.timkrest.framehud.compose.CountCompositions
 
 @Composable
 fun SampleRow(index: Int, active: ActiveLoads, onOpen: () -> Unit) {
-    SideEffect { rowsComposed.add(1) }
+    CountCompositions("rows composed")
     if (Load.Allocate in active) {
         remember(index, active) { List(ALLOCATION_SIZE) { "row $index allocation $it" } }
     }
@@ -19,8 +18,6 @@ fun SampleRow(index: Int, active: ActiveLoads, onOpen: () -> Unit) {
         RowCard(index = index, active = active, onOpen = onOpen)
     }
 }
-
-private val rowsComposed by lazy { FrameHud.counter("rows composed") }
 
 private const val ALLOCATION_SIZE = 2_000
 private const val INTRINSIC_PASSES = 40

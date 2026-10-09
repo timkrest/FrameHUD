@@ -60,8 +60,8 @@ Measure and layout mostly land in `draw`: Compose invalidates its view and remea
 `dispatchDraw`, and asks the View hierarchy for a layout pass only when its root may change size.
 `layout` close to zero is what a Compose screen normally reads.
 
-To tell recomposition from animation inside `anim`, count compositions with a
-[counter](guide.md#counters), or look for `Recomposer:recompose` under `animation` in a
+To tell recomposition from animation inside `anim`, count compositions with
+[`CountCompositions`](guide.md#counters), or look for `Recomposer:recompose` under `animation` in a
 [trace](guide.md#perfetto-flight-recorder).
 
 ## RENDER (render thread)

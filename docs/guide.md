@@ -520,6 +520,20 @@ stand apart [in a trace](#in-a-system-trace), the same rule a screen and a mark 
 `FrameHud.counters` is the same list as a `StateFlow`, for an app that reads the numbers without the
 panel.
 
+In Compose, `framehud-compose` counts how often a composable composes. Put one line at the top of
+the one you suspect:
+
+```kotlin
+@Composable
+fun ProductRow(product: Product) {
+    CountCompositions("product rows")
+    // ...
+}
+```
+
+Every composition adds one, the first included, so a counter that keeps climbing while nothing on
+screen changes points at a composable that recomposes more than it should.
+
 ## Measurement confidence
 
 `IntervalStats.confidence` lists what got in the way while the stats collected: dropped

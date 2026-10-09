@@ -59,7 +59,7 @@ Measure и layout в основном попадают в `draw`: Compose инв
 `dispatchDraw`, а layout-проход у иерархии View просит, только когда может поменяться размер его
 корня. `layout` около нуля для Compose-экрана — обычное дело.
 
-Отличить рекомпозицию от анимации внутри `anim` помогает [счётчик](guide.ru.md#счётчики) композиций
+Отличить рекомпозицию от анимации внутри `anim` помогает [`CountCompositions`](guide.ru.md#счётчики)
 или секция `Recomposer:recompose` под `animation` в [трейсе](guide.ru.md#perfetto-flight-recorder).
 
 ## RENDER (render thread)
