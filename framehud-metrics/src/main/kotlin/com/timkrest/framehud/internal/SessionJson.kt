@@ -192,7 +192,7 @@ private fun JsonObjectScope.putFrames(history: FrameHistory) {
         for (index in 0 until history.size) {
             addObject {
                 put("totalMs", history.totalMsAt(index))
-                put("deadlineMs", history.deadlineMsAt(index))
+                put("budgetMs", history.budgetMsAt(index))
             }
         }
     }

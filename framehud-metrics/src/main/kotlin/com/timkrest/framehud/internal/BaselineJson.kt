@@ -9,7 +9,10 @@ import com.timkrest.framehud.BudgetCandidate
 import com.timkrest.framehud.IntervalFigure
 import com.timkrest.framehud.IntervalId
 
-internal const val BASELINE_SCHEMA_VERSION = 2
+internal const val BASELINE_SCHEMA_VERSION = 3
+
+/** Schema 2 wrote budgets as whole milliseconds, which still read as they are. */
+private const val OLDEST_READABLE_BASELINE_SCHEMA = 2
 
 internal fun Baseline.toJson(): String = buildJsonObject {
     put(SCHEMA, BASELINE_SCHEMA_VERSION)
@@ -47,8 +50,8 @@ internal fun Baseline.toJson(): String = buildJsonObject {
 internal fun parseBaseline(text: String): Parsed<Baseline?> {
     val root = parseJson(text) ?: return rejected("it is not valid JSON")
     val schema = root.int(SCHEMA) ?: return rejected("it names no schema")
-    if (schema != BASELINE_SCHEMA_VERSION) {
-        return Parsed.Unreadable("it holds schema $schema, this build reads $BASELINE_SCHEMA_VERSION")
+    if (schema !in OLDEST_READABLE_BASELINE_SCHEMA..BASELINE_SCHEMA_VERSION) {
+        return Parsed.Unreadable("it holds schema $schema, this build reads up to $BASELINE_SCHEMA_VERSION")
     }
     val environment = root.obj(ENVIRONMENT)?.environment() ?: return rejected("it names no environment")
     val intervals = (root.member(INTERVALS) as? JsonValue.Arr)?.items ?: return rejected("it lists no intervals")

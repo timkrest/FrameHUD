@@ -61,7 +61,7 @@ class SessionHtmlTest {
             screenName = "cart",
             context = mapOf("variant" to "b"),
             session = IntervalStats.of(frames = 120, p95FrameMs = 18f, jankPercent = 7.5f, frozenFrames = 1),
-            window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
+            window = windowOf(totalsMs = floatArrayOf(10f, 40f), budgetsMs = floatArrayOf(16f, 16f)),
             worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS - 1_000_000_000L)),
         ).toHtml()
 
@@ -135,7 +135,7 @@ class SessionHtmlTest {
     private fun everyStyledElement() = sessionSnapshotFixture(
         context = mapOf("variant" to "b"),
         session = IntervalStats.of(droppedReports = 2),
-        window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
+        window = windowOf(totalsMs = floatArrayOf(10f, 40f), budgetsMs = floatArrayOf(16f, 16f)),
         worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS)),
         incidents = listOf(incidentFixture()),
     )

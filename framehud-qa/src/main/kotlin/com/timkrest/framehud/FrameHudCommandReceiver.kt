@@ -45,16 +45,13 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
                 resultData = FrameHud.config.perfettoTrigger?.let { "asked $it" } ?: "no Perfetto trigger configured"
             }
             ACTION_BASELINE -> {
-                val file = (context.applicationContext as? Application)?.let(::baselineFile)
+                val file = context.application?.let(::baselineFile)
                 respondAsync("baseline") {
-                    when {
-                        FrameHud.saveBaseline() == null -> "nothing collected"
-                        else -> file?.absolutePath ?: "baseline updated"
-                    }
+                    if (FrameHud.saveBaseline() == null) "nothing collected" else file?.absolutePath ?: "baseline updated"
                 }
             }
             ACTION_HISTORY -> {
-                val file = (context.applicationContext as? Application)?.let(::historyFile)
+                val file = context.application?.let(::historyFile)
                 respondAsync("history") {
                     when {
                         FrameHud.config.keptRuns == 0 -> "no runs kept, keptRuns is 0"
@@ -65,6 +62,8 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
             }
         }
     }
+
+    private val Context.application: Application? get() = applicationContext as? Application
 
     private fun setName(command: String, name: String?, set: (String?) -> Unit): String = try {
         set(name)
@@ -105,7 +104,7 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
             } finally {
                 pending.finish()
             }
-        }, "framehud-$command").start()
+        }, "framehud-adb-$command").start()
     }
 
     companion object {

@@ -96,13 +96,13 @@ internal fun incidentFixture(
     ),
 )
 
-internal fun windowOf(totalsMs: FloatArray, deadlinesMs: FloatArray) = FrameWindowStats.of(
+internal fun windowOf(totalsMs: FloatArray, budgetsMs: FloatArray) = FrameWindowStats.of(
     fps = totalsMs.size,
     jankPercent = 50f,
     p95FrameMs = totalsMs.max(),
     worstFrameMs = totalsMs.max(),
-    frameBudgetMs = deadlinesMs.last(),
-    frames = FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs),
+    frameBudgetMs = budgetsMs.last(),
+    frames = FrameHistory.of(totalsMs = totalsMs, budgetsMs = budgetsMs),
 )
 
 internal const val TAKEN_AT_EPOCH_MS = 1_700_000_000_000L

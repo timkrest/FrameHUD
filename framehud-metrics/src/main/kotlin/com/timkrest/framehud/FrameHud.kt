@@ -116,9 +116,8 @@ public object FrameHud {
     public val counters: StateFlow<List<CounterReading>> get() = engine.counters
 
     /**
-     * Answers the counter already tracked under the name, or starts one. Rejects a name a trace
-     * could not tell apart from another: blank, over 110 characters, or carrying a `|` or a control
-     * character. Past sixteen names it answers one that discards what it is given.
+     * Answers the counter already tracked under the name, or starts one. The name follows the rule
+     * [screen] states. Past sixteen names it answers one that discards what it is given.
      */
     @AnyThread
     public fun counter(name: String): FrameHudCounter = engine.counter(name)
@@ -213,8 +212,7 @@ public object FrameHud {
     /**
      * Attributes frames to an interaction rather than to the activity in focus. Holds until it is
      * cleared or the screen changes, so an interaction that ends without clearing keeps taking the
-     * frames after it. Rejects a name a trace could not tell apart from another: blank, over 110
-     * characters, or carrying a `|` or a control character.
+     * frames after it. The name follows the rule [screen] states.
      */
     @get:AnyThread
     @set:MainThread

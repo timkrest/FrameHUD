@@ -11,7 +11,7 @@ internal fun worstFramePerSlot(history: FrameHistory, slotCount: Int): FrameHist
 
     val barCount = min(history.size, slotCount)
     val totalsMs = FloatArray(barCount)
-    val deadlinesMs = FloatArray(barCount)
+    val budgetsMs = FloatArray(barCount)
     for (bar in 0 until barCount) {
         var worst = bar * history.size / barCount
         val until = (bar + 1) * history.size / barCount
@@ -19,14 +19,14 @@ internal fun worstFramePerSlot(history: FrameHistory, slotCount: Int): FrameHist
             if (history.overrunMsAt(index) > history.overrunMsAt(worst)) worst = index
         }
         totalsMs[bar] = history.totalMsAt(worst)
-        deadlinesMs[bar] = history.deadlineMsAt(worst)
+        budgetsMs[bar] = history.budgetMsAt(worst)
     }
-    return FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs)
+    return FrameHistory.of(totalsMs = totalsMs, budgetsMs = budgetsMs)
 }
 
-internal fun budgetDoublingCovering(frames: FrameHistory, frameBudgetMs: Float): Float {
+internal fun budgetDoublingCovering(bars: FrameHistory, frameBudgetMs: Float): Float {
     var peakMs = 0f
-    for (index in 0 until frames.size) peakMs = max(peakMs, frames.totalMsAt(index))
+    for (bar in 0 until bars.size) peakMs = max(peakMs, bars.totalMsAt(bar))
 
     val ceilingMs = frameBudgetMs * SPARKLINE_MAX_SCALE_BUDGETS
     var fullHeightMs = frameBudgetMs * SPARKLINE_MIN_SCALE_BUDGETS
@@ -34,4 +34,4 @@ internal fun budgetDoublingCovering(frames: FrameHistory, frameBudgetMs: Float):
     return fullHeightMs
 }
 
-private fun FrameHistory.overrunMsAt(index: Int): Float = totalMsAt(index) - deadlineMsAt(index)
+private fun FrameHistory.overrunMsAt(index: Int): Float = totalMsAt(index) - budgetMsAt(index)

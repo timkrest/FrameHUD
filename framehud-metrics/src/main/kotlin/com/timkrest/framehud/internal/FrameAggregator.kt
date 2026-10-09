@@ -241,4 +241,4 @@ private const val INCIDENT_FRAMES_AFTER_TRIGGER = 30
 
 private const val KEPT_INCIDENTS = 20
 
-private fun FrameHistory.latestBudgetMs(): Float? = if (size == 0) null else deadlineMsAt(size - 1)
+private fun FrameHistory.latestBudgetMs(): Float? = if (size == 0) null else budgetMsAt(size - 1)

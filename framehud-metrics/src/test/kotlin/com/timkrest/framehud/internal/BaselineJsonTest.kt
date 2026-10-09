@@ -62,6 +62,15 @@ class BaselineJsonTest {
     }
 
     @Test
+    fun `a file from the schema before, with whole millisecond budgets, still reads`() {
+        val json = sessionBaseline(entry(p95FrameMs = 10f, frameBudgetMs = 17f)).toJson()
+            .replace(""""schema":$BASELINE_SCHEMA_VERSION""", """"schema":${BASELINE_SCHEMA_VERSION - 1}""")
+            .replace(""""frameBudgetMs":17.0""", """"frameBudgetMs":17""")
+
+        assertEquals(17f, parsedBaseline(json)?.entries?.getValue(IntervalId.Session)?.frameBudgetMs)
+    }
+
+    @Test
     fun `a file written by another schema is kept for the build that reads it`() {
         val json = sessionBaseline().toJson()
             .replace(""""schema":$BASELINE_SCHEMA_VERSION""", """"schema":${BASELINE_SCHEMA_VERSION + 1}""")

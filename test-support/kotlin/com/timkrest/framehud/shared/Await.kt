@@ -14,9 +14,9 @@ private const val POLL_INTERVAL_MS = 20L
 internal fun <T> await(timeoutMs: Long = AWAIT_TIMEOUT_MS, read: suspend () -> T): T =
     runBlocking { withTimeout(timeoutMs) { read() } }
 
-/** Reads until [read] answers, or null once [AWAIT_TIMEOUT_MS] has passed. */
-internal fun <T : Any> pollFor(read: () -> T?): T? {
-    val deadlineMs = SystemClock.uptimeMillis() + AWAIT_TIMEOUT_MS
+/** Reads until [read] answers, or null once [timeoutMs] has passed. */
+internal fun <T : Any> pollFor(timeoutMs: Long = AWAIT_TIMEOUT_MS, read: () -> T?): T? {
+    val deadlineMs = SystemClock.uptimeMillis() + timeoutMs
     while (true) {
         read()?.let { return it }
         if (SystemClock.uptimeMillis() >= deadlineMs) return null
@@ -24,7 +24,8 @@ internal fun <T : Any> pollFor(read: () -> T?): T? {
     }
 }
 
-internal fun awaitUntil(condition: () -> Boolean): Boolean = pollFor { condition().takeIf { it } } != null
+internal fun awaitUntil(timeoutMs: Long = AWAIT_TIMEOUT_MS, condition: () -> Boolean): Boolean =
+    pollFor(timeoutMs) { condition().takeIf { it } } != null
 
 internal fun awaitCollectorStarted() {
     await { FrameHud.sessionStats() }

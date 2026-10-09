@@ -43,7 +43,7 @@ public data class BaselineTrust(
 ) {
     internal fun check(runs: Int, frameBudgetMs: Float?) {
         require(cleanRuns.values.all { it in 0..runs }) {
-            "A metric cannot be measured cleanly more often than the $runs run(s) recorded, got $cleanRuns"
+            "A figure cannot be measured cleanly more often than the $runs run(s) recorded, got $cleanRuns"
         }
         require(gpuRuns == null || gpuRuns in 0..runs) {
             "No more than the $runs run(s) recorded can report a GPU duration, got $gpuRuns"

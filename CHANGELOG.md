@@ -30,8 +30,12 @@ All notable changes to this project are documented here. The format follows
   `IntervalReport.frameBudgetMs`, `BaselineEntry.frameBudgetMs` and the `frameBudgetMs` parameter of
   `BaselineEntry.of`. An interval reports the mean of the budgets that judged it, 16.7 ms on a 60 Hz
   display rather than 17. Budgets that round to the same millisecond still count as the same, so
-  saved baselines keep matching.
+  saved baselines keep matching. `baseline.json` moves to schema 3 and `history.json` to schema 2;
+  both still read the files earlier versions wrote.
 - `FrameWindowStats.history` is now `frames`, as in `Incident`.
+- `FrameHistory.deadlineMsAt` is now `budgetMsAt`. It always held the budget that judged each frame,
+  which is the display deadline only when no `frameBudgetsMs` entry applies. The export's frames
+  carry `budgetMs` instead of `deadlineMs`.
 - `MeasuredMetric` is now `IntervalFigure`: the figures of `IntervalStats` a confidence issue taints.
 
 ### Fixed

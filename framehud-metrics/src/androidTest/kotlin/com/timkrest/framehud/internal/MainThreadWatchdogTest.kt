@@ -5,6 +5,7 @@ package com.timkrest.framehud.internal
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.framehud.MainThreadBlock
+import com.timkrest.framehud.shared.awaitUntil
 import com.timkrest.framehud.shared.pollFor
 import org.junit.After
 import org.junit.Test
@@ -116,12 +117,9 @@ class MainThreadWatchdogTest {
         lastTickMs.set(SystemClock.uptimeMillis())
         watchdog.startWatching()
 
-        val deadlineMs = SystemClock.uptimeMillis() + SOONER_THAN_A_BLOCK_GOES_STALE_MS
-        while (SystemClock.uptimeMillis() < deadlineMs) {
-            if (watchdog.latestBlock == MainThreadBlock.NONE) return
-            SystemClock.sleep(POLL_INTERVAL_MS)
+        check(awaitUntil(SOONER_THAN_A_BLOCK_GOES_STALE_MS) { watchdog.latestBlock == MainThreadBlock.NONE }) {
+            "the watch still explains jank with the block it took before it stopped"
         }
-        error("the watch still explains jank with the block it took before it stopped")
     }
 
     @Test
@@ -157,8 +155,8 @@ class MainThreadWatchdogTest {
         const val POLL_INTERVAL_MS = 50L
         const val TICKS_TO_KEEP_DRAWING = 20
         const val TICKS_TO_DRAW_AGAIN = 8
-        const val SAMPLING_BACKS_OFF_AFTER_MS = 1_600L
-        const val BLOCK_GOES_STALE_AFTER_MS = 2_100L
-        const val SOONER_THAN_A_BLOCK_GOES_STALE_MS = 1_000L
+        const val SAMPLING_BACKS_OFF_AFTER_MS = MainThreadWatchdog.MAX_SAMPLE_INTERVAL_MS * 2
+        const val BLOCK_GOES_STALE_AFTER_MS = MainThreadWatchdog.BLOCK_EXPLAINS_JANK_FOR_MS + 100L
+        const val SOONER_THAN_A_BLOCK_GOES_STALE_MS = MainThreadWatchdog.BLOCK_EXPLAINS_JANK_FOR_MS / 2
     }
 }

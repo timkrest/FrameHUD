@@ -88,7 +88,7 @@ internal class MainThreadWatchdog(
         latestAtMs = endedMs
     }
 
-    private companion object {
+    companion object {
         const val WATCHDOG_THREAD_NAME = "framehud-watchdog"
         const val BLOCKED_AFTER_MS = 300L
         const val FIRST_SAMPLE_INTERVAL_MS = 100L

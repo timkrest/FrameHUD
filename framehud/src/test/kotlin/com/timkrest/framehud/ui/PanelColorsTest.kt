@@ -33,10 +33,10 @@ class PanelColorsTest {
     }
 
     @Test
-    fun `a bar is judged against the deadline that frame had, not the one in force now`() {
-        assertEquals(TextGood, sparklineBarColor(totalMs = 8f, deadlineMs = 16.7f))
-        assertEquals(TextCaution, sparklineBarColor(totalMs = 20f, deadlineMs = 16.7f))
-        assertEquals(TextWarning, sparklineBarColor(totalMs = 20f, deadlineMs = 8.3f))
+    fun `a bar is judged against the budget that frame had, not the one in force now`() {
+        assertEquals(TextGood, sparklineBarColor(totalMs = 8f, budgetMs = FRAME_BUDGET_MS))
+        assertEquals(TextCaution, sparklineBarColor(totalMs = 20f, budgetMs = FRAME_BUDGET_MS))
+        assertEquals(TextWarning, sparklineBarColor(totalMs = 20f, budgetMs = 8.3f))
     }
 
     private fun overrunColor(overrunMs: Float): Color = metricRowColor(

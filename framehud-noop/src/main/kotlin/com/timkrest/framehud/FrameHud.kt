@@ -9,6 +9,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.MainThread
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * No-op replacement for `FrameHud`. It keeps release calls compiling without collecting metrics,
@@ -23,31 +24,31 @@ public object FrameHud {
     public var config: FrameHudConfig = FrameHudConfig()
 
     @get:AnyThread
-    public val isFrozen: StateFlow<Boolean> = MutableStateFlow(false)
+    public val isFrozen: StateFlow<Boolean> = MutableStateFlow(false).asStateFlow()
 
     @get:AnyThread
-    public val metrics: StateFlow<PerformanceMetrics> = MutableStateFlow(PerformanceMetrics.EMPTY)
+    public val metrics: StateFlow<PerformanceMetrics> = MutableStateFlow(PerformanceMetrics.EMPTY).asStateFlow()
 
     @get:AnyThread
-    public val choreographerTicksPerSecond: StateFlow<Int> = MutableStateFlow(0)
+    public val choreographerTicksPerSecond: StateFlow<Int> = MutableStateFlow(0).asStateFlow()
 
     @get:AnyThread
-    public val memoryStats: StateFlow<MemoryStats> = MutableStateFlow(MemoryStats.EMPTY)
+    public val memoryStats: StateFlow<MemoryStats> = MutableStateFlow(MemoryStats.EMPTY).asStateFlow()
 
     @get:AnyThread
-    public val thermalStats: StateFlow<ThermalStats> = MutableStateFlow(ThermalStats.EMPTY)
+    public val thermalStats: StateFlow<ThermalStats> = MutableStateFlow(ThermalStats.EMPTY).asStateFlow()
 
     @get:AnyThread
-    public val processStats: StateFlow<ProcessStats> = MutableStateFlow(ProcessStats.EMPTY)
+    public val processStats: StateFlow<ProcessStats> = MutableStateFlow(ProcessStats.EMPTY).asStateFlow()
 
     @get:AnyThread
-    public val counters: StateFlow<List<CounterReading>> = MutableStateFlow(emptyList())
+    public val counters: StateFlow<List<CounterReading>> = MutableStateFlow(emptyList<CounterReading>()).asStateFlow()
 
     @AnyThread
     public fun counter(name: String): FrameHudCounter = NoopCounter
 
     @get:AnyThread
-    public val diagnosis: StateFlow<JankDiagnosis> = MutableStateFlow(JankDiagnosis.HEALTHY)
+    public val diagnosis: StateFlow<JankDiagnosis> = MutableStateFlow(JankDiagnosis.HEALTHY).asStateFlow()
 
     @Volatile
     @get:AnyThread

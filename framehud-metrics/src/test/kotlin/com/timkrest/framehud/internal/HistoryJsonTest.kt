@@ -64,6 +64,16 @@ class HistoryJsonTest {
     }
 
     @Test
+    fun `a file from the schema before, with whole millisecond budgets, still reads`() {
+        val runs = listOf(storedRun(intervals = listOf(recordedInterval(IntervalId.Session, frameBudgetMs = 17f))))
+        val json = runs.toHistoryJson()
+            .replace(""""schema":$HISTORY_SCHEMA_VERSION""", """"schema":${HISTORY_SCHEMA_VERSION - 1}""")
+            .replace(""""frameBudgetMs":17.0""", """"frameBudgetMs":17""")
+
+        assertEquals(runs, parsedRuns(json))
+    }
+
+    @Test
     fun `a file written by another schema is kept for the build that reads it`() {
         val json = listOf(storedRun()).toHistoryJson()
             .replace(""""schema":$HISTORY_SCHEMA_VERSION""", """"schema":${HISTORY_SCHEMA_VERSION + 1}""")

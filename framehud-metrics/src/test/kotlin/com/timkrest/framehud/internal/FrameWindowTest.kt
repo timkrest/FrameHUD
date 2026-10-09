@@ -32,13 +32,13 @@ class FrameWindowTest {
     }
 
     @Test
-    fun `history pairs each frame with the deadline it had, oldest first`() {
+    fun `history pairs each frame with the budget that judged it, oldest first`() {
         addFrame(totalMs = 1f, overrunMs = -5f)
         addFrame(totalMs = 2f, overrunMs = -4f)
         addFrame(totalMs = 20f, overrunMs = 3f)
         val history = window.history()
         assertEquals(listOf(1f, 2f, 20f), List(history.size, history::totalMsAt))
-        assertEquals(listOf(6f, 6f, 17f), List(history.size, history::deadlineMsAt))
+        assertEquals(listOf(6f, 6f, 17f), List(history.size, history::budgetMsAt))
     }
 
     @Test

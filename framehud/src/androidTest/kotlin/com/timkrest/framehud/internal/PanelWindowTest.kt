@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.framehud.shared.AWAIT_TIMEOUT_MS
+import com.timkrest.framehud.shared.pollFor
 import com.timkrest.framehud.ui.dragHandle
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -113,19 +115,13 @@ class PanelWindowTest {
     private fun View.awaitFrame() {
         val drawn = CountDownLatch(1)
         postOnAnimation { drawn.countDown() }
-        assertTrue(drawn.await(LAYOUT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "no frame came")
+        assertTrue(drawn.await(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS), "no frame came")
     }
 
     private fun awaitLaidOutPanel(): View {
-        val deadline = SystemClock.uptimeMillis() + LAYOUT_TIMEOUT_MS
-        while (SystemClock.uptimeMillis() < deadline) {
-            shownView.get()?.takeIf { it.width > 0 }?.let {
-                relayouts.clear()
-                return it
-            }
-            SystemClock.sleep(POLL_INTERVAL_MS)
-        }
-        error("the panel never reached the window")
+        val view = pollFor { shownView.get()?.takeIf { it.width > 0 } } ?: error("the panel never reached the window")
+        relayouts.clear()
+        return view
     }
 
     private fun spyingOnLayouts(activity: Activity): Context = object : ContextWrapper(activity) {
@@ -156,8 +152,6 @@ class PanelWindowTest {
         const val SLOP_ROOM = 120f
         const val TRAVEL = 60f
         const val MOVES = 20
-        const val LAYOUT_TIMEOUT_MS = 5_000L
-        const val POLL_INTERVAL_MS = 20L
         const val DOWN_TIME = 0L
 
         val PANEL_SIDE = 200.dp

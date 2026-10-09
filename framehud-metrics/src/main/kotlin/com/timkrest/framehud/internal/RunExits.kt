@@ -15,7 +15,7 @@ internal class RunExit(val runId: String, val exit: ProcessExit) {
             description: String?,
             endedAtEpochMs: Long,
             summary: ByteArray?,
-            mainThreadStack: List<String> = emptyList(),
+            mainThreadStack: () -> List<String> = { emptyList() },
         ): RunExit? {
             val shown = ShownState.fromSummary(summary)
             val run = shown.run ?: return null
@@ -26,7 +26,7 @@ internal class RunExit(val runId: String, val exit: ProcessExit) {
                 endedAtEpochMs = endedAtEpochMs,
                 screen = shown.screen,
                 mark = shown.mark,
-                mainThreadStack = mainThreadStack,
+                mainThreadStack = mainThreadStack(),
             )
             return RunExit(runId = run, exit = exit)
         }

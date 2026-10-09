@@ -58,15 +58,8 @@ internal class FrameLog(private val capacity: Int) {
     }
 
     fun history(): FrameHistory {
-        val totalsMs = FloatArray(size)
-        val deadlinesMs = FloatArray(size)
-        for (index in 0 until size) {
-            val slot = slotOf(index)
-            val totalMs = phaseDurationsMs[slot * phaseCount + FramePhase.TOTAL.ordinal]
-            totalsMs[index] = totalMs
-            deadlinesMs[index] = totalMs - overrunsMs[slot]
-        }
-        return FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs)
+        val totalsMs = FloatArray(size) { phaseDurationsMs[slotOf(it) * phaseCount + FramePhase.TOTAL.ordinal] }
+        return frameHistoryOf(totalsMs, FloatArray(size) { overrunsMs[slotOf(it)] })
     }
 
     fun durationMs(): Long =

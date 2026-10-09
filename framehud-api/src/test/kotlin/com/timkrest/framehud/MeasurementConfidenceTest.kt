@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 class MeasurementConfidenceTest {
 
     @Test
-    fun `issuesAffecting only returns issues that taint the metric`() {
+    fun `issuesAffecting only returns issues that taint the figure`() {
         assertFalse(MeasurementConfidence.CLEAN.isSuspect)
 
         val confidence = MeasurementConfidence.of(
@@ -25,12 +25,12 @@ class MeasurementConfidenceTest {
     }
 
     @Test
-    fun `dropped reports, a slow listener, throttling and low battery taint every metric`() {
-        val allMetrics = IntervalFigure.entries.toSet()
-        assertEquals(allMetrics, ConfidenceIssue.DroppedReports.of(3).affected)
-        assertEquals(allMetrics, ConfidenceIssue.SlowListener.of(80f).affected)
-        assertEquals(allMetrics, ConfidenceIssue.ThermalThrottling.of(ThermalLevel.SEVERE).affected)
-        assertEquals(allMetrics, ConfidenceIssue.LowBattery.of(powerSaveMode = true, levelPercent = null).affected)
+    fun `dropped reports, a slow listener, throttling and low battery taint every figure`() {
+        val allFigures = IntervalFigure.entries.toSet()
+        assertEquals(allFigures, ConfidenceIssue.DroppedReports.of(3).affected)
+        assertEquals(allFigures, ConfidenceIssue.SlowListener.of(80f).affected)
+        assertEquals(allFigures, ConfidenceIssue.ThermalThrottling.of(ThermalLevel.SEVERE).affected)
+        assertEquals(allFigures, ConfidenceIssue.LowBattery.of(powerSaveMode = true, levelPercent = null).affected)
     }
 
     @Test

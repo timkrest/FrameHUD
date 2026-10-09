@@ -406,8 +406,8 @@ the one already set in place, so a script that passes an empty variable hears ab
 answers with the report's path in the broadcast result, and `BASELINE` with the path of the
 baseline it updated, so a script pulls whichever directory the device chose. `RETAIN` asks the
 [flight recorder](#perfetto-flight-recorder) to keep the trace. `HISTORY` answers with the path of
-the [past runs](#past-runs) once it has filled in how they ended, so after an ANR a script pulls the
-file with the main thread's stack already in it.
+the [past runs](#past-runs) once it has filled in how they ended, an ANR's main thread stack
+included.
 
 A release-signed QA flavour takes the artifact on its own, and the signing is what makes it worth
 doing: R8 has run, and the timings are the ones a user's device produces.

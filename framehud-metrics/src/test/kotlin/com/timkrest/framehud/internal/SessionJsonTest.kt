@@ -69,14 +69,14 @@ class SessionJsonTest {
             mark = "scroll",
             context = mapOf("variant" to "b"),
             session = IntervalStats.of(frames = 120, jankPercent = 7.5f),
-            window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
+            window = windowOf(totalsMs = floatArrayOf(10f, 40f), budgetsMs = floatArrayOf(16f, 16f)),
         ).toJson()
 
         assertContains(json, """"screen":"product/{id}","mark":"scroll","context":{"variant":"b"}""")
         assertContains(json, """"screen":{"name":"product/{id}",""")
         assertContains(json, """"frames":120""")
         assertContains(json, """"jankPercent":7.5""")
-        assertContains(json, """"frames":[{"totalMs":10.0,"deadlineMs":16.0},{"totalMs":40.0,"deadlineMs":16.0}]""")
+        assertContains(json, """"frames":[{"totalMs":10.0,"budgetMs":16.0},{"totalMs":40.0,"budgetMs":16.0}]""")
     }
 
     @Test
@@ -113,7 +113,7 @@ class SessionJsonTest {
             """"worst":{"at":"2023-11-14T22:13:20.000Z","atMs":1700000000000,""" +
                 """"framesBeforeTrigger":1,"stats":{"frames":2,""",
         )
-        assertContains(json, """"frames":[{"totalMs":10.0,"deadlineMs":16.0},{"totalMs":40.0,"deadlineMs":16.0}]""")
+        assertContains(json, """"frames":[{"totalMs":10.0,"budgetMs":16.0},{"totalMs":40.0,"budgetMs":16.0}]""")
     }
 
     @Test

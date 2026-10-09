@@ -3,7 +3,6 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineComparison
-import com.timkrest.framehud.FrameHistory
 import com.timkrest.framehud.FramePhase
 import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IncidentWindow
@@ -13,7 +12,6 @@ import com.timkrest.framehud.MainThreadBlock
 import com.timkrest.framehud.MetricDelta
 import com.timkrest.framehud.PhaseAverages
 import java.util.Locale
-import kotlin.math.max
 
 internal fun SessionSnapshot.toHtml(): String = buildString {
     append("<!doctype html>\n<html lang=\"en\">\n<head>\n")
@@ -28,10 +26,10 @@ internal fun SessionSnapshot.toHtml(): String = buildString {
 private fun SessionSnapshot.reportBody(): String = buildHtmlBody {
     header(title = "FrameHUD session", meta = subtitle())
     tiles {
-        tile(formatCount(session.frames), "frames")
+        tile(session.frames.toString(), "frames")
         tile(formatMs(session.p95FrameMs), "p95")
         tile(formatPercent(session.jankPercent), "jank")
-        tile(formatCount(session.frozenFrames), "frozen")
+        tile(session.frozenFrames.toString(), "frozen")
     }
     confidence(this@reportBody)
     measurement(this@reportBody)
@@ -101,16 +99,16 @@ private fun HtmlScope.stats(snapshot: SessionSnapshot) = with(snapshot) {
     section("Stats") {
         table {
             headings("", "Session", "Screen")
-            statRow(snapshot, "Frames") { formatCount(it.frames) }
+            statRow(snapshot, "Frames") { it.frames.toString() }
             statRow(snapshot, "Duration") { formatSeconds(it.durationMs) }
             statRow(snapshot, "p50") { formatMs(it.p50FrameMs) }
             statRow(snapshot, "p95") { formatMs(it.p95FrameMs) }
             statRow(snapshot, "p99") { formatMs(it.p99FrameMs) }
             statRow(snapshot, "Jank") { formatPercent(it.jankPercent) }
             statRow(snapshot, "Lost time") { formatMs(it.lostTimeMs) }
-            statRow(snapshot, "Frozen frames") { formatCount(it.frozenFrames) }
-            statRow(snapshot, "Longest jank streak") { formatCount(it.maxJankStreak) }
-            statRow(snapshot, "Dropped reports") { formatCount(it.droppedReports) }
+            statRow(snapshot, "Frozen frames") { it.frozenFrames.toString() }
+            statRow(snapshot, "Longest jank streak") { it.maxJankStreak.toString() }
+            statRow(snapshot, "Dropped reports") { it.droppedReports.toString() }
         }
         if (session.droppedReports > 0) {
             caution("Dropped reports above zero: every other figure is undersampled.")
@@ -132,10 +130,10 @@ private fun HtmlScope.screens(snapshot: SessionSnapshot) = with(snapshot) {
             for (screen in ranked) {
                 row(
                     screen.id.name,
-                    formatCount(screen.stats.frames),
+                    screen.stats.frames.toString(),
                     formatPercent(screen.stats.jankPercent),
                     formatMs(screen.stats.p95FrameMs),
-                    formatCount(screen.stats.frozenFrames),
+                    screen.stats.frozenFrames.toString(),
                     formatMs(screen.frameBudgetMs),
                 )
             }
@@ -238,7 +236,7 @@ private fun HtmlScope.frameWindow(snapshot: SessionSnapshot) = with(snapshot) {
         }
         meta(
             "Last ${window.frames.size} frames: p95 ${formatMs(window.p95FrameMs)} · " +
-                "worst ${formatMs(window.worstFrameMs)} · red bars ran past their deadline. " +
+                "worst ${formatMs(window.worstFrameMs)} · red bars ran past their budget. " +
                 "${window.fps} frames in the last second.",
         )
         markup(frameChart(history = window.frames, label = "Recent frame durations"))
@@ -297,45 +295,6 @@ private fun HtmlScope.mainThreadBlock(block: MainThreadBlock) {
     }
 }
 
-private fun frameChart(history: FrameHistory, label: String, framesBeforeTrigger: Int? = null): String {
-    var scaleMs = 0f
-    for (index in 0 until history.size) {
-        scaleMs = max(scaleMs, max(history.totalMsAt(index), history.deadlineMsAt(index)))
-    }
-    if (scaleMs <= 0f) return ""
-    scaleMs *= CHART_HEADROOM
-
-    return buildString {
-        append("<svg viewBox=\"0 0 $CHART_WIDTH $CHART_HEIGHT\" preserveAspectRatio=\"none\" role=\"img\" ")
-        append("aria-label=\"").append(escapeHtml(label)).append("\">\n")
-        val step = CHART_WIDTH / history.size
-        val barWidth = step * CHART_BAR_SHARE
-        val barWidthText = formatFloat(barWidth)
-        for (index in 0 until history.size) {
-            val totalMs = history.totalMsAt(index)
-            val deadlineMs = history.deadlineMsAt(index)
-            val height = CHART_HEIGHT * (totalMs / scaleMs)
-            val cssClass = if (totalMs > deadlineMs) "janky" else "ok"
-            append("<rect class=\"").append(cssClass).append("\" x=\"").append(formatFloat(step * index))
-            append("\" y=\"").append(formatFloat(CHART_HEIGHT - height))
-            append("\" width=\"").append(barWidthText)
-            append("\" height=\"").append(formatFloat(height)).append("\"/>\n")
-
-            val deadlineY = CHART_HEIGHT * (1f - deadlineMs / scaleMs)
-            append("<line class=\"deadline\" x1=\"").append(formatFloat(step * index))
-            append("\" x2=\"").append(formatFloat(step * index + barWidth))
-            append("\" y1=\"").append(formatFloat(deadlineY))
-            append("\" y2=\"").append(formatFloat(deadlineY)).append("\"/>\n")
-        }
-        if (framesBeforeTrigger != null) {
-            val triggerX = formatFloat(step * framesBeforeTrigger)
-            append("<line class=\"trigger\" x1=\"").append(triggerX).append("\" x2=\"").append(triggerX)
-            append("\" y1=\"0\" y2=\"").append(formatFloat(CHART_HEIGHT)).append("\"/>\n")
-        }
-        append("</svg>\n")
-    }
-}
-
 private fun HtmlScope.worstFrames(snapshot: SessionSnapshot) = with(snapshot) {
     if (worstFrames.isEmpty()) return@with
     section("Worst frames") {
@@ -380,64 +339,3 @@ private fun HtmlScope.environment(snapshot: SessionSnapshot) = with(snapshot) {
 }
 
 private const val INCIDENT_DETAIL_SEPARATOR = " · "
-
-private fun peaked(value: String, peak: String?): String = if (peak == null) value else "$value, peak $peak"
-
-private fun formatMs(value: Float?): String = if (value == null) "—" else "${formatFloat(value)} ms"
-
-private fun formatMs(value: Int?): String = if (value == null) "—" else "$value ms"
-
-private fun formatPercent(value: Float?): String = if (value == null) "—" else "${formatFloat(value)}%"
-
-private fun formatSeconds(durationMs: Long): String = formatInvariant("%.1f s", durationMs / MS_PER_SECOND)
-
-private fun formatCount(value: Int): String = value.toString()
-
-private fun formatFloat(value: Float): String = formatInvariant("%.1f", value)
-
-private const val CHART_WIDTH = 600f
-private const val CHART_HEIGHT = 120f
-private const val CHART_BAR_SHARE = 0.8f
-private const val CHART_HEADROOM = 1.05f
-
-private val REPORT_CSS = """
-    :root { color-scheme: light dark;
-      --bg: #f7f7f5; --card: #ffffff; --text: #1c1c1a; --muted: #6d6d68; --line: #e4e4df;
-      --ok: #4c9a52; --janky: #c94f42; --deadline: #1c1c1a; --caution: #9a6b00; }
-    @media (prefers-color-scheme: dark) { :root {
-      --bg: #191918; --card: #212120; --text: #ececea; --muted: #9c9c96; --line: #33332f;
-      --ok: #5aa860; --janky: #d8695c; --deadline: #ececea; --caution: #d0a13e; } }
-    * { box-sizing: border-box; }
-    body { margin: 0 auto; padding: 24px 16px 8px; max-width: 760px;
-      background: var(--bg); color: var(--text);
-      font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    h1 { font-size: 20px; margin: 0 0 4px; }
-    h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.06em; }
-    .meta { color: var(--muted); margin: 0 0 8px; }
-    header { margin-bottom: 16px; }
-    section { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-      padding: 14px 16px; margin-bottom: 12px; }
-    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-      gap: 12px; background: none; border: none; padding: 0; }
-    .tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-      padding: 12px 14px; }
-    .tile strong { display: block; font-size: 22px; font-weight: 600; }
-    .tile span { color: var(--muted); font-size: 12px; text-transform: uppercase;
-      letter-spacing: 0.06em; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { text-align: left; padding: 5px 16px 5px 0; vertical-align: top;
-      border-bottom: 1px solid var(--line); font-weight: normal; }
-    tr:last-child th, tr:last-child td { border-bottom: none; }
-    th { color: var(--muted); width: 200px; }
-    tr > th:not(:first-child) { width: auto; }
-    code { background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
-      padding: 1px 6px; font-size: 13px; }
-    svg { display: block; width: 100%; height: 120px; margin-top: 8px; }
-    svg .ok { fill: var(--ok); }
-    svg .janky { fill: var(--janky); }
-    svg .deadline { stroke: var(--deadline); stroke-width: 1; opacity: 0.55; }
-    svg .trigger { stroke: var(--caution); stroke-width: 2; }
-    .caution { color: var(--caution); margin: 10px 0 0; }
-    footer { color: var(--muted); font-size: 12px; padding: 8px 0 24px; }
-""".trimIndent()

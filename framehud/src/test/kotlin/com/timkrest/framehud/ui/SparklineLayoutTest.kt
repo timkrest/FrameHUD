@@ -12,7 +12,7 @@ class SparklineLayoutTest {
     fun `a chart narrower than the window keeps the worst frame of every slice`() {
         val history = historyOf(
             totalsMs = floatArrayOf(10f, 50f, 10f, 10f, 10f, 10f, 10f, 10f),
-            deadlinesMs = FloatArray(8) { 16f },
+            budgetsMs = FloatArray(8) { 16f },
         )
         val frames = worstFramePerSlot(history = history, slotCount = 4)
         assertEquals(listOf(50f, 10f, 10f, 10f), List(frames.size, frames::totalMsAt))
@@ -20,10 +20,10 @@ class SparklineLayoutTest {
 
     @Test
     fun `the frame a bar keeps is the one that missed its own deadline by the most`() {
-        val history = historyOf(totalsMs = floatArrayOf(40f, 30f), deadlinesMs = floatArrayOf(39f, 10f))
+        val history = historyOf(totalsMs = floatArrayOf(40f, 30f), budgetsMs = floatArrayOf(39f, 10f))
         val frames = worstFramePerSlot(history = history, slotCount = 1)
         assertEquals(30f, frames.totalMsAt(0), TOLERANCE)
-        assertEquals(10f, frames.deadlineMsAt(0), TOLERANCE)
+        assertEquals(10f, frames.budgetMsAt(0), TOLERANCE)
     }
 
     @Test
@@ -39,11 +39,11 @@ class SparklineLayoutTest {
         assertEquals(160f, fullHeightFor(peakMs = 5_000f), TOLERANCE)
     }
 
-    private fun historyOf(totalsMs: FloatArray, deadlinesMs: FloatArray): FrameHistory =
-        FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs)
+    private fun historyOf(totalsMs: FloatArray, budgetsMs: FloatArray): FrameHistory =
+        FrameHistory.of(totalsMs = totalsMs, budgetsMs = budgetsMs)
 
     private fun fullHeightFor(peakMs: Float): Float = budgetDoublingCovering(
-        frames = historyOf(totalsMs = floatArrayOf(peakMs), deadlinesMs = floatArrayOf(BUDGET_MS)),
+        bars = historyOf(totalsMs = floatArrayOf(peakMs), budgetsMs = floatArrayOf(BUDGET_MS)),
         frameBudgetMs = BUDGET_MS,
     )
 

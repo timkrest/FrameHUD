@@ -5,7 +5,10 @@ package com.timkrest.framehud.internal
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.RecordedRun
 
-internal const val HISTORY_SCHEMA_VERSION = 1
+internal const val HISTORY_SCHEMA_VERSION = 2
+
+/** Schema 1 wrote budgets as whole milliseconds, which still read as they are. */
+private const val OLDEST_READABLE_HISTORY_SCHEMA = 1
 
 internal data class StoredRun(val runId: String, val run: RecordedRun)
 
@@ -19,8 +22,8 @@ internal fun List<StoredRun>.toHistoryJson(): String = buildJsonObject {
 internal fun parseHistory(text: String): Parsed<List<StoredRun>> {
     val root = parseJson(text) ?: return rejected("it is not valid JSON")
     val schema = root.int(SCHEMA) ?: return rejected("it names no schema")
-    if (schema != HISTORY_SCHEMA_VERSION) {
-        return Parsed.Unreadable("it holds schema $schema, this build reads $HISTORY_SCHEMA_VERSION")
+    if (schema !in OLDEST_READABLE_HISTORY_SCHEMA..HISTORY_SCHEMA_VERSION) {
+        return Parsed.Unreadable("it holds schema $schema, this build reads up to $HISTORY_SCHEMA_VERSION")
     }
     val listed = root.member(RUNS) as? JsonValue.Arr ?: return rejected("it lists no runs")
     val runs = listed.items.map { item ->

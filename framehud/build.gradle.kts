@@ -11,6 +11,9 @@ android {
     buildFeatures {
         compose = true
     }
+    sourceSets.getByName("androidTest") {
+        kotlin.srcDir(rootProject.file("test-support/kotlin"))
+    }
 }
 
 dependencies {

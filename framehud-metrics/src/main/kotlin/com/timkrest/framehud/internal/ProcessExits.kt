@@ -41,7 +41,7 @@ private fun exitsOf(context: Context): List<RunExit> {
     val process = currentProcessName() ?: context.packageName
     return context.activityManager()?.getHistoricalProcessExitReasons(context.packageName, 0, 0).orEmpty()
         .filter { it.processName == process }
-        .mapNotNull { RunExit.of(it.reason, it.description, it.timestamp, it.processStateSummary, it.mainThreadStack()) }
+        .mapNotNull { RunExit.of(it.reason, it.description, it.timestamp, it.processStateSummary) { it.mainThreadStack() } }
 }
 
 @RequiresApi(Build.VERSION_CODES.R)

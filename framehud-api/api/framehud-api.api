@@ -295,7 +295,7 @@ public final class com/timkrest/framehud/ExitReason : java/lang/Enum {
 public final class com/timkrest/framehud/FrameHistory {
 	public static final field Companion Lcom/timkrest/framehud/FrameHistory$Companion;
 	public synthetic fun <init> ([F[FLkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun deadlineMsAt (I)F
+	public final fun budgetMsAt (I)F
 	public final fun getSize ()I
 	public final fun totalMsAt (I)F
 }

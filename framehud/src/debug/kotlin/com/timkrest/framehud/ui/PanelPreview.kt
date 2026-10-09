@@ -140,8 +140,8 @@ private fun previewHistory(): FrameHistory {
     val totalsMs = FloatArray(FrameHudConfig.DEFAULT_METRICS_SAMPLE_WINDOW_FRAMES) {
         PREVIEW_FRAME_PATTERN_MS[it % PREVIEW_FRAME_PATTERN_MS.size]
     }
-    val deadlinesMs = FloatArray(totalsMs.size) { DisplayInfo.DEFAULT.frameBudgetMs }
-    return FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs)
+    val budgetsMs = FloatArray(totalsMs.size) { DisplayInfo.DEFAULT.frameBudgetMs }
+    return FrameHistory.of(totalsMs = totalsMs, budgetsMs = budgetsMs)
 }
 
 private val PREVIEW_METRICS = PerformanceMetrics.of(

@@ -27,19 +27,19 @@ internal fun FrameSparkline(window: FrameWindowStats, modifier: Modifier = Modif
 
 private fun DrawScope.drawFrameHistory(history: FrameHistory, frameBudgetMs: Float) {
     val slotCount = (size.width / SparklineMinSlotWidth.toPx()).toInt()
-    val frames = worstFramePerSlot(history = history, slotCount = slotCount)
-    if (frames.size == 0) return
+    val bars = worstFramePerSlot(history = history, slotCount = slotCount)
+    if (bars.size == 0) return
 
-    val fullHeightMs = budgetDoublingCovering(frames = frames, frameBudgetMs = frameBudgetMs)
+    val fullHeightMs = budgetDoublingCovering(bars = bars, frameBudgetMs = frameBudgetMs)
     val slotWidth = size.width / slotCount
     val barWidth = max(slotWidth - SparklineBarGap.toPx(), slotWidth * SPARKLINE_MIN_BAR_FRACTION)
-    val firstSlotX = size.width - frames.size * slotWidth
-    for (bar in 0 until frames.size) {
-        val totalMs = frames.totalMsAt(bar)
+    val firstSlotX = size.width - bars.size * slotWidth
+    for (bar in 0 until bars.size) {
+        val totalMs = bars.totalMsAt(bar)
         if (totalMs <= 0f) continue
         val barHeight = (totalMs / fullHeightMs).coerceIn(0f, 1f) * size.height
         drawRect(
-            color = sparklineBarColor(totalMs = totalMs, deadlineMs = frames.deadlineMsAt(bar)),
+            color = sparklineBarColor(totalMs = totalMs, budgetMs = bars.budgetMsAt(bar)),
             topLeft = Offset(x = firstSlotX + bar * slotWidth, y = size.height - barHeight),
             size = Size(width = barWidth, height = barHeight),
         )

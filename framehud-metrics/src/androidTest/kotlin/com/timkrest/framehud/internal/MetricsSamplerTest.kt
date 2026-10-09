@@ -114,8 +114,7 @@ class MetricsSamplerTest {
     ).also { started += it }
 
     private fun awaitTicks(ticks: AtomicInteger, atLeast: Int) {
-        awaitUntil { ticks.get() >= atLeast }
-        assertTrue(ticks.get() >= atLeast, "the tick never ran")
+        assertTrue(awaitUntil { ticks.get() >= atLeast }, "the tick never ran")
     }
 
     private companion object {
