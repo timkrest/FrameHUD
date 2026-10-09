@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-10
+
 ### Added
 
 - `ProcessExit.mainThreadStack`: for an ANR, the main thread's frames from the trace the system
@@ -741,7 +743,8 @@ All notable changes to this project are documented here. The format follows
   `JankThresholds` and `@SkipJankDetection` for failing instrumentation tests on jank.
 - `FrameHud.awaitSessionStats()`, a blocking snapshot of the session for tests.
 
-[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/timkrest/FrameHUD/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.20.0
 [0.19.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.19.0
 [0.18.1]: https://github.com/timkrest/FrameHUD/releases/tag/v0.18.1
 [0.18.0]: https://github.com/timkrest/FrameHUD/releases/tag/v0.18.0
