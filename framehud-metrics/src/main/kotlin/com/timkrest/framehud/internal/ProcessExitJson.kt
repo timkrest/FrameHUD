@@ -11,6 +11,9 @@ internal fun JsonObjectScope.putProcessExit(exit: ProcessExit) {
     put(ENDED_AT_MS, exit.endedAtEpochMs)
     put(SCREEN, exit.screen)
     put(MARK, exit.mark)
+    if (exit.mainThreadStack.isNotEmpty()) {
+        putArray(MAIN_THREAD_STACK) { exit.mainThreadStack.forEach { add(it) } }
+    }
 }
 
 internal fun JsonValue.processExit(): ProcessExit? = readOrNull {
@@ -20,6 +23,7 @@ internal fun JsonValue.processExit(): ProcessExit? = readOrNull {
         endedAtEpochMs = long(ENDED_AT_MS) ?: return@readOrNull null,
         screen = string(SCREEN),
         mark = string(MARK),
+        mainThreadStack = items(MAIN_THREAD_STACK).map { (it as? JsonValue.Str)?.value ?: return@readOrNull null },
     )
 }
 
@@ -30,3 +34,4 @@ private const val DESCRIPTION = "description"
 private const val ENDED_AT_MS = "endedAtMs"
 private const val SCREEN = "screen"
 private const val MARK = "mark"
+private const val MAIN_THREAD_STACK = "mainThreadStack"

@@ -121,7 +121,8 @@ private fun RecordedRun.sessionSummary(): String {
     return exit?.let { "$session, ${it.summary()}" } ?: session
 }
 
-private fun ProcessExit.summary(): String = screen?.let { "${reason.name} on $it" } ?: reason.name
+private fun ProcessExit.summary(): String =
+    listOfNotNull(reason.name, screen?.let { "on $it" }, mainThreadStack.firstOrNull()?.let { "at $it" }).joinToString(" ")
 
 private fun IntervalReport.budgetSummary(): String = when {
     stats.frames == 0 -> stats.noFrames()

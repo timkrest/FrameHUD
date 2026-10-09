@@ -26,6 +26,13 @@ class RunExitsTest {
     }
 
     @Test
+    fun `an ANR keeps the main thread stack it was read with`() {
+        val stack = listOf("com.example.Cart.load(Cart.kt:42)")
+
+        assertEquals(stack, RunExit.of(ApplicationExitInfo.REASON_ANR, null, 300L, summary, stack)?.exit?.mainThreadStack)
+    }
+
+    @Test
     fun `a process that left no run behind ended outside any kept run`() {
         assertNull(RunExit.of(ApplicationExitInfo.REASON_CRASH, null, 300L, null))
         assertNull(RunExit.of(ApplicationExitInfo.REASON_CRASH, null, 300L, "level=3".toByteArray()))

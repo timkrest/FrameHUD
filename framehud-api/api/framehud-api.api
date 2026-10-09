@@ -1078,15 +1078,17 @@ public final class com/timkrest/framehud/PipelineStage : java/lang/Enum {
 
 public final class com/timkrest/framehud/ProcessExit {
 	public static final field Companion Lcom/timkrest/framehud/ProcessExit$Companion;
-	public synthetic fun <init> (Lcom/timkrest/framehud/ExitReason;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lcom/timkrest/framehud/ExitReason;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/ExitReason;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()J
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/util/List;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getEndedAtEpochMs ()J
+	public final fun getMainThreadStack ()Ljava/util/List;
 	public final fun getMark ()Ljava/lang/String;
 	public final fun getReason ()Lcom/timkrest/framehud/ExitReason;
 	public final fun getScreen ()Ljava/lang/String;

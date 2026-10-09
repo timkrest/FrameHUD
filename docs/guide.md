@@ -569,6 +569,16 @@ one such summary per process: an app that leaves its own there loses it while ru
 process that ended in the background has no screen, and a run killed before it first left the
 foreground has no record to carry its exit.
 
+An ANR also keeps `mainThreadStack`: the main thread's frames from the trace the system dumped, top
+first, with the lock it waited on when there was one.
+
+```kotlin
+val exit = FrameHud.history().firstOrNull()?.exit ?: return@launch
+if (exit.reason == ExitReason.ANR) {
+    Log.w("app", "ANR on ${exit.screen} at ${exit.mainThreadStack.firstOrNull()}")
+}
+```
+
 This is not the baseline. The baseline is one averaged figure per interval and answers whether this
 run is worse than usual. The history is the runs themselves, each with the time it was written.
 

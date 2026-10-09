@@ -45,12 +45,14 @@ internal fun processExit(
     endedAtEpochMs: Long = 1_700_000_100_000L,
     screen: String? = "checkout",
     mark: String? = "scroll",
+    mainThreadStack: List<String> = emptyList(),
 ): ProcessExit = ProcessExit.of(
     reason = reason,
     description = "user request after error: Input dispatching timed out",
     endedAtEpochMs = endedAtEpochMs,
     screen = screen,
     mark = mark,
+    mainThreadStack = mainThreadStack,
 )
 
 internal fun recordedInterval(

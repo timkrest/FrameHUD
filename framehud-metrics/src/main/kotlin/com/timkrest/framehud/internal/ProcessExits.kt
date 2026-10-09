@@ -4,6 +4,7 @@ package com.timkrest.framehud.internal
 
 import android.app.ActivityManager
 import android.app.Application
+import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
 import androidx.annotation.AnyThread
@@ -40,7 +41,15 @@ private fun exitsOf(context: Context): List<RunExit> {
     val process = currentProcessName() ?: context.packageName
     return context.activityManager()?.getHistoricalProcessExitReasons(context.packageName, 0, 0).orEmpty()
         .filter { it.processName == process }
-        .mapNotNull { RunExit.of(it.reason, it.description, it.timestamp, it.processStateSummary) }
+        .mapNotNull { RunExit.of(it.reason, it.description, it.timestamp, it.processStateSummary, it.mainThreadStack()) }
+}
+
+@RequiresApi(Build.VERSION_CODES.R)
+private fun ApplicationExitInfo.mainThreadStack(): List<String> {
+    if (reason != ApplicationExitInfo.REASON_ANR) return emptyList()
+    return guarded("reading the ANR trace", otherwise = emptyList()) {
+        traceInputStream?.bufferedReader()?.use { mainThreadStackOf(it.lineSequence()) }.orEmpty()
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.R)

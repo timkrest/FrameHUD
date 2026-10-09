@@ -17,6 +17,8 @@ public data class ProcessExit private constructor(
      */
     val screen: String?,
     val mark: String?,
+    /** For an ANR, where the main thread stood as the system dumped it, top frame first. Empty otherwise. */
+    val mainThreadStack: List<String>,
 ) {
     init {
         require(endedAtEpochMs > 0L) { "endedAtEpochMs is a wall clock reading, got $endedAtEpochMs" }
@@ -30,12 +32,14 @@ public data class ProcessExit private constructor(
             endedAtEpochMs: Long,
             screen: String?,
             mark: String?,
+            mainThreadStack: List<String> = emptyList(),
         ): ProcessExit = ProcessExit(
             reason = reason,
             description = description,
             endedAtEpochMs = endedAtEpochMs,
             screen = screen,
             mark = mark,
+            mainThreadStack = mainThreadStack,
         )
     }
 }

@@ -32,7 +32,7 @@ class HistoryJsonTest {
     @Test
     fun `how a process ended survives a round trip`() {
         val runs = listOf(
-            storedRun(runId = "a:1", exit = processExit()),
+            storedRun(runId = "a:1", exit = processExit(mainThreadStack = listOf("Cart.load(Cart.kt:42)", "- waiting to lock <0x1>"))),
             storedRun(runId = "a:2", exit = processExit(reason = ExitReason.LOW_MEMORY, screen = null, mark = null)),
         )
 

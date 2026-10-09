@@ -10,7 +10,13 @@ import com.timkrest.framehud.ProcessExit
 internal class RunExit(val runId: String, val exit: ProcessExit) {
 
     companion object {
-        fun of(reason: Int, description: String?, endedAtEpochMs: Long, summary: ByteArray?): RunExit? {
+        fun of(
+            reason: Int,
+            description: String?,
+            endedAtEpochMs: Long,
+            summary: ByteArray?,
+            mainThreadStack: List<String> = emptyList(),
+        ): RunExit? {
             val shown = ShownState.fromSummary(summary)
             val run = shown.run ?: return null
             if (endedAtEpochMs <= 0L) return null
@@ -20,6 +26,7 @@ internal class RunExit(val runId: String, val exit: ProcessExit) {
                 endedAtEpochMs = endedAtEpochMs,
                 screen = shown.screen,
                 mark = shown.mark,
+                mainThreadStack = mainThreadStack,
             )
             return RunExit(runId = run, exit = exit)
         }
