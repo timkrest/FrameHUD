@@ -196,7 +196,8 @@ gate usually reads.
 
 Sessions export as JSON and as a self-contained HTML report into the app's external files directory,
 so CI collects them with `adb pull` and no root. The same run drives over adb without a rebuild:
-screens, marks, export, baseline. That is what a release-signed QA flavour buys — R8 has run, and
+screens, marks, export, baseline, and the past runs with how each one ended, an ANR's main thread
+stack included. That is what a release-signed QA flavour buys — R8 has run, and
 the timings are the ones a user's device will get.
 [The guide](https://github.com/timkrest/FrameHUD/blob/main/docs/guide.md) has the commands.
 
@@ -217,8 +218,8 @@ read the paragraph above as a description of where the cost is, not a claim abou
 
 Release builds get nothing. `debugImplementation` keeps the panel, its provider and the
 `SYSTEM_ALERT_WINDOW` out. The one line a release build can take is `framehud-noop`, a mirror of the
-API with empty bodies, and only if `FrameHud` is called outside `src/debug`, so those lines still
-compile.
+API with empty bodies, needed once `FrameHud` is called outside `src/debug` or `framehud-compose`
+calls it for you, so those lines still compile and run.
 
 ## Limits
 
@@ -229,8 +230,10 @@ never whether the app is busy.
 
 - **Cold start** is Macrobenchmark's job. FrameHUD measures the screen in front of you, including
   its first and usable frame.
-- **Recompositions are invisible.** Through `FrameMetrics` alone, a screen recomposing everything
-  just looks slow.
+- **Recompositions are not counted.** `FrameMetrics` files their time under `anim`, the same
+  callback as animations, and never says how many there were. `CountCompositions` in
+  `framehud-compose` counts them for a composable you choose; finding which one is still the Layout
+  Inspector's job.
 - **Vulkan, OpenGL and game engines** are out; `FrameMetrics` says nothing about them.
 - **It does not replace Perfetto.** It leaves marks and can pull a ring-buffer trigger when an
   incident opens; the analysis stays there.
