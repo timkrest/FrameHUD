@@ -45,9 +45,24 @@ Work on the UI thread, where all your Compose and View code lives.
 | Row | What it covers | Grows when |
 | --- | --- | --- |
 | `input` | Touch and key dispatch, including every `onClick`/`onTouch` callback | Handlers do heavy work |
-| `anim` | Evaluating running animations (`Animatable`, `animate*AsState`, `Transition`) | Many animations run at once |
-| `layout` | Measure and layout of every View and composable | Deep hierarchies, frequent recomposition, intrinsic measurements |
-| `draw` | Recording draw commands into the display list (`Canvas.draw*`, text, backgrounds) | Many elements on screen |
+| `anim` | Choreographer's animation callbacks: running animations (`Animatable`, `animate*AsState`, `Transition`), and in Compose, recomposition | Many animations run at once, recomposition reaches too far |
+| `layout` | Measure and layout the View hierarchy asked for | Deep View hierarchies, `requestLayout` on every frame |
+| `draw` | Recording draw commands into the display list (`Canvas.draw*`, text, backgrounds), and in Compose, measuring and placing what changed | Many elements on screen, intrinsic measurements |
+
+### Compose and the CPU rows
+
+Compose does not split its work the way the row names suggest. It recomposes in a Choreographer
+frame callback, the one `FrameMetrics` files under animation, so a screen that recomposes too much
+shows up in `anim`. A lazy list scrolled by a fling composes and measures the rows coming on screen
+in that same callback.
+
+Measure and layout mostly land in `draw`: Compose invalidates its view and remeasures inside
+`dispatchDraw`, and asks the View hierarchy for a layout pass only when its root may change size.
+`layout` close to zero is what a Compose screen normally reads.
+
+To tell recomposition from animation inside `anim`, count compositions with a
+[counter](guide.md#counters), or look for `Recomposer:recompose` under `animation` in a
+[trace](guide.md#perfetto-flight-recorder).
 
 ## RENDER (render thread)
 
@@ -150,9 +165,9 @@ The current value jumps around; that is fine. Read the average.
 | Row | What to do |
 | --- | --- |
 | `input` | Heavy work in touch/click handlers. Move it off the callback |
-| `anim` | Too many or too complex concurrent animations. Simplify, drop the redundant ones |
-| `layout` | Recomposition. `remember`, `derivedStateOf`, fewer invalidations |
-| `draw` | Too many elements on screen. `LazyColumn`, remove what is not needed |
+| `anim` | Too many concurrent animations, or recomposition. Drop the redundant animations; read fast-changing state in a lambda (`Modifier.offset { }`, `drawBehind`) so composition skips it, `derivedStateOf`, `key` and `contentType` in lazy lists |
+| `layout` | The View hierarchy is remeasured. Flatten it, find what calls `requestLayout` every frame |
+| `draw` | Too many elements on screen, or measuring them is expensive. Remove what is not needed, avoid intrinsic measurements in list rows |
 | `sync` | Heavy images. Check bitmap dimensions, resize in your image loader |
 | `command` | Too many draw commands. Too many layers, too deep a hierarchy |
 | `swap` | The GPU did not free up in time to present. Usually a symptom of heavy `gpu` |
