@@ -14,6 +14,7 @@ import com.timkrest.framehud.Incident
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
+import com.timkrest.framehud.ProcessExit
 import com.timkrest.framehud.RecordedRun
 import com.timkrest.framehud.sample.ui.SampleCard
 import com.timkrest.framehud.sample.ui.SampleLine
@@ -116,8 +117,11 @@ private fun RecordedRun.recordedAt(): String =
 
 private fun RecordedRun.sessionSummary(): String {
     val stats = interval(IntervalId.Session)?.stats ?: return "no session recorded"
-    return "${formatPercent(stats.jankPercent)} jank, p95 ${formatMs(stats.p95FrameMs)}"
+    val session = "${formatPercent(stats.jankPercent)} jank, p95 ${formatMs(stats.p95FrameMs)}"
+    return exit?.let { "$session, ${it.summary()}" } ?: session
 }
+
+private fun ProcessExit.summary(): String = screen?.let { "${reason.name} on $it" } ?: reason.name
 
 private fun IntervalReport.budgetSummary(): String = when {
     stats.frames == 0 -> stats.noFrames()

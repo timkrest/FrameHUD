@@ -49,6 +49,7 @@ class SavedBaselineTest {
 
     private fun statsOf(runNumber: Int) = MetricsEngine.RunStats(
         runNumber = runNumber,
+        runId = "0a1b2c3d:$runNumber",
         session = recordedStats(),
         environment = RECORDED_ENVIRONMENT,
         intervals = listOf(recordedInterval(IntervalId.Session)),

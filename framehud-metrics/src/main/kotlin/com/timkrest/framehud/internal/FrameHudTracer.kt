@@ -10,7 +10,7 @@ import com.timkrest.framehud.MemoryStats
 import com.timkrest.framehud.PerformanceMetrics
 import kotlin.math.roundToInt
 
-internal class FrameHudTracer {
+internal class FrameHudTracer : ShownListener {
 
     private var openScreen: String? = null
     private var openMark: String? = null
@@ -19,19 +19,19 @@ internal class FrameHudTracer {
     private val counterTracks = HashMap<String, String>()
 
     @MainThread
-    fun screenChanged(label: String?) {
-        if (openScreen == label) return
+    override fun screenChanged(screen: String?) {
+        if (openScreen == screen) return
         openScreen?.let { Trace.endAsyncSection(screenSectionName(it), COOKIE) }
-        openScreen = label
-        label?.let { Trace.beginAsyncSection(screenSectionName(it), COOKIE) }
+        openScreen = screen
+        screen?.let { Trace.beginAsyncSection(screenSectionName(it), COOKIE) }
     }
 
     @MainThread
-    fun markChanged(name: String?) {
-        if (openMark == name) return
+    override fun markChanged(mark: String?) {
+        if (openMark == mark) return
         openMark?.let { Trace.endAsyncSection(markSectionName(it), COOKIE) }
-        openMark = name
-        name?.let { Trace.beginAsyncSection(markSectionName(it), COOKIE) }
+        openMark = mark
+        mark?.let { Trace.beginAsyncSection(markSectionName(it), COOKIE) }
     }
 
     @WorkerThread

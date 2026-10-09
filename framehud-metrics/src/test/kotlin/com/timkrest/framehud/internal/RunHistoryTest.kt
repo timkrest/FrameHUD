@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.framehud.internal
 
+import com.timkrest.framehud.ExitReason
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,8 @@ class RunHistoryTest {
     private var stored: Stored<List<StoredRun>> = Stored.Read(emptyList())
 
     private var failure: Throwable? = null
+
+    private var ended: () -> List<RunExit> = ::emptyList
 
     private val history = runHistory(Dispatchers.Unconfined)
 
@@ -74,14 +77,14 @@ class RunHistoryTest {
     fun `a history this run cannot read is not answered as no history`() {
         stored = Stored.Unreadable("it cannot be opened", IOException("the file is busy"))
 
-        assertFailsWith<IOException> { runBlocking { history.recorded(FILE, runNumber = 1) } }
+        assertFailsWith<IOException> { runBlocking { history.recorded(FILE, runId = runId(1)) } }
     }
 
     @Test
     fun `the run in progress is not history`() {
         history.record(runNumber = 1, recordedAtEpochMs = 100L)
 
-        assertEquals(emptyList(), runBlocking { history.recorded(FILE, runNumber = 1) })
+        assertEquals(emptyList(), runBlocking { history.recorded(FILE, runId = runId(1)) })
     }
 
     @Test
@@ -89,25 +92,59 @@ class RunHistoryTest {
         history.record(runNumber = 1, recordedAtEpochMs = 100L)
         val nextProcess = runHistory(Dispatchers.Unconfined)
 
-        val read = runBlocking { nextProcess.recorded(FILE, runNumber = 1) }
+        val read = runBlocking { nextProcess.recorded(FILE, runId = "4e5f6a7b:1") }
 
         assertEquals(listOf(100L), read.map { it.recordedAtEpochMs })
+    }
+
+    @Test
+    fun `reading the history gives an ended run its exit and keeps it in the file`() {
+        stored = Stored.Read(listOf(storedRun(runId = "before:1", recordedAtEpochMs = 100L)))
+        val exit = processExit(endedAtEpochMs = 300L)
+        ended = { listOf(RunExit(runId = "before:1", exit = exit)) }
+
+        val read = runBlocking { history.recorded(FILE, runId = runId(1)) }
+
+        assertEquals(exit, read.single().exit)
+        assertEquals(exit, (stored as Stored.Read).value.single().run.exit)
+    }
+
+    @Test
+    fun `the first write of a process keeps the exits it found beside its own run`() {
+        stored = Stored.Read(listOf(storedRun(runId = "before:1", recordedAtEpochMs = 100L)))
+        ended = { listOf(RunExit(runId = "before:1", exit = processExit(endedAtEpochMs = 300L))) }
+
+        history.record(runNumber = 1, recordedAtEpochMs = 400L)
+
+        assertEquals(listOf(null, ExitReason.ANR), (stored as Stored.Read).value.map { it.run.exit?.reason })
+    }
+
+    @Test
+    fun `a system that will not say how processes ended costs no run`() {
+        ended = { throw SecurityException("not this package") }
+
+        history.record(runNumber = 1, recordedAtEpochMs = 100L)
+
+        assertEquals(listOf(100L), recordedAt())
     }
 
     private fun runHistory(dispatcher: CoroutineDispatcher) = RunHistory(
         queue = CoroutineScope(dispatcher + CoroutineExceptionHandler { _, error -> failure = error }),
         read = { stored },
         write = { _, runs -> stored = Stored.Read(runs) },
+        exits = { ended() },
     )
 
     private fun RunHistory.record(runNumber: Int, recordedAtEpochMs: Long, keptRuns: Int = 5) {
         record(
             keptRuns = keptRuns,
-            runNumber = runNumber,
+            runId = runId(runNumber),
             file = { FILE },
             run = { recordedRun(recordedAtEpochMs = recordedAtEpochMs) },
         )
     }
+
+    private fun runId(runNumber: Int): String = "$PROCESS:$runNumber"
 
     private fun recordedAt(): List<Long> = (stored as Stored.Read).value.map { it.run.recordedAtEpochMs }
 
@@ -126,5 +163,6 @@ class RunHistoryTest {
 
     private companion object {
         val FILE = File("history.json")
+        const val PROCESS = "0a1b2c3d"
     }
 }

@@ -45,6 +45,7 @@ private fun JsonObjectScope.putRun(stored: StoredRun) {
             }
         }
     }
+    run.exit?.let { exit -> putObject(EXIT) { putProcessExit(exit) } }
 }
 
 private fun JsonValue.run(): StoredRun? = readOrNull {
@@ -56,6 +57,10 @@ private fun JsonValue.run(): StoredRun? = readOrNull {
         appVersionName = string(APP_VERSION_NAME),
         appVersionCode = long(APP_VERSION_CODE) ?: return@readOrNull null,
         intervals = listed.items.map { it.report() ?: return@readOrNull null },
+        exit = when (val exit = member(EXIT)) {
+            null -> null
+            else -> exit.processExit() ?: return@readOrNull null
+        },
     )
     StoredRun(runId, run)
 }
@@ -81,3 +86,4 @@ private const val ENVIRONMENT = "environment"
 private const val INTERVALS = "intervals"
 private const val INTERVAL = "interval"
 private const val FRAME_BUDGET_MS = "frameBudgetMs"
+private const val EXIT = "exit"

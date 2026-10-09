@@ -4,11 +4,13 @@ package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.ExitReason
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.PhaseAverages
+import com.timkrest.framehud.ProcessExit
 import com.timkrest.framehud.RecordedRun
 
 internal val RECORDED_ENVIRONMENT = BaselineEnvironment(manufacturer = "Google", model = "Pixel 8", apiLevel = 34)
@@ -17,12 +19,14 @@ internal fun recordedRun(
     recordedAtEpochMs: Long = 1_700_000_000_000L,
     appVersionName: String? = "1.2.3",
     intervals: List<IntervalReport> = listOf(recordedInterval(IntervalId.Session, recordedStats())),
+    exit: ProcessExit? = null,
 ): RecordedRun = RecordedRun.of(
     recordedAtEpochMs = recordedAtEpochMs,
     environment = RECORDED_ENVIRONMENT,
     appVersionName = appVersionName,
     appVersionCode = 42L,
     intervals = intervals,
+    exit = exit,
 )
 
 internal fun storedRun(
@@ -30,9 +34,23 @@ internal fun storedRun(
     recordedAtEpochMs: Long = 1_700_000_000_000L,
     appVersionName: String? = "1.2.3",
     intervals: List<IntervalReport> = listOf(recordedInterval(IntervalId.Session, recordedStats())),
+    exit: ProcessExit? = null,
 ): StoredRun = StoredRun(
     runId = runId,
-    run = recordedRun(recordedAtEpochMs = recordedAtEpochMs, appVersionName = appVersionName, intervals = intervals),
+    run = recordedRun(recordedAtEpochMs = recordedAtEpochMs, appVersionName = appVersionName, intervals = intervals, exit = exit),
+)
+
+internal fun processExit(
+    reason: ExitReason = ExitReason.ANR,
+    endedAtEpochMs: Long = 1_700_000_100_000L,
+    screen: String? = "checkout",
+    mark: String? = "scroll",
+): ProcessExit = ProcessExit.of(
+    reason = reason,
+    description = "user request after error: Input dispatching timed out",
+    endedAtEpochMs = endedAtEpochMs,
+    screen = screen,
+    mark = mark,
 )
 
 internal fun recordedInterval(

@@ -3,6 +3,7 @@
 package com.timkrest.framehud.internal
 
 import com.timkrest.framehud.ConfidenceIssue
+import com.timkrest.framehud.ExitReason
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
@@ -26,6 +27,23 @@ class HistoryJsonTest {
         )
 
         assertEquals(runs, parsedRuns(runs.toHistoryJson()))
+    }
+
+    @Test
+    fun `how a process ended survives a round trip`() {
+        val runs = listOf(
+            storedRun(runId = "a:1", exit = processExit()),
+            storedRun(runId = "a:2", exit = processExit(reason = ExitReason.LOW_MEMORY, screen = null, mark = null)),
+        )
+
+        assertEquals(runs, parsedRuns(runs.toHistoryJson()))
+    }
+
+    @Test
+    fun `an exit reason this build does not know reads as unknown`() {
+        val json = listOf(storedRun(exit = processExit())).toHistoryJson().replace(""""reason":"ANR"""", """"reason":"HIBERNATED"""")
+
+        assertEquals(ExitReason.UNKNOWN, parsedRuns(json)?.single()?.run?.exit?.reason)
     }
 
     @Test

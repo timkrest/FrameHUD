@@ -257,6 +257,29 @@ public final class com/timkrest/framehud/DisplayInfo$Companion {
 	public final fun getDEFAULT ()Lcom/timkrest/framehud/DisplayInfo;
 }
 
+public final class com/timkrest/framehud/ExitReason : java/lang/Enum {
+	public static final field ANR Lcom/timkrest/framehud/ExitReason;
+	public static final field CRASH Lcom/timkrest/framehud/ExitReason;
+	public static final field CRASH_NATIVE Lcom/timkrest/framehud/ExitReason;
+	public static final field DEPENDENCY_DIED Lcom/timkrest/framehud/ExitReason;
+	public static final field EXCESSIVE_RESOURCE_USAGE Lcom/timkrest/framehud/ExitReason;
+	public static final field EXIT_SELF Lcom/timkrest/framehud/ExitReason;
+	public static final field FREEZER Lcom/timkrest/framehud/ExitReason;
+	public static final field INITIALIZATION_FAILURE Lcom/timkrest/framehud/ExitReason;
+	public static final field LOW_MEMORY Lcom/timkrest/framehud/ExitReason;
+	public static final field OTHER Lcom/timkrest/framehud/ExitReason;
+	public static final field PACKAGE_STATE_CHANGE Lcom/timkrest/framehud/ExitReason;
+	public static final field PACKAGE_UPDATED Lcom/timkrest/framehud/ExitReason;
+	public static final field PERMISSION_CHANGE Lcom/timkrest/framehud/ExitReason;
+	public static final field SIGNALED Lcom/timkrest/framehud/ExitReason;
+	public static final field UNKNOWN Lcom/timkrest/framehud/ExitReason;
+	public static final field USER_REQUESTED Lcom/timkrest/framehud/ExitReason;
+	public static final field USER_STOPPED Lcom/timkrest/framehud/ExitReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/timkrest/framehud/ExitReason;
+	public static fun values ()[Lcom/timkrest/framehud/ExitReason;
+}
+
 public final class com/timkrest/framehud/FrameHistory {
 	public static final field Companion Lcom/timkrest/framehud/FrameHistory$Companion;
 	public synthetic fun <init> ([F[FLkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -1053,6 +1076,27 @@ public final class com/timkrest/framehud/PipelineStage : java/lang/Enum {
 	public static fun values ()[Lcom/timkrest/framehud/PipelineStage;
 }
 
+public final class com/timkrest/framehud/ProcessExit {
+	public static final field Companion Lcom/timkrest/framehud/ProcessExit$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/ExitReason;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/timkrest/framehud/ExitReason;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()J
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getEndedAtEpochMs ()J
+	public final fun getMark ()Ljava/lang/String;
+	public final fun getReason ()Lcom/timkrest/framehud/ExitReason;
+	public final fun getScreen ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/ProcessExit$Companion {
+}
+
 public final class com/timkrest/framehud/ProcessStats {
 	public static final field Companion Lcom/timkrest/framehud/ProcessStats$Companion;
 	public synthetic fun <init> (Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -1083,16 +1127,18 @@ public final class com/timkrest/framehud/ProcessStats$Companion {
 
 public final class com/timkrest/framehud/RecordedRun {
 	public static final field Companion Lcom/timkrest/framehud/RecordedRun$Companion;
-	public synthetic fun <init> (JLcom/timkrest/framehud/BaselineEnvironment;Ljava/lang/String;JLjava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (JLcom/timkrest/framehud/BaselineEnvironment;Ljava/lang/String;JLjava/util/List;Lcom/timkrest/framehud/ProcessExit;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component2 ()Lcom/timkrest/framehud/BaselineEnvironment;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()J
 	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Lcom/timkrest/framehud/ProcessExit;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAppVersionCode ()J
 	public final fun getAppVersionName ()Ljava/lang/String;
 	public final fun getEnvironment ()Lcom/timkrest/framehud/BaselineEnvironment;
+	public final fun getExit ()Lcom/timkrest/framehud/ProcessExit;
 	public final fun getIntervals ()Ljava/util/List;
 	public final fun getRecordedAtEpochMs ()J
 	public fun hashCode ()I

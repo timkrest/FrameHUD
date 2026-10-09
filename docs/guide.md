@@ -560,6 +560,15 @@ each screen and each mark it measured, next to the device and the app version it
 `framehud/history.json`, and `adb pull` reaches it the way it reaches the exports; it throws when it
 cannot read the file rather than answering that nothing was recorded.
 
+On API 30+ a run also says how its process ended. `exit` carries the reason the system gives, an ANR,
+a crash or memory reclaimed, with its description and the screen and mark in front of the user at
+that moment. FrameHUD leaves those two with the system as they change, through
+`setProcessStateSummary`, and the system hands them back once the process is gone, so the exit lands
+on the run when a later process reads the history and writes it back to the file. The system keeps
+one such summary per process: an app that leaves its own there loses it while runs are kept. A
+process that ended in the background has no screen, and a run killed before it first left the
+foreground has no record to carry its exit.
+
 This is not the baseline. The baseline is one averaged figure per interval and answers whether this
 run is worse than usual. The history is the runs themselves, each with the time it was written.
 

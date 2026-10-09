@@ -26,7 +26,8 @@ public data class FrameHudConfig(
     val perfettoTrigger: String? = null,
     /**
      * Runs `framehud/history.json` keeps, the one in progress included. Zero writes no file, and the
-     * oldest go early once the file outgrows what FrameHUD reads back.
+     * oldest go early once the file outgrows what FrameHUD reads back. Above zero, FrameHUD also
+     * takes the process state summary to learn how each run ended, replacing any the app sets.
      */
     val keptRuns: Int = 0,
     /**

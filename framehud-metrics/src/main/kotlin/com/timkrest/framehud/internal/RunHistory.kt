@@ -14,7 +14,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
-import java.util.UUID
 import java.util.concurrent.Executors
 
 @AnyThread
@@ -22,28 +21,37 @@ internal class RunHistory(
     private val queue: CoroutineScope,
     private val read: (File) -> Stored<List<StoredRun>> = ::readHistory,
     private val write: (File, List<StoredRun>) -> Unit = ::writeHistory,
+    private val exits: () -> List<RunExit> = ::emptyList,
 ) {
 
-    private val process = UUID.randomUUID().toString()
+    private var exitsRead = false
 
-    fun record(keptRuns: Int, runNumber: Int, file: () -> File, run: () -> RecordedRun) {
+    fun record(keptRuns: Int, runId: String, file: () -> File, run: () -> RecordedRun) {
         queue.launch {
             val target = file()
-            val recorded = StoredRun(runId(runNumber), run())
-            write(target, (listOf(recorded) + runsIn(target).withoutTheRun(recorded.runId)).take(keptRuns))
+            val recorded = StoredRun(runId, run())
+            write(target, (listOf(recorded) + withExitsOnce(storedIn(target)).withoutTheRun(runId)).take(keptRuns))
         }
     }
 
-    suspend fun recorded(file: File, runNumber: Int): List<RecordedRun> =
-        queue.async { runsIn(file) }.await().withoutTheRun(runId(runNumber)).map { it.run }
+    suspend fun recorded(file: File, runId: String): List<RecordedRun> = queue.async {
+        val stored = storedIn(file)
+        val runs = withExitsOnce(stored)
+        if (runs !== stored) guarded("keeping how earlier processes ended") { write(file, runs) }
+        runs
+    }.await().withoutTheRun(runId).map { it.run }
 
-    private fun runsIn(file: File): List<StoredRun> = when (val stored = read(file)) {
+    private fun withExitsOnce(stored: List<StoredRun>): List<StoredRun> {
+        if (exitsRead) return stored
+        exitsRead = true
+        return stored.withExits(guarded("reading how earlier processes ended", otherwise = emptyList(), exits))
+    }
+
+    private fun storedIn(file: File): List<StoredRun> = when (val stored = read(file)) {
         is Stored.Read -> stored.value
         is Stored.Unreadable ->
             throw IOException("Cannot read the run history at ${file.path}: ${stored.reason}", stored.cause)
     }
-
-    private fun runId(runNumber: Int): String = "$process:$runNumber"
 
     private fun List<StoredRun>.withoutTheRun(runId: String): List<StoredRun> = filterNot { it.runId == runId }
 }

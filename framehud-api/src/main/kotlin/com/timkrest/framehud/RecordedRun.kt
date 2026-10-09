@@ -15,6 +15,8 @@ public data class RecordedRun private constructor(
     val appVersionCode: Long,
     /** The session, every screen and every mark the run measured. */
     val intervals: List<IntervalReport>,
+    /** How the process that ran it ended, on API 30+. Null while it lives, or when the system kept no record. */
+    val exit: ProcessExit?,
 ) {
     init {
         require(recordedAtEpochMs > 0L) { "recordedAtEpochMs is a wall clock reading, got $recordedAtEpochMs" }
@@ -29,6 +31,9 @@ public data class RecordedRun private constructor(
 
     public fun interval(id: IntervalId): IntervalReport? = intervals.firstOrNull { it.id == id }
 
+    @InternalFrameHudApi
+    public fun withExit(exit: ProcessExit): RecordedRun = copy(exit = exit)
+
     public companion object {
         @InternalFrameHudApi
         public fun of(
@@ -37,12 +42,14 @@ public data class RecordedRun private constructor(
             appVersionName: String?,
             appVersionCode: Long,
             intervals: List<IntervalReport>,
+            exit: ProcessExit? = null,
         ): RecordedRun = RecordedRun(
             recordedAtEpochMs = recordedAtEpochMs,
             environment = environment,
             appVersionName = appVersionName,
             appVersionCode = appVersionCode,
             intervals = intervals,
+            exit = exit,
         )
     }
 }

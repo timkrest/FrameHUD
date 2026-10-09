@@ -17,6 +17,7 @@ import com.timkrest.framehud.internal.ActivityTracker
 import com.timkrest.framehud.internal.GuardedFailures
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.MetricsEngine
+import com.timkrest.framehud.internal.ProcessExits
 import com.timkrest.framehud.internal.RunHistory
 import com.timkrest.framehud.internal.SavedBaseline
 import com.timkrest.framehud.internal.ScreenNames
@@ -35,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -47,7 +49,16 @@ public object FrameHud {
     @Volatile
     private var currentConfig = FrameHudConfig()
 
-    private val engine = MetricsEngine(::currentConfig)
+    private val historyQueue = oneAtATime { error -> GuardedFailures.report("writing the run history", error) }
+
+    private val processExits = ProcessExits(
+        post = { task ->
+            historyQueue.launch { task() }
+            true
+        },
+    )
+
+    private val engine = MetricsEngine(::currentConfig, leaveSummary = processExits::leave)
 
     init {
         GuardedFailures.reportTo(engine::onInternalFailure)
@@ -65,9 +76,7 @@ public object FrameHud {
 
     private val savedBaseline = SavedBaseline()
 
-    private val runHistory = RunHistory(
-        queue = oneAtATime { error -> GuardedFailures.report("writing the run history", error) },
-    )
+    private val runHistory = RunHistory(queue = historyQueue, exits = processExits::read)
 
     @Volatile
     private var application: Application? = null
@@ -241,6 +250,7 @@ public object FrameHud {
             return
         }
         this.application = application
+        processExits.bind(application)
         application.registerActivityLifecycleCallbacks(activityTracker)
         fragmentScreens?.let(application::registerActivityLifecycleCallbacks)
     }
@@ -354,12 +364,13 @@ public object FrameHud {
     /**
      * Runs `framehud/history.json` holds, newest first, without the run in progress. A run is
      * written whenever the app leaves the foreground, so one killed while it is showing holds what
-     * it had when it last left. Throws when the file cannot be read.
+     * it had when it last left. The first read in a process fills in how earlier runs ended and
+     * writes that back to the file. Throws when the file cannot be read.
      */
     @AnyThread
     public suspend fun history(): List<RecordedRun> {
         val application = installedApplication("read the run history")
-        return withContext(Dispatchers.IO) { runHistory.recorded(historyFile(application), engine.runNumber) }
+        return withContext(Dispatchers.IO) { runHistory.recorded(historyFile(application), engine.runId) }
     }
 
     @InternalFrameHudApi
@@ -469,7 +480,7 @@ public object FrameHud {
             if (stats.session.frames == 0) return@postRunStats
             runHistory.record(
                 keptRuns = keptRuns,
-                runNumber = stats.runNumber,
+                runId = stats.runId,
                 file = { historyFile(application) },
                 run = { measuredRun(application, stats) },
             )

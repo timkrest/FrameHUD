@@ -13,7 +13,7 @@ internal fun isMainProcess(context: Context): Boolean {
     return processName == context.packageName
 }
 
-private fun currentProcessName(): String? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+internal fun currentProcessName(): String? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
     Application.getProcessName()
 } else {
     readCmdline()

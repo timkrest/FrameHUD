@@ -6,16 +6,21 @@ import android.util.Log
 import com.timkrest.framehud.InternalFrameHudApi
 
 @InternalFrameHudApi
-public inline fun guarded(what: String, block: () -> Unit): Boolean =
+public inline fun guarded(what: String, block: () -> Unit): Boolean = guarded(what, otherwise = false) {
+    block()
+    true
+}
+
+@InternalFrameHudApi
+public inline fun <T> guarded(what: String, otherwise: T, block: () -> T): T =
     try {
         block()
-        true
     } catch (e: Exception) {
         GuardedFailures.report(what, e)
-        false
+        otherwise
     } catch (e: LinkageError) {
         GuardedFailures.report(what, e)
-        false
+        otherwise
     }
 
 @InternalFrameHudApi

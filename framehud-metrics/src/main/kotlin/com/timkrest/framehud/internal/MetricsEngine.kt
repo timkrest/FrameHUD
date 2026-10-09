@@ -30,6 +30,7 @@ import kotlin.coroutines.resume
 internal class MetricsEngine(
     private val config: () -> FrameHudConfig,
     clock: MetricsClock = SystemMetricsClock,
+    leaveSummary: (ByteArray) -> Unit = {},
 ) {
 
     private val aggregator = FrameAggregator(config(), clock, isEmulator = isEmulatorDevice)
@@ -39,6 +40,9 @@ internal class MetricsEngine(
         onSlowListener = aggregator::addSlowListener,
     )
     private val tracer = FrameHudTracer()
+    private val runIds = RunIds()
+    private val shownState = ProcessStateSummary(firstRun = runIds.of(0), publish = leaveSummary)
+    private val shownListeners = listOf<ShownListener>(tracer, shownState)
     private val windows = MeasuredWindows()
     private val collector = FrameMetricsCollector(
         aggregator = aggregator,
@@ -65,6 +69,8 @@ internal class MetricsEngine(
     @Volatile
     var runNumber = 0
         private set
+
+    val runId: String get() = runIds.of(runNumber)
 
     private val reportedFailures = mutableSetOf<String>()
 
@@ -143,7 +149,7 @@ internal class MetricsEngine(
         if (focusedWindow === window) return
         unbindFocusedWindow()
         val label = measuredScreen.bind(screen)
-        tracer.screenChanged(label)
+        screenChanged(label)
         collector.expectScreen(window = window, screen = label, start = start)
         focusedWindow = window
         windows.add(window, label)
@@ -202,7 +208,7 @@ internal class MetricsEngine(
         endMark(endedScreen = rename.previous)
         val sampler = metricsThread.started ?: return
         val measured = focusedWindow?.let(windows::get) ?: return
-        tracer.screenChanged(rename.current)
+        screenChanged(rename.current)
         collector.restartScreen(rename.current)
         val listeners = config().eventListeners
         val endedContext = context
@@ -222,7 +228,7 @@ internal class MetricsEngine(
         endMark()
         if (name == null) return
         _activeMark.value = name
-        tracer.markChanged(name)
+        markChanged(name)
         onAggregates { aggregator.beginMark(name) }
     }
 
@@ -246,7 +252,7 @@ internal class MetricsEngine(
         collector.forgetScreen()
         endMark()
         val endedScreen = measuredScreen.unbind()
-        tracer.screenChanged(null)
+        screenChanged(null)
         val listeners = config().eventListeners
         val endedContext = context
         sampler.post {
@@ -273,6 +279,7 @@ internal class MetricsEngine(
             keepTicking = focusedWindow != null,
         )
         onAggregates { aggregator.updateConfig(newConfig) }
+        shownState.setPublishing(newConfig.keptRuns > 0)
     }
 
     @AnyThread
@@ -290,6 +297,7 @@ internal class MetricsEngine(
     fun reset() {
         onAggregates {
             runNumber++
+            shownState.runChanged(runId)
             aggregator.reset()
             memoryMonitor.reset()
             processMonitor.reset()
@@ -344,6 +352,7 @@ internal class MetricsEngine(
     @WorkerThread
     private fun runStatsHere(): RunStats = RunStats(
         runNumber = runNumber,
+        runId = runId,
         session = aggregator.sessionStats(),
         environment = BaselineEnvironment.current(),
         intervals = aggregator.intervals(),
@@ -359,10 +368,14 @@ internal class MetricsEngine(
         if (!posted) waiting.resume(null)
     }
 
+    private fun screenChanged(screen: String?) = shownListeners.forEach { it.screenChanged(screen) }
+
+    private fun markChanged(mark: String?) = shownListeners.forEach { it.markChanged(mark) }
+
     private fun endMark(endedScreen: String? = measuredScreen.active) {
         val ended = _activeMark.value ?: return
         _activeMark.value = null
-        tracer.markChanged(null)
+        markChanged(null)
         val listeners = config().eventListeners
         val endedContext = context
         onMetricsThread {
@@ -495,6 +508,7 @@ internal class MetricsEngine(
 
     class RunStats(
         val runNumber: Int,
+        val runId: String,
         val session: IntervalStats,
         val environment: BaselineEnvironment,
         val intervals: List<IntervalReport>,
