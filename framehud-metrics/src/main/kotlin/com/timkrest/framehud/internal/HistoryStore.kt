@@ -5,13 +5,15 @@ package com.timkrest.framehud.internal
 import android.app.Application
 import android.util.Log
 import androidx.annotation.WorkerThread
+import com.timkrest.framehud.InternalFrameHudApi
 import java.io.File
 
 internal const val HISTORY_FILE_NAME = "history.json"
 
 private const val MAX_HISTORY_BYTES = 1L shl 22
 
-internal fun historyFile(application: Application): File = File(exportDirectory(application), HISTORY_FILE_NAME)
+@InternalFrameHudApi
+public fun historyFile(application: Application): File = File(exportDirectory(application), HISTORY_FILE_NAME)
 
 @WorkerThread
 internal fun readHistory(file: File): Stored<List<StoredRun>> =

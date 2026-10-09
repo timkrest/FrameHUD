@@ -10,9 +10,11 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.timkrest.framehud.internal.baselineFile
+import com.timkrest.framehud.internal.historyFile
 import com.timkrest.framehud.shared.BlankActivity
 import com.timkrest.framehud.shared.awaitCollectorStarted
 import com.timkrest.framehud.shared.drawFrames
+import com.timkrest.framehud.shared.pollFor
 import com.timkrest.framehud.shared.runOnMain
 import org.junit.After
 import org.junit.Before
@@ -31,6 +33,8 @@ class CommandReceiverTest {
 
     private val targetContext: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
+    private val application: Application get() = targetContext.applicationContext as Application
+
     @Before
     fun resetCollector() {
         FrameHud.reset()
@@ -42,9 +46,11 @@ class CommandReceiverTest {
             FrameHud.screen = null
             FrameHud.mark = null
             FrameHud.context = emptyMap()
+            FrameHud.config = FrameHud.config.copy(keptRuns = 0)
         }
         FrameHud.baselineOverride = null
-        baselineFile(targetContext.applicationContext as Application).delete()
+        baselineFile(application).delete()
+        historyFile(application).delete()
     }
 
     @Test
@@ -115,6 +121,30 @@ class CommandReceiverTest {
         }
     }
 
+    @Test
+    fun theHistoryCommandSaysSoWhenNoRunsAreKept() {
+        ActivityScenario.launch(BlankActivity::class.java).use {
+            awaitCollectorStarted()
+
+            assertEquals("no runs kept, keptRuns is 0", broadcast(Intent(FrameHudCommandReceiver.ACTION_HISTORY)))
+        }
+    }
+
+    @Test
+    fun theHistoryCommandAnswersWithThePathOfTheHistory() {
+        runOnMain { FrameHud.config = FrameHud.config.copy(keptRuns = KEPT_RUNS) }
+        ActivityScenario.launch(BlankActivity::class.java).use { scenario ->
+            scenario.drawFrames(FRAMES)
+        }
+        runOnMain { FrameHud.reset() }
+
+        val result = pollFor {
+            broadcast(Intent(FrameHudCommandReceiver.ACTION_HISTORY))?.takeIf { it.endsWith("history.json") }
+        }
+        assertNotNull(result, "the history command never named the file")
+        assertTrue(File(result).length() > 0L, "the history is empty")
+    }
+
     private fun broadcast(intent: Intent): String? {
         val done = CountDownLatch(1)
         val resultData = AtomicReference<String?>()
@@ -139,6 +169,7 @@ class CommandReceiverTest {
     private companion object {
         const val COLD_START_AND_DELIVERY_MS = 60_000L
         const val FRAMES = 30
+        const val KEPT_RUNS = 3
         const val TOO_LONG_FOR_A_TRACE = 111
     }
 }

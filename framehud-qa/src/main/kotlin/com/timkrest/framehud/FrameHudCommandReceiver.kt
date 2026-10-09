@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import com.timkrest.framehud.internal.LOG_TAG
 import com.timkrest.framehud.internal.baselineFile
+import com.timkrest.framehud.internal.historyFile
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 
@@ -49,6 +50,16 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
                     when {
                         FrameHud.saveBaseline() == null -> "nothing collected"
                         else -> file?.absolutePath ?: "baseline updated"
+                    }
+                }
+            }
+            ACTION_HISTORY -> {
+                val file = (context.applicationContext as? Application)?.let(::historyFile)
+                respondAsync("history") {
+                    when {
+                        FrameHud.config.keptRuns == 0 -> "no runs kept, keptRuns is 0"
+                        FrameHud.history().isEmpty() -> "no earlier run recorded"
+                        else -> file?.absolutePath ?: "history read"
                     }
                 }
             }
@@ -107,6 +118,7 @@ internal class FrameHudCommandReceiver : BroadcastReceiver() {
         const val ACTION_EXPORT = "com.timkrest.framehud.EXPORT"
         const val ACTION_BASELINE = "com.timkrest.framehud.BASELINE"
         const val ACTION_RETAIN = "com.timkrest.framehud.RETAIN"
+        const val ACTION_HISTORY = "com.timkrest.framehud.HISTORY"
         const val EXTRA_NAME = "name"
         const val COMMAND_TIMEOUT_MS = 5_000L
     }

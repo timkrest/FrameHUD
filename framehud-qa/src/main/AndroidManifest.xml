@@ -16,6 +16,7 @@
                 <action android:name="com.timkrest.framehud.EXPORT" />
                 <action android:name="com.timkrest.framehud.BASELINE" />
                 <action android:name="com.timkrest.framehud.RETAIN" />
+                <action android:name="com.timkrest.framehud.HISTORY" />
             </intent-filter>
         </receiver>
     </application>
