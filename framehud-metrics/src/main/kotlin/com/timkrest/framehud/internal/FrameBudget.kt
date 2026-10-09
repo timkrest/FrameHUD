@@ -6,7 +6,7 @@ internal const val NO_DEADLINE_NS: Long = 0L
 
 internal const val UNKNOWN_REFRESH_RATE_HZ: Float = 0f
 
-internal fun overrunAgainst(budgetMs: Int?, totalMs: Float, displayOverrunMs: Float): Float =
+internal fun overrunAgainst(budgetMs: Float?, totalMs: Float, displayOverrunMs: Float): Float =
     if (budgetMs == null) displayOverrunMs else totalMs - budgetMs
 
 internal fun frameBudgetMs(deadlineNs: Long, refreshRateHz: Float): Float =

@@ -80,7 +80,7 @@ internal fun SessionSnapshot.toJson(): String = buildJsonObject {
             putPhase("total", phases.total)
             putPhase("overrun", phases.overrun)
         }
-        putFrames(window.history)
+        putFrames(window.frames)
     }
     putArray("worstFrames") {
         for (frame in worstFrames) {
@@ -249,7 +249,7 @@ private fun JsonObjectScope.putProcess(process: ProcessStats) {
     put("peakOpenFiles", process.peakOpenFiles)
 }
 
-private fun SessionSnapshot.sessionBudgetMs(): Int? =
+private fun SessionSnapshot.sessionBudgetMs(): Float? =
     intervals.firstOrNull { it.id == IntervalId.Session }?.frameBudgetMs
 
 private fun JsonObjectScope.putBaseline(comparison: BaselineComparison) {

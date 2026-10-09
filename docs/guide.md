@@ -454,8 +454,8 @@ can be judged against a number you pick instead.
 ```kotlin
 FrameHud.config = FrameHud.config.copy(
     frameBudgetsMs = mapOf(
-        IntervalId.Screen("feed") to 8,
-        IntervalId.Mark("scroll") to 8,
+        IntervalId.Screen("feed") to 8.3f,
+        IntervalId.Mark("scroll") to 8.3f,
     ),
 )
 ```
@@ -770,7 +770,7 @@ every few seconds, overdrawing, allocating per row, nesting layouts, churning ga
 the background. Each moves a different metric,
 and whichever ones you pick travel with every event and every incident as measurement context. The
 switch above the list judges frames by a budget instead of the display deadline, 16 ms for the
-session and 8 ms while the list scrolls. Scrolling is marked. A row opens as a screen named
+session and 8.3 ms while the list scrolls. Scrolling is marked. A row opens as a screen named
 `row/{index}` that reports itself usable once its data is in.
 
 **Readouts** is every reading FrameHUD keeps, taken from the flows instead of from the panel: the
@@ -792,14 +792,15 @@ Before 1.0 the public API can change in a minor release; the changelog says what
 release may still make. Both are caught by the compiler, and rebuilding against the new version
 settles both:
 
-- A type you build yourself grows a field, which changes the signature of its constructor and
-  `copy`: `FrameHudConfig` gains an option, `IntervalStats` gains a figure. Building them is the
-  point, so they stay public and grow with it.
+- `FrameHudConfig` gains an option, which changes the signature of its constructor and `copy`.
+  Building it is the point, so it stays public and grows with it.
 - A sealed type gains a subtype: a new event, a new confidence issue, a new jank cause. A `when`
   over it that has no `else` stops compiling.
 
-A reading you only read carries no public constructor and no `copy`, so it gains figures without
-breaking anyone. Something on its way out is deprecated first, for at least one minor release, with
+Everything FrameHUD hands you, the stats, events, jank causes, confidence issues and comparisons,
+carries no public constructor and no `copy`, so it gains figures without breaking anyone. A test
+that needs one builds it with its `of` factory under `@OptIn(InternalFrameHudApi::class)`, which
+promises nothing. Something on its way out is deprecated first, for at least one minor release, with
 `@Deprecated` naming what replaces it, and goes in the next major version.
 
 ## Non-goals

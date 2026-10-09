@@ -147,9 +147,9 @@ class IncidentRecorderTest {
 
     @Test
     fun `the same screen blamed for something else is a case of its own`() {
-        armBurst(JankCause.Stage(PipelineStage.CPU, averageMs = 12f))
+        armBurst(JankCause.Stage.of(PipelineStage.CPU, averageMs = 12f))
         addFrames(10f, 10f)
-        armBurst(JankCause.Thermal(ThermalLevel.SEVERE))
+        armBurst(JankCause.Thermal.of(ThermalLevel.SEVERE))
         addFrames(10f, 10f)
 
         assertEquals(2, recorder.incidents().size)
@@ -157,9 +157,9 @@ class IncidentRecorderTest {
 
     @Test
     fun `readings apart, the same diagnosis is the same case`() {
-        armBurst(JankCause.Stage(PipelineStage.CPU, averageMs = 12f))
+        armBurst(JankCause.Stage.of(PipelineStage.CPU, averageMs = 12f))
         addFrames(10f, 10f)
-        armBurst(JankCause.Stage(PipelineStage.CPU, averageMs = 31f))
+        armBurst(JankCause.Stage.of(PipelineStage.CPU, averageMs = 31f))
         addFrames(10f, 10f)
 
         assertEquals(2, recorder.incidents().single().occurrences)
@@ -211,7 +211,7 @@ class IncidentRecorderTest {
     }
 
     private fun arm(screen: String = "Home", battery: BatterySample = BatterySample.UNKNOWN) =
-        arm(FrameHudEvent.FrozenFrames(count = 1, screen = screen, mark = null), battery)
+        arm(FrameHudEvent.FrozenFrames.of(count = 1, screen = screen, mark = null), battery)
 
     @Test
     fun `a screen change keeps the window an incident was still filling`() {
@@ -233,13 +233,13 @@ class IncidentRecorderTest {
 
         val issues = recorder.incidents().single().worst.stats.confidence.issues
         assertEquals(
-            listOf(ConfidenceIssue.LowBattery(powerSaveMode = true, levelPercent = 80)),
+            listOf(ConfidenceIssue.LowBattery.of(powerSaveMode = true, levelPercent = 80)),
             issues.filterIsInstance<ConfidenceIssue.LowBattery>(),
         )
     }
 
     private fun armBurst(cause: JankCause) = arm(
-        FrameHudEvent.JankBurst(
+        FrameHudEvent.JankBurst.of(
             diagnosis = JankDiagnosis.of(
                 cause = cause,
                 severity = JankSeverity.WARNING,

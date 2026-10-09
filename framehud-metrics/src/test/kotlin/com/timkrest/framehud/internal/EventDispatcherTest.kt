@@ -95,14 +95,14 @@ class EventDispatcherTest {
         dispatcher.onScreenEnded(listenersWhenItEnded = listeners, stats = IntervalStats.EMPTY, screen = SCREEN, context = emptyMap())
         assertTrue(events.isEmpty())
 
-        dispatcher.onScreenEnded(listeners, IntervalStats.EMPTY.copy(frames = 12), SCREEN, context = emptyMap())
+        dispatcher.onScreenEnded(listeners, IntervalStats.of(frames = 12), SCREEN, context = emptyMap())
         assertIs<FrameHudEvent.ScreenEnded>(events.single())
     }
 
     @Test
     fun `a finished screen does not restart burst tracking`() {
         sample(jankPercent = 30f, frozenFrames = 4)
-        dispatcher.onScreenEnded(listeners, IntervalStats.EMPTY.copy(frames = 4), SCREEN, context = emptyMap())
+        dispatcher.onScreenEnded(listeners, IntervalStats.of(frames = 4), SCREEN, context = emptyMap())
         events.clear()
 
         sample(jankPercent = 30f, frozenFrames = 4)
@@ -112,11 +112,11 @@ class EventDispatcherTest {
     @Test
     fun `a listener at exactly 50 ms is not reported, a millisecond past it is`() {
         val onTimeListener = listOf(FrameHudEventListener { clock.nanos += SLOW_LISTENER_THRESHOLD_NS })
-        dispatcher.onScreenEnded(onTimeListener, IntervalStats.EMPTY.copy(frames = 1), SCREEN, context = emptyMap())
+        dispatcher.onScreenEnded(onTimeListener, IntervalStats.of(frames = 1), SCREEN, context = emptyMap())
         assertTrue(slowListenerReports.isEmpty())
 
         val slowListener = listOf(FrameHudEventListener { clock.nanos += SLOW_LISTENER_THRESHOLD_NS + NS_PER_MS_LONG })
-        dispatcher.onScreenEnded(slowListener, IntervalStats.EMPTY.copy(frames = 1), SCREEN, context = emptyMap())
+        dispatcher.onScreenEnded(slowListener, IntervalStats.of(frames = 1), SCREEN, context = emptyMap())
         assertEquals(1, slowListenerReports.size)
     }
 
@@ -139,7 +139,7 @@ class EventDispatcherTest {
         val metrics = PerformanceMetrics.of(
             phases = FramePhases.of(draw = MetricValue.of(average = 12f)),
             window = FrameWindowStats.of(jankPercent = jankPercent),
-            session = IntervalStats.EMPTY.copy(frames = 100, durationMs = 1_000L, frozenFrames = frozenFrames),
+            session = IntervalStats.of(frames = 100, durationMs = 1_000L, frozenFrames = frozenFrames),
             display = DisplayInfo.of(refreshRateHz = 60f),
         )
         return dispatcher.onSample(

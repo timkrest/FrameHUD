@@ -26,11 +26,11 @@ internal class EventDispatcher(
     private var lastThermalLevel = ThermalLevel.UNKNOWN
 
     fun onFirstFrame(timeToDisplayMs: Float, screen: String?, context: Map<String, String>) {
-        emit(FrameHudEvent.FirstFrame(timeToDisplayMs = timeToDisplayMs, screen = screen, context = context))
+        emit(FrameHudEvent.FirstFrame.of(timeToDisplayMs = timeToDisplayMs, screen = screen, context = context))
     }
 
     fun onUsableFrame(timeToUsableMs: Float, screen: String?, context: Map<String, String>) {
-        emit(FrameHudEvent.UsableFrame(timeToUsableMs = timeToUsableMs, screen = screen, context = context))
+        emit(FrameHudEvent.UsableFrame.of(timeToUsableMs = timeToUsableMs, screen = screen, context = context))
     }
 
     fun onSample(
@@ -57,7 +57,7 @@ internal class EventDispatcher(
         val started = burst && !isInBurst
         isInBurst = burst
         if (!started) return null
-        return FrameHudEvent.JankBurst(diagnosis = diagnosis, screen = screen, mark = mark, context = context)
+        return FrameHudEvent.JankBurst.of(diagnosis = diagnosis, screen = screen, mark = mark, context = context)
     }
 
     private fun takeFrozenFrames(
@@ -69,7 +69,7 @@ internal class EventDispatcher(
         val added = frozenFrames - lastFrozenFrames
         lastFrozenFrames = frozenFrames
         if (added <= 0) return null
-        return FrameHudEvent.FrozenFrames(count = added, screen = screen, mark = mark, context = context)
+        return FrameHudEvent.FrozenFrames.of(count = added, screen = screen, mark = mark, context = context)
     }
 
     private fun takeThermalChange(
@@ -82,7 +82,7 @@ internal class EventDispatcher(
         val isFirstReading = lastThermalLevel == ThermalLevel.UNKNOWN
         lastThermalLevel = thermalLevel
         if (isFirstReading && !thermalLevel.isThrottling) return null
-        return FrameHudEvent.ThermalChanged(level = thermalLevel, screen = screen, mark = mark, context = context)
+        return FrameHudEvent.ThermalChanged.of(level = thermalLevel, screen = screen, mark = mark, context = context)
     }
 
     fun onScreenEnded(
@@ -93,7 +93,7 @@ internal class EventDispatcher(
     ) {
         if (stats.frames > 0) {
             listenersWhenItEnded.emit(
-                FrameHudEvent.ScreenEnded(stats = stats, screen = screen, context = context),
+                FrameHudEvent.ScreenEnded.of(stats = stats, screen = screen, context = context),
             )
         }
     }
@@ -106,7 +106,7 @@ internal class EventDispatcher(
         context: Map<String, String>,
     ) {
         listenersWhenItEnded.emit(
-            FrameHudEvent.MarkEnded(stats = stats, mark = mark, screen = screen, context = context),
+            FrameHudEvent.MarkEnded.of(stats = stats, mark = mark, screen = screen, context = context),
         )
     }
 
@@ -118,7 +118,7 @@ internal class EventDispatcher(
         context: Map<String, String>,
     ) {
         emit(
-            FrameHudEvent.InternalFailure(
+            FrameHudEvent.InternalFailure.of(
                 what = what,
                 error = error,
                 screen = screen,

@@ -65,7 +65,7 @@ internal fun SessionSnapshot.writeTo(directory: File): SessionExport {
     val name = unusedName(directory, stamp)
     val json = File(directory, "$name.json").apply { writeText(toJson()) }
     val html = File(directory, "$name.html").apply { writeText(toHtml()) }
-    return SessionExport(json = json, html = html)
+    return SessionExport.of(json = json, html = html)
 }
 
 private fun unusedName(directory: File, stamp: String): String {

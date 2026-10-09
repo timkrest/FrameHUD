@@ -112,15 +112,28 @@ public data class IntervalComparison private constructor(
 public sealed interface BaselineComparison {
 
     @Immutable
-    public data class Compared(val intervals: List<IntervalComparison>) : BaselineComparison {
+    @ConsistentCopyVisibility
+    public data class Compared private constructor(val intervals: List<IntervalComparison>) : BaselineComparison {
         public fun interval(id: IntervalId): IntervalComparison? = intervals.firstOrNull { it.id == id }
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(intervals: List<IntervalComparison>): Compared = Compared(intervals = intervals)
+        }
     }
 
     @Immutable
-    public data class OtherEnvironment(
+    @ConsistentCopyVisibility
+    public data class OtherEnvironment private constructor(
         val recorded: BaselineEnvironment,
         val current: BaselineEnvironment,
-    ) : BaselineComparison
+    ) : BaselineComparison {
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(recorded: BaselineEnvironment, current: BaselineEnvironment): OtherEnvironment =
+                OtherEnvironment(recorded = recorded, current = current)
+        }
+    }
 
     /** No run has recorded a baseline on this device yet. */
     public data object NoBaseline : BaselineComparison

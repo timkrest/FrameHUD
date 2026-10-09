@@ -13,7 +13,7 @@ class BaselineTest {
     @Test
     fun `an entry spreads lost time and frozen frames over every frame`() {
         val entry = BaselineEntry.of(
-            IntervalStats.EMPTY.copy(frames = 200, lostTimeMs = 50f, frozenFrames = 2),
+            IntervalStats.of(frames = 200, lostTimeMs = 50f, frozenFrames = 2),
         )
 
         assertEquals(0.25f, entry.lostTimeMsPerFrame)
@@ -22,7 +22,7 @@ class BaselineTest {
 
     @Test
     fun `an interval with no frames reports zero rather than dividing by them`() {
-        val entry = BaselineEntry.of(IntervalStats.EMPTY.copy(lostTimeMs = 4f, frozenFrames = 1))
+        val entry = BaselineEntry.of(IntervalStats.of(lostTimeMs = 4f, frozenFrames = 1))
 
         assertEquals(0f, entry.lostTimeMsPerFrame)
         assertEquals(0f, entry.frozenPercent)
@@ -238,15 +238,15 @@ class BaselineTest {
     @Test
     fun `budget metrics neither move nor compare across frame budgets`() {
         val baseline = Baseline(ENVIRONMENT, emptyMap())
-            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17, jankPercent = 10f, p95FrameMs = 10f)))
+            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17f, jankPercent = 10f, p95FrameMs = 10f)))
 
-        val updated = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f, p95FrameMs = 20f)))
+        val updated = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f, p95FrameMs = 20f)))
 
         val session = updated.entries.getValue(IntervalId.Session)
         assertEquals(10f, session.jankPercent)
         assertEquals(15f, session.p95FrameMs)
         val comparison = assertIs<BaselineComparison.Compared>(
-            updated.compare(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f, p95FrameMs = 20f))),
+            updated.compare(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f, p95FrameMs = 20f))),
         )
         assertNull(comparison.interval(IntervalId.Session)?.delta(BaselineMetric.JANK_PERCENT))
         assertEquals(5f, comparison.interval(IntervalId.Session)?.delta(BaselineMetric.P95_MS)?.change)
@@ -255,17 +255,28 @@ class BaselineTest {
     @Test
     fun `three runs in a row under a new budget restart the budget metrics from it`() {
         var baseline = Baseline(ENVIRONMENT, emptyMap())
-            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17, jankPercent = 10f)))
+            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17f, jankPercent = 10f)))
 
         repeat(3) {
-            baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
+            baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
         }
 
         val session = baseline.entries.getValue(IntervalId.Session)
         assertEquals(30f, session.jankPercent)
-        assertEquals(8, session.frameBudgetMs)
+        assertEquals(8f, session.frameBudgetMs)
         val comparison = assertIs<BaselineComparison.Compared>(
-            baseline.compare(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f))),
+            baseline.compare(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f))),
+        )
+        assertEquals(0f, comparison.interval(IntervalId.Session)?.delta(BaselineMetric.JANK_PERCENT)?.change)
+    }
+
+    @Test
+    fun `budgets that round to the same millisecond judge alike`() {
+        val baseline = Baseline(ENVIRONMENT, emptyMap())
+            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 16.67f, jankPercent = 10f)))
+
+        val comparison = assertIs<BaselineComparison.Compared>(
+            baseline.compare(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 16.6f, jankPercent = 10f))),
         )
         assertEquals(0f, comparison.interval(IntervalId.Session)?.delta(BaselineMetric.JANK_PERCENT)?.change)
     }
@@ -273,29 +284,29 @@ class BaselineTest {
     @Test
     fun `runs under different replacement budgets do not add up to a migration`() {
         var baseline = Baseline(ENVIRONMENT, emptyMap())
-            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17, jankPercent = 10f)))
+            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17f, jankPercent = 10f)))
 
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 11, jankPercent = 30f)))
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 11f, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
 
         val session = baseline.entries.getValue(IntervalId.Session)
-        assertEquals(17, session.frameBudgetMs)
+        assertEquals(17f, session.frameBudgetMs)
         assertEquals(10f, session.jankPercent)
     }
 
     @Test
     fun `a run under the recorded budget resets the migration streak`() {
         var baseline = Baseline(ENVIRONMENT, emptyMap())
-            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17, jankPercent = 10f)))
+            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17f, jankPercent = 10f)))
 
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17, jankPercent = 12f)))
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17f, jankPercent = 12f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
 
         val session = baseline.entries.getValue(IntervalId.Session)
-        assertEquals(17, session.frameBudgetMs)
+        assertEquals(17f, session.frameBudgetMs)
         assertEquals(11f, session.jankPercent)
     }
 
@@ -303,35 +314,35 @@ class BaselineTest {
     fun `a clean run under any budget replaces budget metrics no run measured cleanly`() {
         val mixed = IntervalReport.of(
             id = IntervalId.Session,
-            stats = IntervalStats.EMPTY.copy(
+            stats = IntervalStats.of(
                 frames = 100,
                 jankPercent = 50f,
-                confidence = MeasurementConfidence(listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120)))),
+                confidence = MeasurementConfidence.of(listOf(ConfidenceIssue.RefreshRateChanged.of(setOf(60, 120)))),
             ),
             frameBudgetMs = null,
         )
         val seeded = Baseline(ENVIRONMENT, emptyMap()).updatedWith(ENVIRONMENT, listOf(mixed))
 
-        val cleaned = seeded.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 20f)))
+        val cleaned = seeded.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 20f)))
 
         val session = cleaned.entries.getValue(IntervalId.Session)
         assertEquals(20f, session.jankPercent)
-        assertEquals(8, session.frameBudgetMs)
+        assertEquals(8f, session.frameBudgetMs)
     }
 
     @Test
     fun `a mixed run neither breaks nor advances the migration streak`() {
         var baseline = Baseline(ENVIRONMENT, emptyMap())
-            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17, jankPercent = 10f)))
+            .updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 17f, jankPercent = 10f)))
 
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
         baseline = baseline.updatedWith(ENVIRONMENT, listOf(mixedSession(jankPercent = 30f)))
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
-        assertEquals(17, baseline.entries.getValue(IntervalId.Session).frameBudgetMs)
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
+        assertEquals(17f, baseline.entries.getValue(IntervalId.Session).frameBudgetMs)
 
-        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 30f)))
+        baseline = baseline.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 30f)))
         val session = baseline.entries.getValue(IntervalId.Session)
-        assertEquals(8, session.frameBudgetMs)
+        assertEquals(8f, session.frameBudgetMs)
         assertEquals(30f, session.jankPercent)
     }
 
@@ -340,11 +351,11 @@ class BaselineTest {
         val seeded = Baseline(ENVIRONMENT, emptyMap())
             .updatedWith(ENVIRONMENT, listOf(mixedSession(jankPercent = 50f)))
 
-        val cleaned = seeded.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8, jankPercent = 20f)))
+        val cleaned = seeded.updatedWith(ENVIRONMENT, listOf(sessionUnderBudget(budgetMs = 8f, jankPercent = 20f)))
 
         val session = cleaned.entries.getValue(IntervalId.Session)
         assertEquals(20f, session.jankPercent)
-        assertEquals(8, session.frameBudgetMs)
+        assertEquals(8f, session.frameBudgetMs)
     }
 
     @Test
@@ -386,10 +397,10 @@ class BaselineTest {
         )
         val emulator = IntervalReport.of(
             IntervalId.Session,
-            IntervalStats.EMPTY.copy(
+            IntervalStats.of(
                 frames = 100,
                 phases = PhaseAverages.of(layout = 5f, swapBuffers = 10f),
-                confidence = MeasurementConfidence(listOf(ConfidenceIssue.Emulator)),
+                confidence = MeasurementConfidence.of(listOf(ConfidenceIssue.Emulator)),
             ),
         )
 
@@ -440,37 +451,39 @@ class BaselineTest {
 
     private fun emulatorGpuSessionOf(gpuMs: Float) = IntervalReport.of(
         IntervalId.Session,
-        statsOf(phases = PhaseAverages.of(gpu = gpuMs))
-            .copy(confidence = MeasurementConfidence(listOf(ConfidenceIssue.Emulator))),
+        statsOf(
+            phases = PhaseAverages.of(gpu = gpuMs),
+            confidence = MeasurementConfidence.of(listOf(ConfidenceIssue.Emulator)),
+        ),
     )
 
     private fun mixedSession(jankPercent: Float) = IntervalReport.of(
         id = IntervalId.Session,
-        stats = IntervalStats.EMPTY.copy(frames = 100, jankPercent = jankPercent),
+        stats = IntervalStats.of(frames = 100, jankPercent = jankPercent),
         frameBudgetMs = null,
     )
 
     private fun droppedReportsSessionOf(phases: PhaseAverages) = IntervalReport.of(
         IntervalId.Session,
-        IntervalStats.EMPTY.copy(
+        IntervalStats.of(
             frames = 100,
             phases = phases,
-            confidence = MeasurementConfidence(listOf(ConfidenceIssue.DroppedReports(3))),
+            confidence = MeasurementConfidence.of(listOf(ConfidenceIssue.DroppedReports.of(3))),
         ),
     )
 
-    private fun sessionUnderBudget(budgetMs: Int, jankPercent: Float = 0f, p95FrameMs: Float = 0f) = IntervalReport.of(
+    private fun sessionUnderBudget(budgetMs: Float, jankPercent: Float = 0f, p95FrameMs: Float = 0f) = IntervalReport.of(
         id = IntervalId.Session,
-        stats = IntervalStats.EMPTY.copy(frames = 100, jankPercent = jankPercent, p95FrameMs = p95FrameMs),
+        stats = IntervalStats.of(frames = 100, jankPercent = jankPercent, p95FrameMs = p95FrameMs),
         frameBudgetMs = budgetMs,
     )
 
     private fun taintedSessionOf(p95FrameMs: Float) = IntervalReport.of(
         IntervalId.Session,
-        IntervalStats.EMPTY.copy(
+        IntervalStats.of(
             frames = 30,
             p95FrameMs = p95FrameMs,
-            confidence = MeasurementConfidence(listOf(ConfidenceIssue.ShortSample(30))),
+            confidence = MeasurementConfidence.of(listOf(ConfidenceIssue.ShortSample.of(30))),
         ),
     )
 
@@ -484,7 +497,8 @@ class BaselineTest {
     private fun statsOf(
         p95FrameMs: Float = 0f,
         phases: PhaseAverages = PhaseAverages.EMPTY,
-    ) = IntervalStats.EMPTY.copy(frames = 100, p95FrameMs = p95FrameMs, phases = phases)
+        confidence: MeasurementConfidence = MeasurementConfidence.CLEAN,
+    ) = IntervalStats.of(frames = 100, p95FrameMs = p95FrameMs, phases = phases, confidence = confidence)
 
     private companion object {
         val ENVIRONMENT = BaselineEnvironment(

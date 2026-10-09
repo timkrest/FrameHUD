@@ -8,6 +8,7 @@ import com.timkrest.framehud.ThermalLevel
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -72,10 +73,25 @@ class SessionAccumulatorTest {
         val session = SessionAccumulator(TestMetricsClock())
         repeat(29) { session.addFrame(totalMs = 10f, isJanky = false) }
         session.addFrame(totalMs = 10f, isJanky = false, refreshRateHz = 120f)
-        assertEquals(17, session.frameBudgetMs())
+        assertEquals(MS_PER_SECOND / DEFAULT_REFRESH_RATE_HZ, assertNotNull(session.frameBudgetMs()), TOLERANCE)
 
         session.addFrame(totalMs = 10f, isJanky = false, refreshRateHz = 120f)
         assertNull(session.frameBudgetMs())
+    }
+
+    @Test
+    fun `a deadline that jitters below a millisecond reports its mean`() {
+        val session = SessionAccumulator(TestMetricsClock())
+        listOf(16.6f, 16.8f).forEach { budgetMs ->
+            session.addFrame(
+                durationsMs = phaseDurationsMs(10f, 0f),
+                overrunMs = -1f,
+                refreshRateHz = DEFAULT_REFRESH_RATE_HZ,
+                frameBudgetMs = budgetMs,
+            )
+        }
+
+        assertEquals(16.7f, assertNotNull(session.frameBudgetMs()), TOLERANCE)
     }
 
     @Test
@@ -218,7 +234,7 @@ class SessionAccumulatorTest {
     }
 
     private companion object {
-        const val TOLERANCE = 0.0001f
+        const val TOLERANCE = 0.001f
         const val DEFAULT_REFRESH_RATE_HZ = 60f
     }
 }

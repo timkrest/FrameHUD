@@ -237,7 +237,7 @@ class PanelLinesTest {
             gpu = gpuMs?.let { MetricValue.of(current = it, average = it) },
         ),
         window = FrameWindowStats.of(fps = fps, jankPercent = jankPercent),
-        session = IntervalStats.EMPTY.copy(droppedReports = droppedReports),
+        session = IntervalStats.of(droppedReports = droppedReports),
     )
 
     private companion object {

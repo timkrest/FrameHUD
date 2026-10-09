@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.framehud.instrumentation
 
+import com.timkrest.framehud.IntervalFigure
 import com.timkrest.framehud.IntervalStats
-import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.internal.formatInvariant
 import org.junit.AssumptionViolatedException
@@ -47,11 +47,11 @@ internal fun JankThresholds.verdict(tag: String, stats: IntervalStats): GateVerd
 
 internal sealed interface GateCheck {
 
-    val metric: MeasuredMetric
+    val figure: IntervalFigure
 
-    data class Measured(override val metric: MeasuredMetric, val violationMessage: String?) : GateCheck
+    data class Measured(override val figure: IntervalFigure, val violationMessage: String?) : GateCheck
 
-    data class Unjudged(override val metric: MeasuredMetric, val reason: String) : GateCheck
+    data class Unjudged(override val figure: IntervalFigure, val reason: String) : GateCheck
 }
 
 internal fun gateVerdict(
@@ -61,14 +61,14 @@ internal fun gateVerdict(
     tail: String,
 ): GateVerdict {
     val (tainted, trusted) = checks.filterIsInstance<GateCheck.Measured>()
-        .partition { confidence.issuesAffecting(it.metric).isNotEmpty() }
+        .partition { confidence.issuesAffecting(it.figure).isNotEmpty() }
 
     val trustedViolations = trusted.mapNotNull { it.violationMessage }
     if (trustedViolations.isNotEmpty()) {
         return GateVerdict.Fail("$tag: ${trustedViolations.joinToString("; ")} $tail")
     }
 
-    val doubts = tainted.flatMap { confidence.issuesAffecting(it.metric) }.distinct().map { it.summary } +
+    val doubts = tainted.flatMap { confidence.issuesAffecting(it.figure) }.distinct().map { it.summary } +
         checks.filterIsInstance<GateCheck.Unjudged>().map { it.reason }
     if (doubts.isEmpty()) return GateVerdict.Pass
 
@@ -79,22 +79,22 @@ internal fun gateVerdict(
 }
 
 private fun JankThresholds.thresholdChecks(stats: IntervalStats): List<GateCheck> = listOfNotNull(
-    limitCheck(MeasuredMetric.JANK_PERCENT, stats.jankPercent, maxJankPercent, "jank %.1f%% over %.1f%%"),
+    limitCheck(IntervalFigure.JANK_PERCENT, stats.jankPercent, maxJankPercent, "jank %.1f%% over %.1f%%"),
     frozenFramesCheck(stats.frozenFrames),
-    limitCheck(MeasuredMetric.P95, stats.p95FrameMs, maxP95FrameMs, "p95 %.1f ms over %.1f ms"),
-    limitCheck(MeasuredMetric.LOST_TIME, stats.lostTimeMs, maxLostTimeMs, "lost time %.1f ms over %.1f ms"),
+    limitCheck(IntervalFigure.P95, stats.p95FrameMs, maxP95FrameMs, "p95 %.1f ms over %.1f ms"),
+    limitCheck(IntervalFigure.LOST_TIME, stats.lostTimeMs, maxLostTimeMs, "lost time %.1f ms over %.1f ms"),
 )
 
 private fun JankThresholds.frozenFramesCheck(frozenFrames: Int): GateCheck.Measured? {
     if (maxFrozenFrames == Int.MAX_VALUE) return null
     return GateCheck.Measured(
-        metric = MeasuredMetric.FROZEN_FRAMES,
+        figure = IntervalFigure.FROZEN_FRAMES,
         violationMessage = "$frozenFrames frozen frame(s), allowed $maxFrozenFrames"
             .takeIf { frozenFrames > maxFrozenFrames },
     )
 }
 
-private fun limitCheck(metric: MeasuredMetric, value: Float, limit: Float, violation: String): GateCheck.Measured? {
+private fun limitCheck(figure: IntervalFigure, value: Float, limit: Float, violation: String): GateCheck.Measured? {
     if (!limit.isFinite()) return null
-    return GateCheck.Measured(metric, formatInvariant(violation, value, limit).takeIf { value > limit })
+    return GateCheck.Measured(figure, formatInvariant(violation, value, limit).takeIf { value > limit })
 }

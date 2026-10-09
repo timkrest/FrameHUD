@@ -126,7 +126,7 @@ private fun previewScreen(
     frozenFrames: Int,
 ) = IntervalReport.of(
     id = IntervalId.Screen(name),
-    stats = IntervalStats(
+    stats = IntervalStats.of(
         frames = frames,
         jankPercent = jankPercent,
         p95FrameMs = p95FrameMs,
@@ -150,7 +150,7 @@ private val PREVIEW_METRICS = PerformanceMetrics.of(
         jankPercent = 33.3f,
         p95FrameMs = 23f,
         worstFrameMs = 57f,
-        history = previewHistory(),
+        frames = previewHistory(),
     ),
 )
 

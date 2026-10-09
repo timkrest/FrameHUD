@@ -17,15 +17,17 @@ public abstract interface class com/timkrest/framehud/BaselineComparison {
 }
 
 public final class com/timkrest/framehud/BaselineComparison$Compared : com/timkrest/framehud/BaselineComparison {
-	public fun <init> (Ljava/util/List;)V
+	public static final field Companion Lcom/timkrest/framehud/BaselineComparison$Compared$Companion;
+	public synthetic fun <init> (Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lcom/timkrest/framehud/BaselineComparison$Compared;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/BaselineComparison$Compared;Ljava/util/List;ILjava/lang/Object;)Lcom/timkrest/framehud/BaselineComparison$Compared;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getIntervals ()Ljava/util/List;
 	public fun hashCode ()I
 	public final fun interval (Lcom/timkrest/framehud/IntervalId;)Lcom/timkrest/framehud/IntervalComparison;
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/BaselineComparison$Compared$Companion {
 }
 
 public final class com/timkrest/framehud/BaselineComparison$NoBaseline : com/timkrest/framehud/BaselineComparison {
@@ -36,16 +38,18 @@ public final class com/timkrest/framehud/BaselineComparison$NoBaseline : com/tim
 }
 
 public final class com/timkrest/framehud/BaselineComparison$OtherEnvironment : com/timkrest/framehud/BaselineComparison {
-	public fun <init> (Lcom/timkrest/framehud/BaselineEnvironment;Lcom/timkrest/framehud/BaselineEnvironment;)V
+	public static final field Companion Lcom/timkrest/framehud/BaselineComparison$OtherEnvironment$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/BaselineEnvironment;Lcom/timkrest/framehud/BaselineEnvironment;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/BaselineEnvironment;
 	public final fun component2 ()Lcom/timkrest/framehud/BaselineEnvironment;
-	public final fun copy (Lcom/timkrest/framehud/BaselineEnvironment;Lcom/timkrest/framehud/BaselineEnvironment;)Lcom/timkrest/framehud/BaselineComparison$OtherEnvironment;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/BaselineComparison$OtherEnvironment;Lcom/timkrest/framehud/BaselineEnvironment;Lcom/timkrest/framehud/BaselineEnvironment;ILjava/lang/Object;)Lcom/timkrest/framehud/BaselineComparison$OtherEnvironment;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCurrent ()Lcom/timkrest/framehud/BaselineEnvironment;
 	public final fun getRecorded ()Lcom/timkrest/framehud/BaselineEnvironment;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/BaselineComparison$OtherEnvironment$Companion {
 }
 
 public final class com/timkrest/framehud/BaselineEntry {
@@ -59,10 +63,10 @@ public final class com/timkrest/framehud/BaselineEntry {
 	public final fun component6 ()F
 	public final fun component7 ()F
 	public final fun component8 ()Lcom/timkrest/framehud/PhaseAverages;
-	public final fun component9 ()Ljava/lang/Integer;
+	public final fun component9 ()Ljava/lang/Float;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun get (Lcom/timkrest/framehud/BaselineMetric;)F
-	public final fun getFrameBudgetMs ()Ljava/lang/Integer;
+	public final fun getFrameBudgetMs ()Ljava/lang/Float;
 	public final fun getFrozenPercent ()F
 	public final fun getJankPercent ()F
 	public final fun getLostTimeMsPerFrame ()F
@@ -76,8 +80,8 @@ public final class com/timkrest/framehud/BaselineEntry {
 }
 
 public final class com/timkrest/framehud/BaselineEntry$Companion {
-	public final fun of (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;I)Lcom/timkrest/framehud/BaselineEntry;
-	public static synthetic fun of$default (Lcom/timkrest/framehud/BaselineEntry$Companion;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;IILjava/lang/Object;)Lcom/timkrest/framehud/BaselineEntry;
+	public final fun of (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Float;I)Lcom/timkrest/framehud/BaselineEntry;
+	public static synthetic fun of$default (Lcom/timkrest/framehud/BaselineEntry$Companion;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Float;IILjava/lang/Object;)Lcom/timkrest/framehud/BaselineEntry;
 }
 
 public final class com/timkrest/framehud/BaselineEnvironment {
@@ -128,16 +132,18 @@ public abstract interface class com/timkrest/framehud/ConfidenceIssue {
 }
 
 public final class com/timkrest/framehud/ConfidenceIssue$DroppedReports : com/timkrest/framehud/ConfidenceIssue {
-	public fun <init> (I)V
+	public static final field Companion Lcom/timkrest/framehud/ConfidenceIssue$DroppedReports$Companion;
+	public synthetic fun <init> (ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
-	public final fun copy (I)Lcom/timkrest/framehud/ConfidenceIssue$DroppedReports;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/ConfidenceIssue$DroppedReports;IILjava/lang/Object;)Lcom/timkrest/framehud/ConfidenceIssue$DroppedReports;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getAffected ()Ljava/util/Set;
 	public final fun getCount ()I
 	public fun getSummary ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/ConfidenceIssue$DroppedReports$Companion {
 }
 
 public final class com/timkrest/framehud/ConfidenceIssue$Emulator : com/timkrest/framehud/ConfidenceIssue {
@@ -150,11 +156,10 @@ public final class com/timkrest/framehud/ConfidenceIssue$Emulator : com/timkrest
 }
 
 public final class com/timkrest/framehud/ConfidenceIssue$LowBattery : com/timkrest/framehud/ConfidenceIssue {
-	public fun <init> (ZLjava/lang/Integer;)V
+	public static final field Companion Lcom/timkrest/framehud/ConfidenceIssue$LowBattery$Companion;
+	public synthetic fun <init> (ZLjava/lang/Integer;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z
 	public final fun component2 ()Ljava/lang/Integer;
-	public final fun copy (ZLjava/lang/Integer;)Lcom/timkrest/framehud/ConfidenceIssue$LowBattery;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/ConfidenceIssue$LowBattery;ZLjava/lang/Integer;ILjava/lang/Object;)Lcom/timkrest/framehud/ConfidenceIssue$LowBattery;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getAffected ()Ljava/util/Set;
 	public final fun getLevelPercent ()Ljava/lang/Integer;
@@ -164,11 +169,13 @@ public final class com/timkrest/framehud/ConfidenceIssue$LowBattery : com/timkre
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/ConfidenceIssue$LowBattery$Companion {
+}
+
 public final class com/timkrest/framehud/ConfidenceIssue$RefreshRateChanged : com/timkrest/framehud/ConfidenceIssue {
-	public fun <init> (Ljava/util/Set;)V
+	public static final field Companion Lcom/timkrest/framehud/ConfidenceIssue$RefreshRateChanged$Companion;
+	public synthetic fun <init> (Ljava/util/Set;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/Set;
-	public final fun copy (Ljava/util/Set;)Lcom/timkrest/framehud/ConfidenceIssue$RefreshRateChanged;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/ConfidenceIssue$RefreshRateChanged;Ljava/util/Set;ILjava/lang/Object;)Lcom/timkrest/framehud/ConfidenceIssue$RefreshRateChanged;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getAffected ()Ljava/util/Set;
 	public final fun getRatesHz ()Ljava/util/Set;
@@ -177,15 +184,16 @@ public final class com/timkrest/framehud/ConfidenceIssue$RefreshRateChanged : co
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/ConfidenceIssue$RefreshRateChanged$Companion {
+}
+
 public final class com/timkrest/framehud/ConfidenceIssue$ShortSample : com/timkrest/framehud/ConfidenceIssue {
 	public static final field Companion Lcom/timkrest/framehud/ConfidenceIssue$ShortSample$Companion;
 	public static final field MIN_FRAMES_P50 I
 	public static final field MIN_FRAMES_P95 I
 	public static final field MIN_FRAMES_P99 I
-	public fun <init> (I)V
+	public synthetic fun <init> (ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
-	public final fun copy (I)Lcom/timkrest/framehud/ConfidenceIssue$ShortSample;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/ConfidenceIssue$ShortSample;IILjava/lang/Object;)Lcom/timkrest/framehud/ConfidenceIssue$ShortSample;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getAffected ()Ljava/util/Set;
 	public final fun getFrames ()I
@@ -198,10 +206,9 @@ public final class com/timkrest/framehud/ConfidenceIssue$ShortSample$Companion {
 }
 
 public final class com/timkrest/framehud/ConfidenceIssue$SlowListener : com/timkrest/framehud/ConfidenceIssue {
-	public fun <init> (F)V
+	public static final field Companion Lcom/timkrest/framehud/ConfidenceIssue$SlowListener$Companion;
+	public synthetic fun <init> (FLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()F
-	public final fun copy (F)Lcom/timkrest/framehud/ConfidenceIssue$SlowListener;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/ConfidenceIssue$SlowListener;FILjava/lang/Object;)Lcom/timkrest/framehud/ConfidenceIssue$SlowListener;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getAffected ()Ljava/util/Set;
 	public final fun getLongestCallMs ()F
@@ -210,17 +217,22 @@ public final class com/timkrest/framehud/ConfidenceIssue$SlowListener : com/timk
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/ConfidenceIssue$SlowListener$Companion {
+}
+
 public final class com/timkrest/framehud/ConfidenceIssue$ThermalThrottling : com/timkrest/framehud/ConfidenceIssue {
-	public fun <init> (Lcom/timkrest/framehud/ThermalLevel;)V
+	public static final field Companion Lcom/timkrest/framehud/ConfidenceIssue$ThermalThrottling$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/ThermalLevel;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/ThermalLevel;
-	public final fun copy (Lcom/timkrest/framehud/ThermalLevel;)Lcom/timkrest/framehud/ConfidenceIssue$ThermalThrottling;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/ConfidenceIssue$ThermalThrottling;Lcom/timkrest/framehud/ThermalLevel;ILjava/lang/Object;)Lcom/timkrest/framehud/ConfidenceIssue$ThermalThrottling;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getAffected ()Ljava/util/Set;
 	public fun getSummary ()Ljava/lang/String;
 	public final fun getWorstLevel ()Lcom/timkrest/framehud/ThermalLevel;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/ConfidenceIssue$ThermalThrottling$Companion {
 }
 
 public final class com/timkrest/framehud/CounterReading {
@@ -345,13 +357,11 @@ public abstract interface class com/timkrest/framehud/FrameHudEvent {
 }
 
 public final class com/timkrest/framehud/FrameHudEvent$FirstFrame : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (FLjava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (FLjava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$FirstFrame$Companion;
+	public synthetic fun <init> (FLjava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()F
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (FLjava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$FirstFrame;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$FirstFrame;FLjava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$FirstFrame;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public fun getMark ()Ljava/lang/String;
@@ -362,15 +372,16 @@ public final class com/timkrest/framehud/FrameHudEvent$FirstFrame : com/timkrest
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/FrameHudEvent$FirstFrame$Companion {
+}
+
 public final class com/timkrest/framehud/FrameHudEvent$FrozenFrames : com/timkrest/framehud/FrameHudEvent$IncidentTrigger {
-	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$FrozenFrames$Companion;
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$FrozenFrames;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$FrozenFrames;ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$FrozenFrames;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public final fun getCount ()I
@@ -381,19 +392,20 @@ public final class com/timkrest/framehud/FrameHudEvent$FrozenFrames : com/timkre
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/FrameHudEvent$FrozenFrames$Companion {
+}
+
 public abstract interface class com/timkrest/framehud/FrameHudEvent$IncidentTrigger : com/timkrest/framehud/FrameHudEvent {
 }
 
 public final class com/timkrest/framehud/FrameHudEvent$InternalFailure : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$InternalFailure$Companion;
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/Throwable;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$InternalFailure;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$InternalFailure;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$InternalFailure;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public final fun getError ()Ljava/lang/Throwable;
@@ -405,15 +417,16 @@ public final class com/timkrest/framehud/FrameHudEvent$InternalFailure : com/tim
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/FrameHudEvent$InternalFailure$Companion {
+}
+
 public final class com/timkrest/framehud/FrameHudEvent$JankBurst : com/timkrest/framehud/FrameHudEvent$IncidentTrigger {
-	public fun <init> (Lcom/timkrest/framehud/JankDiagnosis;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/JankDiagnosis;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$JankBurst$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/JankDiagnosis;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/JankDiagnosis;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Lcom/timkrest/framehud/JankDiagnosis;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$JankBurst;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$JankBurst;Lcom/timkrest/framehud/JankDiagnosis;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$JankBurst;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public final fun getDiagnosis ()Lcom/timkrest/framehud/JankDiagnosis;
@@ -424,15 +437,16 @@ public final class com/timkrest/framehud/FrameHudEvent$JankBurst : com/timkrest/
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/FrameHudEvent$JankBurst$Companion {
+}
+
 public final class com/timkrest/framehud/FrameHudEvent$MarkEnded : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$MarkEnded$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$MarkEnded;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public fun getMark ()Ljava/lang/String;
@@ -441,16 +455,17 @@ public final class com/timkrest/framehud/FrameHudEvent$MarkEnded : com/timkrest/
 	public fun getSummary ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/FrameHudEvent$MarkEnded$Companion {
 }
 
 public final class com/timkrest/framehud/FrameHudEvent$ScreenEnded : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/IntervalStats;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$ScreenEnded;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public fun getMark ()Ljava/lang/String;
@@ -461,15 +476,16 @@ public final class com/timkrest/framehud/FrameHudEvent$ScreenEnded : com/timkres
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/FrameHudEvent$ScreenEnded$Companion {
+}
+
 public final class com/timkrest/framehud/FrameHudEvent$ThermalChanged : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (Lcom/timkrest/framehud/ThermalLevel;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Lcom/timkrest/framehud/ThermalLevel;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$ThermalChanged$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/ThermalLevel;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/ThermalLevel;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Lcom/timkrest/framehud/ThermalLevel;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$ThermalChanged;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$ThermalChanged;Lcom/timkrest/framehud/ThermalLevel;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$ThermalChanged;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public final fun getLevel ()Lcom/timkrest/framehud/ThermalLevel;
@@ -480,14 +496,15 @@ public final class com/timkrest/framehud/FrameHudEvent$ThermalChanged : com/timk
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/FrameHudEvent$ThermalChanged$Companion {
+}
+
 public final class com/timkrest/framehud/FrameHudEvent$UsableFrame : com/timkrest/framehud/FrameHudEvent {
-	public fun <init> (FLjava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (FLjava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final field Companion Lcom/timkrest/framehud/FrameHudEvent$UsableFrame$Companion;
+	public synthetic fun <init> (FLjava/lang/String;Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()F
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (FLjava/lang/String;Ljava/util/Map;)Lcom/timkrest/framehud/FrameHudEvent$UsableFrame;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/FrameHudEvent$UsableFrame;FLjava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/timkrest/framehud/FrameHudEvent$UsableFrame;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getContext ()Ljava/util/Map;
 	public fun getMark ()Ljava/lang/String;
@@ -496,6 +513,9 @@ public final class com/timkrest/framehud/FrameHudEvent$UsableFrame : com/timkres
 	public final fun getTimeToUsableMs ()F
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/FrameHudEvent$UsableFrame$Companion {
 }
 
 public abstract interface class com/timkrest/framehud/FrameHudEventListener {
@@ -570,7 +590,7 @@ public final class com/timkrest/framehud/FrameWindowStats {
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFps ()I
 	public final fun getFrameBudgetMs ()F
-	public final fun getHistory ()Lcom/timkrest/framehud/FrameHistory;
+	public final fun getFrames ()Lcom/timkrest/framehud/FrameHistory;
 	public final fun getJankPercent ()F
 	public final fun getP95FrameMs ()F
 	public final fun getWorstFrameMs ()F
@@ -657,6 +677,21 @@ public final class com/timkrest/framehud/IntervalComparison {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/IntervalFigure : java/lang/Enum {
+	public static final field FROZEN_FRAMES Lcom/timkrest/framehud/IntervalFigure;
+	public static final field JANK_PERCENT Lcom/timkrest/framehud/IntervalFigure;
+	public static final field LOST_TIME Lcom/timkrest/framehud/IntervalFigure;
+	public static final field MAX_JANK_STREAK Lcom/timkrest/framehud/IntervalFigure;
+	public static final field P50 Lcom/timkrest/framehud/IntervalFigure;
+	public static final field P95 Lcom/timkrest/framehud/IntervalFigure;
+	public static final field P99 Lcom/timkrest/framehud/IntervalFigure;
+	public static final field RENDER_PHASES Lcom/timkrest/framehud/IntervalFigure;
+	public static final field UI_THREAD_PHASES Lcom/timkrest/framehud/IntervalFigure;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/timkrest/framehud/IntervalFigure;
+	public static fun values ()[Lcom/timkrest/framehud/IntervalFigure;
+}
+
 public abstract interface class com/timkrest/framehud/IntervalId {
 	public abstract fun getLabel ()Ljava/lang/String;
 	public abstract fun getName ()Ljava/lang/String;
@@ -697,12 +732,12 @@ public final class com/timkrest/framehud/IntervalId$Session : com/timkrest/frame
 
 public final class com/timkrest/framehud/IntervalReport {
 	public static final field Companion Lcom/timkrest/framehud/IntervalReport$Companion;
-	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Integer;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lcom/timkrest/framehud/IntervalId;Lcom/timkrest/framehud/IntervalStats;Ljava/lang/Float;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/IntervalId;
 	public final fun component2 ()Lcom/timkrest/framehud/IntervalStats;
-	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component3 ()Ljava/lang/Float;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getFrameBudgetMs ()Ljava/lang/Integer;
+	public final fun getFrameBudgetMs ()Ljava/lang/Float;
 	public final fun getId ()Lcom/timkrest/framehud/IntervalId;
 	public final fun getStats ()Lcom/timkrest/framehud/IntervalStats;
 	public fun hashCode ()I
@@ -715,9 +750,7 @@ public final class com/timkrest/framehud/IntervalReport$Companion {
 public final class com/timkrest/framehud/IntervalStats {
 	public static final field Companion Lcom/timkrest/framehud/IntervalStats$Companion;
 	public static final field FROZEN_FRAME_MS F
-	public fun <init> ()V
-	public fun <init> (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;)V
-	public synthetic fun <init> (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component10 ()I
 	public final fun component11 ()Lcom/timkrest/framehud/PhaseAverages;
@@ -730,8 +763,6 @@ public final class com/timkrest/framehud/IntervalStats {
 	public final fun component7 ()F
 	public final fun component8 ()I
 	public final fun component9 ()I
-	public final fun copy (IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;)Lcom/timkrest/framehud/IntervalStats;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/IntervalStats;IJFFFFFIIILcom/timkrest/framehud/PhaseAverages;Lcom/timkrest/framehud/MeasurementConfidence;ILjava/lang/Object;)Lcom/timkrest/framehud/IntervalStats;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getConfidence ()Lcom/timkrest/framehud/MeasurementConfidence;
 	public final fun getDroppedReports ()I
@@ -758,10 +789,9 @@ public abstract interface class com/timkrest/framehud/JankCause {
 }
 
 public final class com/timkrest/framehud/JankCause$Gc : com/timkrest/framehud/JankCause {
-	public fun <init> (F)V
+	public static final field Companion Lcom/timkrest/framehud/JankCause$Gc$Companion;
+	public synthetic fun <init> (FLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()F
-	public final fun copy (F)Lcom/timkrest/framehud/JankCause$Gc;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/JankCause$Gc;FILjava/lang/Object;)Lcom/timkrest/framehud/JankCause$Gc;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getSummary ()Ljava/lang/String;
 	public final fun getTimePercent ()F
@@ -769,16 +799,21 @@ public final class com/timkrest/framehud/JankCause$Gc : com/timkrest/framehud/Ja
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/JankCause$Gc$Companion {
+}
+
 public final class com/timkrest/framehud/JankCause$LateStart : com/timkrest/framehud/JankCause {
-	public fun <init> (F)V
+	public static final field Companion Lcom/timkrest/framehud/JankCause$LateStart$Companion;
+	public synthetic fun <init> (FLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()F
-	public final fun copy (F)Lcom/timkrest/framehud/JankCause$LateStart;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/JankCause$LateStart;FILjava/lang/Object;)Lcom/timkrest/framehud/JankCause$LateStart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDelayMs ()F
 	public fun getSummary ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/JankCause$LateStart$Companion {
 }
 
 public final class com/timkrest/framehud/JankCause$None : com/timkrest/framehud/JankCause {
@@ -790,11 +825,10 @@ public final class com/timkrest/framehud/JankCause$None : com/timkrest/framehud/
 }
 
 public final class com/timkrest/framehud/JankCause$Stage : com/timkrest/framehud/JankCause {
-	public fun <init> (Lcom/timkrest/framehud/PipelineStage;F)V
+	public static final field Companion Lcom/timkrest/framehud/JankCause$Stage$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/PipelineStage;FLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/PipelineStage;
 	public final fun component2 ()F
-	public final fun copy (Lcom/timkrest/framehud/PipelineStage;F)Lcom/timkrest/framehud/JankCause$Stage;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/JankCause$Stage;Lcom/timkrest/framehud/PipelineStage;FILjava/lang/Object;)Lcom/timkrest/framehud/JankCause$Stage;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAverageMs ()F
 	public final fun getStage ()Lcom/timkrest/framehud/PipelineStage;
@@ -803,11 +837,13 @@ public final class com/timkrest/framehud/JankCause$Stage : com/timkrest/framehud
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/JankCause$Stage$Companion {
+}
+
 public final class com/timkrest/framehud/JankCause$Thermal : com/timkrest/framehud/JankCause {
-	public fun <init> (Lcom/timkrest/framehud/ThermalLevel;)V
+	public static final field Companion Lcom/timkrest/framehud/JankCause$Thermal$Companion;
+	public synthetic fun <init> (Lcom/timkrest/framehud/ThermalLevel;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/timkrest/framehud/ThermalLevel;
-	public final fun copy (Lcom/timkrest/framehud/ThermalLevel;)Lcom/timkrest/framehud/JankCause$Thermal;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/JankCause$Thermal;Lcom/timkrest/framehud/ThermalLevel;ILjava/lang/Object;)Lcom/timkrest/framehud/JankCause$Thermal;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getLevel ()Lcom/timkrest/framehud/ThermalLevel;
 	public fun getSummary ()Ljava/lang/String;
@@ -815,18 +851,23 @@ public final class com/timkrest/framehud/JankCause$Thermal : com/timkrest/frameh
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/timkrest/framehud/JankCause$Thermal$Companion {
+}
+
 public final class com/timkrest/framehud/JankCause$VsyncStarvation : com/timkrest/framehud/JankCause {
-	public fun <init> (IF)V
+	public static final field Companion Lcom/timkrest/framehud/JankCause$VsyncStarvation$Companion;
+	public synthetic fun <init> (IFLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component2 ()F
-	public final fun copy (IF)Lcom/timkrest/framehud/JankCause$VsyncStarvation;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/JankCause$VsyncStarvation;IFILjava/lang/Object;)Lcom/timkrest/framehud/JankCause$VsyncStarvation;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRefreshRateHz ()F
 	public fun getSummary ()Ljava/lang/String;
 	public final fun getTicksPerSecond ()I
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/JankCause$VsyncStarvation$Companion {
 }
 
 public final class com/timkrest/framehud/JankDiagnosis {
@@ -892,32 +933,15 @@ public final class com/timkrest/framehud/MainThreadBlock$Companion {
 	public final fun getNONE ()Lcom/timkrest/framehud/MainThreadBlock;
 }
 
-public final class com/timkrest/framehud/MeasuredMetric : java/lang/Enum {
-	public static final field FROZEN_FRAMES Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field JANK_PERCENT Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field LOST_TIME Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field MAX_JANK_STREAK Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field P50 Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field P95 Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field P99 Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field RENDER_PHASES Lcom/timkrest/framehud/MeasuredMetric;
-	public static final field UI_THREAD_PHASES Lcom/timkrest/framehud/MeasuredMetric;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lcom/timkrest/framehud/MeasuredMetric;
-	public static fun values ()[Lcom/timkrest/framehud/MeasuredMetric;
-}
-
 public final class com/timkrest/framehud/MeasurementConfidence {
 	public static final field Companion Lcom/timkrest/framehud/MeasurementConfidence$Companion;
-	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lcom/timkrest/framehud/MeasurementConfidence;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/MeasurementConfidence;Ljava/util/List;ILjava/lang/Object;)Lcom/timkrest/framehud/MeasurementConfidence;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getIssues ()Ljava/util/List;
 	public fun hashCode ()I
 	public final fun isSuspect ()Z
-	public final fun issuesAffecting (Lcom/timkrest/framehud/MeasuredMetric;)Ljava/util/List;
+	public final fun issuesAffecting (Lcom/timkrest/framehud/IntervalFigure;)Ljava/util/List;
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -1167,16 +1191,18 @@ public final class com/timkrest/framehud/SampledCall$Companion {
 }
 
 public final class com/timkrest/framehud/SessionExport {
-	public fun <init> (Ljava/io/File;Ljava/io/File;)V
+	public static final field Companion Lcom/timkrest/framehud/SessionExport$Companion;
+	public synthetic fun <init> (Ljava/io/File;Ljava/io/File;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/io/File;
 	public final fun component2 ()Ljava/io/File;
-	public final fun copy (Ljava/io/File;Ljava/io/File;)Lcom/timkrest/framehud/SessionExport;
-	public static synthetic fun copy$default (Lcom/timkrest/framehud/SessionExport;Ljava/io/File;Ljava/io/File;ILjava/lang/Object;)Lcom/timkrest/framehud/SessionExport;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getHtml ()Ljava/io/File;
 	public final fun getJson ()Ljava/io/File;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/timkrest/framehud/SessionExport$Companion {
 }
 
 public final class com/timkrest/framehud/ThermalLevel : java/lang/Enum {

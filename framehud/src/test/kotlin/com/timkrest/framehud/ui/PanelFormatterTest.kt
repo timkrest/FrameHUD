@@ -109,7 +109,7 @@ class PanelFormatterTest {
     }
 
     private fun sessionTotals(durationMs: Long): String =
-        formatSessionTotals(IntervalStats.EMPTY.copy(frames = 120, durationMs = durationMs))
+        formatSessionTotals(IntervalStats.of(frames = 120, durationMs = durationMs))
 
     private fun withLocale(locale: Locale, block: () -> Unit) {
         val previous = Locale.getDefault()

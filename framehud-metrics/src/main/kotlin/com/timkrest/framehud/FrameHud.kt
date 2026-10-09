@@ -382,7 +382,7 @@ public object FrameHud {
             session = stats?.session ?: IntervalStats.EMPTY,
             comparison = when {
                 baseline == null -> BaselineComparison.NoBaseline
-                stats == null -> BaselineComparison.Compared(emptyList())
+                stats == null -> BaselineComparison.Compared.of(emptyList())
                 else -> baseline.compare(stats.environment, stats.intervals)
             },
             isCollecting = stats != null,

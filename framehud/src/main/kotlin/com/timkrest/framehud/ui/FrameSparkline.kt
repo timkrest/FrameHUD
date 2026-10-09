@@ -21,7 +21,7 @@ internal fun FrameSparkline(window: FrameWindowStats, modifier: Modifier = Modif
             .clip(SparklineShape)
             .background(SparklineBackground),
     ) {
-        drawFrameHistory(history = window.history, frameBudgetMs = window.frameBudgetMs)
+        drawFrameHistory(history = window.frames, frameBudgetMs = window.frameBudgetMs)
     }
 }
 

@@ -41,17 +41,17 @@ public data class IntervalReport private constructor(
     val id: IntervalId,
     val stats: IntervalStats,
     /** Null when no single budget judged nearly every frame. */
-    val frameBudgetMs: Int? = null,
+    val frameBudgetMs: Float? = null,
 ) {
     init {
-        require(frameBudgetMs == null || frameBudgetMs > 0) {
+        require(frameBudgetMs == null || frameBudgetMs > 0f) {
             "A frame budget must be positive, got $frameBudgetMs"
         }
     }
 
     public companion object {
         @InternalFrameHudApi
-        public fun of(id: IntervalId, stats: IntervalStats, frameBudgetMs: Int? = null): IntervalReport =
+        public fun of(id: IntervalId, stats: IntervalStats, frameBudgetMs: Float? = null): IntervalReport =
             IntervalReport(id = id, stats = stats, frameBudgetMs = frameBudgetMs)
     }
 }

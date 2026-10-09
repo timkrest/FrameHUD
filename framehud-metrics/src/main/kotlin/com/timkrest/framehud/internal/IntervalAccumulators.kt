@@ -13,7 +13,7 @@ import com.timkrest.framehud.ThermalLevel
 internal class IntervalAccumulators(
     private val clock: MetricsClock,
     private val isEmulator: Boolean,
-    budgetsMs: Map<IntervalId, Int>,
+    budgetsMs: Map<IntervalId, Float>,
 ) {
 
     private class ActiveMark(val name: String, val accumulator: SessionAccumulator)
@@ -28,16 +28,16 @@ internal class IntervalAccumulators(
 
     private val markTotals = IntervalTotals(clock, isEmulator, IntervalId::Mark)
 
-    private var sessionBudgetMs: Int? = null
+    private var sessionBudgetMs: Float? = null
 
-    private var screenBudgetsMs = emptyMap<String, Int>()
+    private var screenBudgetsMs = emptyMap<String, Float>()
 
-    private var markBudgetsMs = emptyMap<String, Int>()
+    private var markBudgetsMs = emptyMap<String, Float>()
 
     var screenName: String? = null
         private set
 
-    val activeBudgetMs: Int? get() = budgetMsUnder(screenName, activeMark?.name)
+    val activeBudgetMs: Float? get() = budgetMsUnder(screenName, activeMark?.name)
 
     private var latestThermalLevel: ThermalLevel? = null
 
@@ -47,13 +47,13 @@ internal class IntervalAccumulators(
         updateBudgets(budgetsMs)
     }
 
-    fun updateBudgets(budgetsMs: Map<IntervalId, Int>) {
+    fun updateBudgets(budgetsMs: Map<IntervalId, Float>) {
         sessionBudgetMs = budgetsMs[IntervalId.Session]
         screenBudgetsMs = budgetsMs.byNameOf<IntervalId.Screen>()
         markBudgetsMs = budgetsMs.byNameOf<IntervalId.Mark>()
     }
 
-    private fun budgetMsUnder(onScreen: String?, onMark: String?): Int? = onMark?.let { markBudgetsMs[it] }
+    private fun budgetMsUnder(onScreen: String?, onMark: String?): Float? = onMark?.let { markBudgetsMs[it] }
         ?: onScreen?.let { screenBudgetsMs[it] }
         ?: sessionBudgetMs
 
@@ -65,7 +65,7 @@ internal class IntervalAccumulators(
         markTotals.forEachCollecting(action)
     }
 
-    private inline fun forEachOn(fromScreen: String?, action: (SessionAccumulator, budgetMs: Int?) -> Unit) {
+    private inline fun forEachOn(fromScreen: String?, action: (SessionAccumulator, budgetMs: Float?) -> Unit) {
         action(session, sessionBudgetMs)
         val screenBudgetMs = budgetMsUnder(fromScreen, onMark = null)
         screenTotals.collecting(fromScreen)?.let { action(it, screenBudgetMs) }
@@ -90,7 +90,7 @@ internal class IntervalAccumulators(
                 durationsMs = durationsMs,
                 overrunMs = overrunAgainst(budgetMs, totalMs = totalMs, displayOverrunMs = overrunMs),
                 refreshRateHz = refreshRateHz,
-                frameBudgetMs = budgetMs?.toFloat() ?: frameBudgetMs,
+                frameBudgetMs = budgetMs ?: frameBudgetMs,
             )
         }
     }
@@ -197,5 +197,5 @@ internal class IntervalAccumulators(
     }
 }
 
-private inline fun <reified T : IntervalId> Map<IntervalId, Int>.byNameOf(): Map<String, Int> =
+private inline fun <reified T : IntervalId> Map<IntervalId, Float>.byNameOf(): Map<String, Float> =
     entries.filter { it.key is T }.associate { (id, budgetMs) -> id.name to budgetMs }

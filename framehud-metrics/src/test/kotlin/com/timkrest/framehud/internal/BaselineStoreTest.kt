@@ -35,7 +35,7 @@ class BaselineStoreTest {
     }
 
     private fun entry(runs: Int): BaselineEntry = BaselineEntry.of(
-        stats = IntervalStats.EMPTY.copy(frames = 100, p95FrameMs = 10f, phases = PhaseAverages.of(total = 12f)),
+        stats = IntervalStats.of(frames = 100, p95FrameMs = 10f, phases = PhaseAverages.of(total = 12f)),
         runs = runs,
     )
 

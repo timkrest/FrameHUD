@@ -6,9 +6,9 @@ import com.timkrest.framehud.Baseline
 import com.timkrest.framehud.BaselineEntry
 import com.timkrest.framehud.BaselineTrust
 import com.timkrest.framehud.BudgetCandidate
+import com.timkrest.framehud.IntervalFigure
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalStats
-import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.PhaseAverages
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -38,7 +38,7 @@ class BaselineJsonTest {
                 p95FrameMs = 10f,
                 runs = 3,
                 trust = BaselineTrust(
-                    cleanRuns = mapOf(MeasuredMetric.P95 to 0, MeasuredMetric.P99 to 2),
+                    cleanRuns = mapOf(IntervalFigure.P95 to 0, IntervalFigure.P99 to 2),
                     gpuRuns = 1,
                 ),
             ),
@@ -159,14 +159,14 @@ class BaselineJsonTest {
     @Test
     fun `a candidate budget that already replaced the budget rejects the file`() {
         val json = sessionBaseline(candidateEntry()).toJson()
-            .replace(""""budgetMs":8,"runs":2""", """"budgetMs":8,"runs":3""")
+            .replace(""""budgetMs":8.3,"runs":2""", """"budgetMs":8.3,"runs":3""")
 
         assertIs<Parsed.Rejected>(parseBaseline(json))
     }
 
     @Test
     fun `a candidate for the budget already in effect rejects the file`() {
-        val json = sessionBaseline(candidateEntry()).toJson().replace(""""budgetMs":8""", """"budgetMs":17""")
+        val json = sessionBaseline(candidateEntry()).toJson().replace(""""budgetMs":8.3""", """"budgetMs":16.7""")
 
         assertIs<Parsed.Rejected>(parseBaseline(json))
     }
@@ -198,18 +198,18 @@ class BaselineJsonTest {
     private fun candidateEntry(): BaselineEntry = entry(
         p95FrameMs = 10f,
         runs = 3,
-        frameBudgetMs = 17,
-        trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8, runs = 2)),
+        frameBudgetMs = 16.7f,
+        trust = BaselineTrust(candidateBudget = BudgetCandidate(budgetMs = 8.3f, runs = 2)),
     )
 
     private fun entry(
         p95FrameMs: Float,
         runs: Int = 1,
-        frameBudgetMs: Int? = null,
+        frameBudgetMs: Float? = null,
         trust: BaselineTrust? = null,
     ): BaselineEntry {
         val measured = BaselineEntry.of(
-            stats = IntervalStats.EMPTY.copy(
+            stats = IntervalStats.of(
                 frames = 100,
                 p95FrameMs = p95FrameMs,
                 lostTimeMs = 25f,

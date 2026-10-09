@@ -40,13 +40,13 @@ class JankThresholdsTest {
         assertIs<GateVerdict.Pass>(JankThresholds().verdict(TAG, stats))
         assertIs<GateVerdict.Fail>(JankThresholds(maxP95FrameMs = 20f).verdict(TAG, stats))
 
-        val short = session(p95FrameMs = 30f, issues = listOf(ConfidenceIssue.ShortSample(30)))
+        val short = session(p95FrameMs = 30f, issues = listOf(ConfidenceIssue.ShortSample.of(30)))
         assertIs<GateVerdict.Inconclusive>(JankThresholds(maxP95FrameMs = 20f).verdict(TAG, short))
     }
 
     @Test
     fun `a violation tainted by a confidence issue is inconclusive, and the message still names it`() {
-        val stats = session(jankPercent = 12f, issues = listOf(ConfidenceIssue.DroppedReports(3)))
+        val stats = session(jankPercent = 12f, issues = listOf(ConfidenceIssue.DroppedReports.of(3)))
         val verdict = JankThresholds().verdict(TAG, stats)
         val inconclusive = assertIs<GateVerdict.Inconclusive>(verdict)
         assertContains(inconclusive.message, "jank 12.0% over")
@@ -59,7 +59,7 @@ class JankThresholdsTest {
         assertIs<GateVerdict.Pass>(JankThresholds().verdict(TAG, stats))
         assertIs<GateVerdict.Fail>(JankThresholds(maxLostTimeMs = 500f).verdict(TAG, stats))
 
-        val rateChanged = session(lostTimeMs = 800f, issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120))))
+        val rateChanged = session(lostTimeMs = 800f, issues = listOf(ConfidenceIssue.RefreshRateChanged.of(setOf(60, 120))))
         assertIs<GateVerdict.Inconclusive>(JankThresholds(maxLostTimeMs = 500f).verdict(TAG, rateChanged))
     }
 
@@ -68,7 +68,7 @@ class JankThresholdsTest {
         val emulator = listOf(ConfidenceIssue.Emulator)
         assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, session(jankPercent = 12f, issues = emulator)))
 
-        val rateChanged = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120)))
+        val rateChanged = listOf(ConfidenceIssue.RefreshRateChanged.of(setOf(60, 120)))
         assertIs<GateVerdict.Fail>(JankThresholds().verdict(TAG, session(frozenFrames = 1, issues = rateChanged)))
         assertIs<GateVerdict.Fail>(
             JankThresholds(maxP95FrameMs = 20f).verdict(TAG, session(p95FrameMs = 30f, issues = rateChanged)),
@@ -80,7 +80,7 @@ class JankThresholdsTest {
 
     @Test
     fun `a check turned off neither fails nor taints the run`() {
-        val stats = session(frozenFrames = 3, issues = listOf(ConfidenceIssue.DroppedReports(1)))
+        val stats = session(frozenFrames = 3, issues = listOf(ConfidenceIssue.DroppedReports.of(1)))
         val thresholds = JankThresholds(maxJankPercent = Float.POSITIVE_INFINITY, maxFrozenFrames = Int.MAX_VALUE)
 
         assertIs<GateVerdict.Pass>(thresholds.verdict(TAG, stats))
@@ -88,7 +88,7 @@ class JankThresholdsTest {
 
     @Test
     fun `a passing but tainted checked threshold is still inconclusive`() {
-        val stats = session(jankPercent = 1f, issues = listOf(ConfidenceIssue.DroppedReports(1)))
+        val stats = session(jankPercent = 1f, issues = listOf(ConfidenceIssue.DroppedReports.of(1)))
         assertIs<GateVerdict.Inconclusive>(JankThresholds().verdict(TAG, stats))
     }
 
@@ -122,13 +122,13 @@ class JankThresholdsTest {
         p95FrameMs: Float = 0f,
         lostTimeMs: Float = 0f,
         issues: List<ConfidenceIssue> = emptyList(),
-    ) = IntervalStats.EMPTY.copy(
+    ) = IntervalStats.of(
         frames = 500,
         jankPercent = jankPercent,
         frozenFrames = frozenFrames,
         p95FrameMs = p95FrameMs,
         lostTimeMs = lostTimeMs,
-        confidence = MeasurementConfidence(issues),
+        confidence = MeasurementConfidence.of(issues),
     )
 
     private companion object {

@@ -15,29 +15,60 @@ public sealed interface JankCause {
         override val summary: String get() = "no jank"
     }
 
-    public data class Thermal(val level: ThermalLevel) : JankCause {
+    @ConsistentCopyVisibility
+    public data class Thermal private constructor(val level: ThermalLevel) : JankCause {
         override val summary: String get() = "thermal throttling (${level.name.lowercase(Locale.US)})"
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(level: ThermalLevel): Thermal = Thermal(level = level)
+        }
     }
 
     /** [timePercent] is the share of the session spent in GC pauses, 0..100. */
-    public data class Gc(val timePercent: Float) : JankCause {
+    @ConsistentCopyVisibility
+    public data class Gc private constructor(val timePercent: Float) : JankCause {
         override val summary: String get() = formatInvariant("GC pauses take %.1f%% of the session", timePercent)
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(timePercent: Float): Gc = Gc(timePercent = timePercent)
+        }
     }
 
     /** Ticks keep arriving on a still screen, so a low count means a blocked main thread, not an idle one. */
-    public data class VsyncStarvation(val ticksPerSecond: Int, val refreshRateHz: Float) : JankCause {
+    @ConsistentCopyVisibility
+    public data class VsyncStarvation private constructor(val ticksPerSecond: Int, val refreshRateHz: Float) : JankCause {
         override val summary: String
             get() = formatInvariant("main thread handled %d ticks/s on a %.0f Hz display", ticksPerSecond, refreshRateHz)
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(ticksPerSecond: Int, refreshRateHz: Float): VsyncStarvation =
+                VsyncStarvation(ticksPerSecond = ticksPerSecond, refreshRateHz = refreshRateHz)
+        }
     }
 
     /** Frames start late: work queued before rendering is holding the main thread. */
-    public data class LateStart(val delayMs: Float) : JankCause {
+    @ConsistentCopyVisibility
+    public data class LateStart private constructor(val delayMs: Float) : JankCause {
         override val summary: String get() = formatInvariant("frames start %.1f ms late", delayMs)
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(delayMs: Float): LateStart = LateStart(delayMs = delayMs)
+        }
     }
 
-    public data class Stage(val stage: PipelineStage, val averageMs: Float) : JankCause {
+    @ConsistentCopyVisibility
+    public data class Stage private constructor(val stage: PipelineStage, val averageMs: Float) : JankCause {
         override val summary: String
             get() = formatInvariant("%s bound, %.1f ms per frame", stage.name.lowercase(Locale.US), averageMs)
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(stage: PipelineStage, averageMs: Float): Stage = Stage(stage = stage, averageMs = averageMs)
+        }
     }
 }
 
@@ -120,15 +151,15 @@ public data class JankDiagnosis private constructor(
             val refreshRateHz = metrics.display.refreshRateHz
             val gcTimePercent = gcTimePercent(memory, metrics.session)
             val cause = when {
-                thermal.level.isThrottling -> JankCause.Thermal(thermal.level)
-                gcTimePercent >= MIN_GC_TIME_PERCENT -> JankCause.Gc(gcTimePercent)
+                thermal.level.isThrottling -> JankCause.Thermal.of(thermal.level)
+                gcTimePercent >= MIN_GC_TIME_PERCENT -> JankCause.Gc.of(gcTimePercent)
                 isVsyncStarved(choreographerTicksPerSecond, refreshRateHz) ->
-                    JankCause.VsyncStarvation(choreographerTicksPerSecond, refreshRateHz)
+                    JankCause.VsyncStarvation.of(choreographerTicksPerSecond, refreshRateHz)
 
                 phases.unknownDelay.average > phases.bottleneck.average ->
-                    JankCause.LateStart(phases.unknownDelay.average)
+                    JankCause.LateStart.of(phases.unknownDelay.average)
 
-                else -> JankCause.Stage(phases.bottleneckStage, phases.bottleneck.average)
+                else -> JankCause.Stage.of(phases.bottleneckStage, phases.bottleneck.average)
             }
             return JankDiagnosis(
                 cause = cause,

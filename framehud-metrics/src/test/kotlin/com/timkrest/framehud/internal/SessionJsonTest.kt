@@ -6,6 +6,7 @@ import com.timkrest.framehud.BaselineComparison
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.CounterReading
 import com.timkrest.framehud.FrameHudEvent
+import com.timkrest.framehud.IntervalFigure
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalReport
 import com.timkrest.framehud.IntervalStats
@@ -13,7 +14,6 @@ import com.timkrest.framehud.JankCause
 import com.timkrest.framehud.JankDiagnosis
 import com.timkrest.framehud.JankSeverity
 import com.timkrest.framehud.MainThreadBlock
-import com.timkrest.framehud.MeasuredMetric
 import com.timkrest.framehud.MeasurementConfidence
 import com.timkrest.framehud.PipelineStage
 import com.timkrest.framehud.SampledCall
@@ -68,7 +68,7 @@ class SessionJsonTest {
             screenName = "product/{id}",
             mark = "scroll",
             context = mapOf("variant" to "b"),
-            session = IntervalStats.EMPTY.copy(frames = 120, jankPercent = 7.5f),
+            session = IntervalStats.of(frames = 120, jankPercent = 7.5f),
             window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
         ).toJson()
 
@@ -82,13 +82,13 @@ class SessionJsonTest {
     @Test
     fun `an incident carries the diagnosis that opened it, its window and where the trigger fell`() {
         val diagnosis = JankDiagnosis.of(
-            cause = JankCause.Stage(stage = PipelineStage.CPU, averageMs = 12.5f),
+            cause = JankCause.Stage.of(stage = PipelineStage.CPU, averageMs = 12.5f),
             severity = JankSeverity.SEVERE,
             jankPercent = 40f,
             worstFrameMs = 51f,
             frameBudgetMs = 16.6f,
         )
-        val burst = FrameHudEvent.JankBurst(
+        val burst = FrameHudEvent.JankBurst.of(
             diagnosis = diagnosis,
             screen = "cart",
             mark = "scroll",
@@ -96,7 +96,7 @@ class SessionJsonTest {
         )
         val json = sessionSnapshotFixture(
             incidents = listOf(
-                incidentFixture(trigger = burst, stats = IntervalStats.EMPTY.copy(frames = 2, frozenFrames = 1)),
+                incidentFixture(trigger = burst, stats = IntervalStats.of(frames = 2, frozenFrames = 1)),
             ),
         ).toJson()
 
@@ -159,20 +159,20 @@ class SessionJsonTest {
 
     @Test
     fun `confidence issues carry their type, detail fields and affected metrics`() {
-        val confidence = MeasurementConfidence(
+        val confidence = MeasurementConfidence.of(
             issues = listOf(
-                ConfidenceIssue.ThermalThrottling(ThermalLevel.SEVERE),
-                ConfidenceIssue.LowBattery(powerSaveMode = true, levelPercent = 12),
-                ConfidenceIssue.RefreshRateChanged(setOf(60, 120)),
+                ConfidenceIssue.ThermalThrottling.of(ThermalLevel.SEVERE),
+                ConfidenceIssue.LowBattery.of(powerSaveMode = true, levelPercent = 12),
+                ConfidenceIssue.RefreshRateChanged.of(setOf(60, 120)),
             ),
         )
-        val json = sessionSnapshotFixture(session = IntervalStats.EMPTY.copy(confidence = confidence)).toJson()
+        val json = sessionSnapshotFixture(session = IntervalStats.of(confidence = confidence)).toJson()
 
         assertContains(json, """"suspect":true""")
         assertContains(json, """{"type":"thermalThrottling","worstLevel":"SEVERE","affected":[""")
         assertContains(json, """{"type":"lowBattery","powerSaveMode":true,"levelPercent":12,"affected":[""")
         assertContains(json, """{"type":"refreshRateChanged","ratesHz":[60,120],"affected":[""")
-        assertContains(json, MeasuredMetric.JANK_PERCENT.name)
+        assertContains(json, IntervalFigure.JANK_PERCENT.name)
     }
 
     @Test
@@ -217,12 +217,12 @@ class SessionJsonTest {
     fun `intervals and their deltas against the baseline reach the export`() {
         val json = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
+                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.of(frames = 90), frameBudgetMs = 16.5f),
             ),
             baseline = comparisonFixture(),
         ).toJson()
 
-        assertContains(json, """"intervals":[{"interval":"screen:cart","frameBudgetMs":17,"frames":90""")
+        assertContains(json, """"intervals":[{"interval":"screen:cart","frameBudgetMs":16.5,"frames":90""")
         assertContains(json, """"baseline":{"comparable":true""")
         assertContains(
             json,
@@ -235,12 +235,12 @@ class SessionJsonTest {
     fun `the session carries its own budget and does not repeat itself among the intervals`() {
         val json = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalReport.of(IntervalId.Session, IntervalStats.EMPTY.copy(frames = 90), frameBudgetMs = 17),
-                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 90)),
+                IntervalReport.of(IntervalId.Session, IntervalStats.of(frames = 90), frameBudgetMs = 16.5f),
+                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.of(frames = 90)),
             ),
         ).toJson()
 
-        assertContains(json, """"session":{"frameBudgetMs":17,""")
+        assertContains(json, """"session":{"frameBudgetMs":16.5,""")
         assertContains(json, """"intervals":[{"interval":"screen:cart",""")
         assertFalse(json.contains(""""interval":"session""""), "the session is exported twice")
     }
@@ -248,7 +248,7 @@ class SessionJsonTest {
     @Test
     fun `a baseline from another device exports both environments instead of deltas`() {
         val json = sessionSnapshotFixture(
-            baseline = BaselineComparison.OtherEnvironment(
+            baseline = BaselineComparison.OtherEnvironment.of(
                 recorded = RECORDED_ENVIRONMENT,
                 current = RECORDED_ENVIRONMENT.copy(model = "Pixel 5"),
             ),

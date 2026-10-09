@@ -19,7 +19,18 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - `JankCause.Gc.timeShare` (0..1) is now `timePercent` (0..100), like every other share in the API.
-  The export schema is 8 for the renamed key.
+  The export schema is 8 for the renamed key and for interval budgets that are no longer whole.
+- What FrameHUD hands you has no public constructor or `copy` any more: `IntervalStats`, the
+  `FrameHudEvent`, `JankCause` and `ConfidenceIssue` subtypes, `MeasurementConfidence`,
+  `BaselineComparison.Compared` and `OtherEnvironment`, and `SessionExport`. They can now gain fields
+  without breaking binary compatibility. A test that builds one uses its `of` factory under
+  `@OptIn(InternalFrameHudApi::class)`.
+- Frame budgets are `Float` milliseconds everywhere: `FrameHudConfig.frameBudgetsMs`,
+  `IntervalReport.frameBudgetMs` and `BaselineEntry.frameBudgetMs`. An interval reports the mean of
+  the budgets that judged it, 16.7 ms on a 60 Hz display rather than 17. Budgets that round to the
+  same millisecond still count as the same, so saved baselines keep matching.
+- `FrameWindowStats.history` is now `frames`, as in `Incident`.
+- `MeasuredMetric` is now `IntervalFigure`: the figures of `IntervalStats` a confidence issue taints.
 
 ### Fixed
 

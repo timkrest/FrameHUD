@@ -18,7 +18,7 @@ public data class FrameHudConfig(
      * A budget covers everything its interval holds: the session covers every screen, a screen
      * covers the marks made on it. An entry deeper in wins.
      */
-    val frameBudgetsMs: Map<IntervalId, Int> = emptyMap(),
+    val frameBudgetsMs: Map<IntervalId, Float> = emptyMap(),
     /**
      * Name of a Perfetto trigger an incident activates, in a trace already recording into a ring
      * buffer. FrameHUD neither starts nor configures that trace. Null activates none.
@@ -46,7 +46,7 @@ public data class FrameHudConfig(
         require(fallbackRefreshRateHz.isFinite() && fallbackRefreshRateHz > 0f) {
             "fallbackRefreshRateHz must be finite and positive, was $fallbackRefreshRateHz"
         }
-        require(frameBudgetsMs.values.all { it > 0 }) {
+        require(frameBudgetsMs.values.all { it.isFinite() && it > 0f }) {
             "A frame budget must be positive, got $frameBudgetsMs"
         }
         require(perfettoTrigger == null || perfettoTrigger.isNotBlank()) {

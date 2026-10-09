@@ -72,7 +72,7 @@ class BaselineThresholdsTest {
 
     @Test
     fun `a regression a confidence issue taints is inconclusive`() {
-        val tainted = session(issues = listOf(ConfidenceIssue.ThermalThrottling(ThermalLevel.SEVERE)))
+        val tainted = session(issues = listOf(ConfidenceIssue.ThermalThrottling.of(ThermalLevel.SEVERE)))
 
         val verdict = BaselineThresholds().verdict(TAG, comparisonOf(baseline = 10f, current = 12f), tainted)
 
@@ -82,7 +82,7 @@ class BaselineThresholdsTest {
 
     @Test
     fun `a regression on a metric a noisy run measured cleanly fails in every mode`() {
-        val issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120)))
+        val issues = listOf(ConfidenceIssue.RefreshRateChanged.of(setOf(60, 120)))
         val thresholds = BaselineThresholds(metrics = setOf(BaselineMetric.P95_MS))
         val comparison = comparisonOf(baseline = 10f, current = 12f, currentIssues = issues)
 
@@ -95,7 +95,7 @@ class BaselineThresholdsTest {
 
     @Test
     fun `a baseline recorded elsewhere is inconclusive rather than a verdict`() {
-        val comparison = BaselineComparison.OtherEnvironment(recorded = ENVIRONMENT, current = OTHER_ENVIRONMENT)
+        val comparison = BaselineComparison.OtherEnvironment.of(recorded = ENVIRONMENT, current = OTHER_ENVIRONMENT)
 
         val verdict = BaselineThresholds().verdict(TAG, comparison, session())
 
@@ -104,7 +104,7 @@ class BaselineThresholdsTest {
 
     @Test
     fun `a baseline that never saw this session is inconclusive`() {
-        val verdict = BaselineThresholds().verdict(TAG, BaselineComparison.Compared(emptyList()), session())
+        val verdict = BaselineThresholds().verdict(TAG, BaselineComparison.Compared.of(emptyList()), session())
 
         assertContains(assertIs<GateVerdict.Inconclusive>(verdict).message, "no session")
     }
@@ -112,7 +112,7 @@ class BaselineThresholdsTest {
     @Test
     fun `a metric left out of the comparison is inconclusive, even when the rest passed`() {
         val thresholds = BaselineThresholds(metrics = setOf(BaselineMetric.P95_MS, BaselineMetric.JANK_PERCENT))
-        val comparison = comparisonOf(baseline = 10f, current = 10f, currentBudgetMs = 8)
+        val comparison = comparisonOf(baseline = 10f, current = 10f, currentBudgetMs = 8f)
 
         val verdict = thresholds.verdict(TAG, comparison, session())
 
@@ -124,7 +124,7 @@ class BaselineThresholdsTest {
 
     @Test
     fun `a chosen metric this run measured tainted is inconclusive, even when the rest passed`() {
-        val issues = listOf(ConfidenceIssue.RefreshRateChanged(setOf(60, 120)))
+        val issues = listOf(ConfidenceIssue.RefreshRateChanged.of(setOf(60, 120)))
         val thresholds =
             BaselineThresholds(metrics = setOf(BaselineMetric.P95_MS, BaselineMetric.LOST_TIME_MS_PER_FRAME))
         val comparison = comparisonOf(baseline = 10f, current = 10f, currentIssues = issues)
@@ -148,7 +148,7 @@ class BaselineThresholdsTest {
     fun `a run with no chosen metric to compare is inconclusive, and the message names each`() {
         val thresholds =
             BaselineThresholds(metrics = setOf(BaselineMetric.JANK_PERCENT, BaselineMetric.LOST_TIME_MS_PER_FRAME))
-        val comparison = comparisonOf(baseline = 10f, current = 10f, currentBudgetMs = 8)
+        val comparison = comparisonOf(baseline = 10f, current = 10f, currentBudgetMs = 8f)
 
         val message = assertIs<GateVerdict.Inconclusive>(thresholds.verdict(TAG, comparison, session())).message
 
@@ -168,7 +168,7 @@ class BaselineThresholdsTest {
         current: Float,
         baselinePhases: PhaseAverages = PhaseAverages.EMPTY,
         currentPhases: PhaseAverages = PhaseAverages.EMPTY,
-        currentBudgetMs: Int = BUDGET_MS,
+        currentBudgetMs: Float = BUDGET_MS,
         currentIssues: List<ConfidenceIssue> = emptyList(),
     ): BaselineComparison {
         val recorded = Baseline(
@@ -186,24 +186,28 @@ class BaselineThresholdsTest {
             listOf(
                 IntervalReport.of(
                     id = IntervalId.Session,
-                    stats = statsOf(p95FrameMs = current, phases = currentPhases)
-                        .copy(confidence = MeasurementConfidence(currentIssues)),
+                    stats = statsOf(p95FrameMs = current, phases = currentPhases, issues = currentIssues),
                     frameBudgetMs = currentBudgetMs,
                 ),
             ),
         )
     }
 
-    private fun statsOf(p95FrameMs: Float, phases: PhaseAverages) =
-        IntervalStats.EMPTY.copy(frames = 500, p95FrameMs = p95FrameMs, phases = phases)
+    private fun statsOf(p95FrameMs: Float, phases: PhaseAverages, issues: List<ConfidenceIssue> = emptyList()) =
+        IntervalStats.of(
+            frames = 500,
+            p95FrameMs = p95FrameMs,
+            phases = phases,
+            confidence = MeasurementConfidence.of(issues),
+        )
 
     private fun session(issues: List<ConfidenceIssue> = emptyList()) =
-        IntervalStats.EMPTY.copy(frames = 500, confidence = MeasurementConfidence(issues))
+        IntervalStats.of(frames = 500, confidence = MeasurementConfidence.of(issues))
 
     private companion object {
         const val TAG = "sample test"
 
-        const val BUDGET_MS = 17
+        const val BUDGET_MS = 16.7f
 
         val ENVIRONMENT = BaselineEnvironment(
             manufacturer = "Google",

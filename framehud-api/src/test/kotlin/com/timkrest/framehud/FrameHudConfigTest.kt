@@ -21,7 +21,7 @@ class FrameHudConfigTest {
 
     @Test
     fun `a frame budget no frame can fit into is rejected`() {
-        listOf(0, -8).forEach { budget ->
+        listOf(0f, -8f, Float.NaN, Float.POSITIVE_INFINITY).forEach { budget ->
             assertFailsWith<IllegalArgumentException>("accepted $budget ms") {
                 FrameHudConfig(frameBudgetsMs = mapOf(IntervalId.Screen("feed") to budget))
             }

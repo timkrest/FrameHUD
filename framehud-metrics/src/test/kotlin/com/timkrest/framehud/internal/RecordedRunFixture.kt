@@ -58,13 +58,13 @@ internal fun processExit(
 internal fun recordedInterval(
     id: IntervalId,
     stats: IntervalStats = recordedStats(),
-    frameBudgetMs: Int? = null,
+    frameBudgetMs: Float? = null,
 ): IntervalReport = IntervalReport.of(id = id, stats = stats, frameBudgetMs = frameBudgetMs)
 
 internal fun recordedStats(
     p95FrameMs: Float = 10f,
     issues: List<ConfidenceIssue> = emptyList(),
-): IntervalStats = IntervalStats(
+): IntervalStats = IntervalStats.of(
     frames = 300,
     durationMs = 5_000L,
     p50FrameMs = 8f,
@@ -76,5 +76,5 @@ internal fun recordedStats(
     maxJankStreak = 4,
     droppedReports = 2,
     phases = PhaseAverages.of(layout = 2f, draw = 3f, total = 8f),
-    confidence = MeasurementConfidence(issues),
+    confidence = MeasurementConfidence.of(issues),
 )

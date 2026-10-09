@@ -43,14 +43,14 @@ private fun BaselineThresholds.sessionVerdict(
 private fun IntervalComparison.checkOf(metric: BaselineMetric, maxRelativeIncreasePercent: Float): GateCheck {
     delta(metric)?.let { delta ->
         val violation = delta.summary.takeIf { delta.isRegression(maxRelativeIncreasePercent) }
-        return GateCheck.Measured(metric.confidenceMetric, violation)
+        return GateCheck.Measured(metric.figure, violation)
     }
     val left = uncompared.first { it.metric == metric }
     return when (left.gap) {
-        ComparisonGap.RUN_UNTRUSTED -> GateCheck.Measured(metric.confidenceMetric, violationMessage = null)
+        ComparisonGap.RUN_UNTRUSTED -> GateCheck.Measured(metric.figure, violationMessage = null)
         ComparisonGap.BASELINE_HAS_NONE,
         ComparisonGap.OTHER_FRAME_BUDGET,
-        -> GateCheck.Unjudged(metric.confidenceMetric, left.summary)
+        -> GateCheck.Unjudged(metric.figure, left.summary)
     }
 }
 

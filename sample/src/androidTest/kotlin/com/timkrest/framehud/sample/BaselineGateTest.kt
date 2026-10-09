@@ -10,6 +10,7 @@ import com.timkrest.framehud.BaselineEnvironment
 import com.timkrest.framehud.BaselineMetric
 import com.timkrest.framehud.ConfidenceIssue
 import com.timkrest.framehud.FrameHud
+import com.timkrest.framehud.InternalFrameHudApi
 import com.timkrest.framehud.IntervalId
 import com.timkrest.framehud.IntervalStats
 import com.timkrest.framehud.instrumentation.BaselineThresholds
@@ -68,11 +69,12 @@ class BaselineGateTest {
         assertNotNull(failure.message)
     }
 
+    @OptIn(InternalFrameHudApi::class)
     private fun baselineOf(p95FrameMs: Float) = Baseline(
         environment = BaselineEnvironment.current(),
         entries = mapOf(
             IntervalId.Session to BaselineEntry.of(
-                IntervalStats.EMPTY.copy(frames = FRAMES_THE_GATE_NEEDS, p95FrameMs = p95FrameMs),
+                IntervalStats.of(frames = FRAMES_THE_GATE_NEEDS, p95FrameMs = p95FrameMs),
             ),
         ),
     )

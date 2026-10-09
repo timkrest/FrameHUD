@@ -232,16 +232,16 @@ private fun PhaseAverages.boundBy(): String =
 
 private fun HtmlScope.frameWindow(snapshot: SessionSnapshot) = with(snapshot) {
     section("Frame window") {
-        if (window.history.size == 0) {
+        if (window.frames.size == 0) {
             meta("No frames in the window.")
             return@section
         }
         meta(
-            "Last ${window.history.size} frames: p95 ${formatMs(window.p95FrameMs)} · " +
+            "Last ${window.frames.size} frames: p95 ${formatMs(window.p95FrameMs)} · " +
                 "worst ${formatMs(window.worstFrameMs)} · red bars ran past their deadline. " +
                 "${window.fps} frames in the last second.",
         )
-        markup(frameChart(history = window.history, label = "Recent frame durations"))
+        markup(frameChart(history = window.frames, label = "Recent frame durations"))
     }
 }
 

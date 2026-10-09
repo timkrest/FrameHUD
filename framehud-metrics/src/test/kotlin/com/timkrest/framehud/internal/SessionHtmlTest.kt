@@ -32,8 +32,8 @@ class SessionHtmlTest {
 
     @Test
     fun `confidence issues list their summaries`() {
-        val confidence = MeasurementConfidence(issues = listOf(ConfidenceIssue.Emulator))
-        val html = sessionSnapshotFixture(session = IntervalStats.EMPTY.copy(confidence = confidence)).toHtml()
+        val confidence = MeasurementConfidence.of(issues = listOf(ConfidenceIssue.Emulator))
+        val html = sessionSnapshotFixture(session = IntervalStats.of(confidence = confidence)).toHtml()
         assertContains(html, "running on an emulator")
     }
 
@@ -60,7 +60,7 @@ class SessionHtmlTest {
         val html = sessionSnapshotFixture(
             screenName = "cart",
             context = mapOf("variant" to "b"),
-            session = IntervalStats.EMPTY.copy(frames = 120, p95FrameMs = 18f, jankPercent = 7.5f, frozenFrames = 1),
+            session = IntervalStats.of(frames = 120, p95FrameMs = 18f, jankPercent = 7.5f, frozenFrames = 1),
             window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
             worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS - 1_000_000_000L)),
         ).toHtml()
@@ -94,12 +94,12 @@ class SessionHtmlTest {
     fun `the screens section ranks what the run measured`() {
         val html = sessionSnapshotFixture(
             intervals = listOf(
-                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.EMPTY.copy(frames = 600)),
+                IntervalReport.of(IntervalId.Screen("cart"), IntervalStats.of(frames = 600)),
                 IntervalReport.of(
                     IntervalId.Screen("checkout"),
-                    IntervalStats.EMPTY.copy(frames = 600, frozenFrames = 2),
+                    IntervalStats.of(frames = 600, frozenFrames = 2),
                 ),
-                IntervalReport.of(IntervalId.Mark("scroll"), IntervalStats.EMPTY.copy(frames = 600)),
+                IntervalReport.of(IntervalId.Mark("scroll"), IntervalStats.of(frames = 600)),
             ),
         ).toHtml()
 
@@ -134,7 +134,7 @@ class SessionHtmlTest {
 
     private fun everyStyledElement() = sessionSnapshotFixture(
         context = mapOf("variant" to "b"),
-        session = IntervalStats.EMPTY.copy(droppedReports = 2),
+        session = IntervalStats.of(droppedReports = 2),
         window = windowOf(totalsMs = floatArrayOf(10f, 40f), deadlinesMs = floatArrayOf(16f, 16f)),
         worstFrames = listOf(WorstFrames.Frame(totalMs = 812.5f, endNs = TAKEN_AT_NS)),
         incidents = listOf(incidentFixture()),
@@ -144,7 +144,7 @@ class SessionHtmlTest {
     fun `an incident names its trigger, sizes its window and marks where the trigger fell`() {
         val html = sessionSnapshotFixture(
             incidents = listOf(
-                incidentFixture(stats = IntervalStats.EMPTY.copy(frames = 2, jankPercent = 50f, p95FrameMs = 40f)),
+                incidentFixture(stats = IntervalStats.of(frames = 2, jankPercent = 50f, p95FrameMs = 40f)),
             ),
         ).toHtml()
 
@@ -222,8 +222,8 @@ class SessionHtmlTest {
     @Test
     fun `a phase is reported per interval, with the peak the whole session reached`() {
         val html = sessionSnapshotFixture(
-            session = IntervalStats.EMPTY.copy(phases = PhaseAverages.of(layout = 9f, total = 12f)),
-            screen = IntervalStats.EMPTY.copy(phases = PhaseAverages.of(layout = 4f, total = 6f)),
+            session = IntervalStats.of(phases = PhaseAverages.of(layout = 9f, total = 12f)),
+            screen = IntervalStats.of(phases = PhaseAverages.of(layout = 4f, total = 6f)),
             phases = FramePhases.of(layout = MetricValue.of(average = 9f, peak = 21f)),
         ).toHtml()
 
@@ -234,8 +234,8 @@ class SessionHtmlTest {
 
     @Test
     fun `a screen issue the whole session does not share is called out`() {
-        val screen = IntervalStats.EMPTY.copy(
-            confidence = MeasurementConfidence(issues = listOf(ConfidenceIssue.ShortSample(12))),
+        val screen = IntervalStats.of(
+            confidence = MeasurementConfidence.of(issues = listOf(ConfidenceIssue.ShortSample.of(12))),
         )
         val html = sessionSnapshotFixture(screen = screen).toHtml()
 
@@ -263,7 +263,7 @@ class SessionHtmlTest {
     @Test
     fun `a baseline from another device says so instead of showing deltas`() {
         val html = sessionSnapshotFixture(
-            baseline = BaselineComparison.OtherEnvironment(
+            baseline = BaselineComparison.OtherEnvironment.of(
                 recorded = RECORDED_ENVIRONMENT,
                 current = RECORDED_ENVIRONMENT.copy(model = "Pixel 5"),
             ),

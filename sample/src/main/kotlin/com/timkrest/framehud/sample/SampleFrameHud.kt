@@ -65,5 +65,5 @@ object SampleFrameHud : FrameHudEventListener {
     }
 }
 
-private const val SESSION_BUDGET_MS = 16
-private const val SCROLL_BUDGET_MS = 8
+private const val SESSION_BUDGET_MS = 16f
+private const val SCROLL_BUDGET_MS = 8.3f

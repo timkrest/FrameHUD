@@ -15,7 +15,7 @@ internal fun JsonObjectScope.putConfidence(confidence: MeasurementConfidence) {
 
 internal fun JsonValue.confidence(): MeasurementConfidence? {
     val listed = member(ISSUES) as? JsonValue.Arr ?: return null
-    return MeasurementConfidence(listed.items.map { it.issue() ?: return null })
+    return MeasurementConfidence.of(listed.items.map { it.issue() ?: return null })
 }
 
 private fun JsonObjectScope.putIssue(issue: ConfidenceIssue) {
@@ -49,20 +49,20 @@ private fun JsonObjectScope.putIssue(issue: ConfidenceIssue) {
             put(FRAMES, issue.frames)
         }
     }
-    putArray(AFFECTED) { for (metric in issue.affected) add(metric.name) }
+    putArray(AFFECTED) { for (figure in issue.affected) add(figure.name) }
 }
 
 private fun JsonValue.issue(): ConfidenceIssue? = readOrNull {
     when (string(TYPE)) {
-        DROPPED_REPORTS -> int(COUNT)?.let(ConfidenceIssue::DroppedReports)
-        SLOW_LISTENER -> float(LONGEST_CALL_MS)?.let(ConfidenceIssue::SlowListener)
-        THERMAL_THROTTLING -> enumNamed<ThermalLevel>(string(WORST_LEVEL))?.let(ConfidenceIssue::ThermalThrottling)
+        DROPPED_REPORTS -> int(COUNT)?.let(ConfidenceIssue.DroppedReports::of)
+        SLOW_LISTENER -> float(LONGEST_CALL_MS)?.let(ConfidenceIssue.SlowListener::of)
+        THERMAL_THROTTLING -> enumNamed<ThermalLevel>(string(WORST_LEVEL))?.let(ConfidenceIssue.ThermalThrottling::of)
         LOW_BATTERY -> bool(POWER_SAVE_MODE)?.let { powerSaveMode ->
-            ConfidenceIssue.LowBattery(powerSaveMode = powerSaveMode, levelPercent = int(LEVEL_PERCENT))
+            ConfidenceIssue.LowBattery.of(powerSaveMode = powerSaveMode, levelPercent = int(LEVEL_PERCENT))
         }
-        REFRESH_RATE_CHANGED -> ratesHz()?.let(ConfidenceIssue::RefreshRateChanged)
+        REFRESH_RATE_CHANGED -> ratesHz()?.let(ConfidenceIssue.RefreshRateChanged::of)
         EMULATOR -> ConfidenceIssue.Emulator
-        SHORT_SAMPLE -> int(FRAMES)?.let(ConfidenceIssue::ShortSample)
+        SHORT_SAMPLE -> int(FRAMES)?.let(ConfidenceIssue.ShortSample::of)
         else -> null
     }
 }

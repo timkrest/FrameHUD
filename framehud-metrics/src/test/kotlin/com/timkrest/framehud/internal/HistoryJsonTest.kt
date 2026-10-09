@@ -19,7 +19,7 @@ class HistoryJsonTest {
                 recordedAtEpochMs = 1_700_000_000_000L,
                 intervals = listOf(
                     recordedInterval(IntervalId.Session, recordedStats(p95FrameMs = 12.5f)),
-                    recordedInterval(IntervalId.Screen("product/{id}"), recordedStats(p95FrameMs = 20f), frameBudgetMs = 8),
+                    recordedInterval(IntervalId.Screen("product/{id}"), recordedStats(p95FrameMs = 20f), frameBudgetMs = 8.3f),
                     recordedInterval(IntervalId.Mark("scroll"), recordedStats(p95FrameMs = 30f)),
                 ),
             ),
@@ -49,14 +49,14 @@ class HistoryJsonTest {
     @Test
     fun `every confidence issue survives a round trip`() {
         val issues = listOf(
-            ConfidenceIssue.DroppedReports(count = 4),
-            ConfidenceIssue.SlowListener(longestCallMs = 12.5f),
-            ConfidenceIssue.ThermalThrottling(worstLevel = ThermalLevel.SEVERE),
-            ConfidenceIssue.LowBattery(powerSaveMode = true, levelPercent = 12),
-            ConfidenceIssue.LowBattery(powerSaveMode = false, levelPercent = null),
-            ConfidenceIssue.RefreshRateChanged(ratesHz = setOf(60, 120)),
+            ConfidenceIssue.DroppedReports.of(count = 4),
+            ConfidenceIssue.SlowListener.of(longestCallMs = 12.5f),
+            ConfidenceIssue.ThermalThrottling.of(worstLevel = ThermalLevel.SEVERE),
+            ConfidenceIssue.LowBattery.of(powerSaveMode = true, levelPercent = 12),
+            ConfidenceIssue.LowBattery.of(powerSaveMode = false, levelPercent = null),
+            ConfidenceIssue.RefreshRateChanged.of(ratesHz = setOf(60, 120)),
             ConfidenceIssue.Emulator,
-            ConfidenceIssue.ShortSample(frames = 7),
+            ConfidenceIssue.ShortSample.of(frames = 7),
         )
         val runs = listOf(storedRun(intervals = listOf(recordedInterval(IntervalId.Session, recordedStats(issues = issues)))))
 

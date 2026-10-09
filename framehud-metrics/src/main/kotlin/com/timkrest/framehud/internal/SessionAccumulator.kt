@@ -15,7 +15,7 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
 
     private val totals = LatencyHistogram()
     private val confidence = ConfidenceTracker(isEmulator)
-    private val framesPerBudgetMs = mutableMapOf<Int, FrameCount>()
+    private val framesPerBudgetMs = mutableMapOf<Int, BudgetFrames>()
     private val phaseSumsMs = DoubleArray(FramePhase.entries.size)
     private var hasReportedGpuDuration = false
     private var collectingSinceMs: Long? = null
@@ -28,7 +28,7 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
     private var maxJankStreak = 0
 
     fun addFrame(durationsMs: FloatArray, overrunMs: Float, refreshRateHz: Float, frameBudgetMs: Float) {
-        framesPerBudgetMs.getOrPut(frameBudgetMs.roundToInt()) { FrameCount() }.frames++
+        framesPerBudgetMs.getOrPut(frameBudgetMs.roundToInt()) { BudgetFrames() }.add(frameBudgetMs)
         val totalMs = durationsMs[FramePhase.TOTAL.ordinal]
         totals.add(totalMs)
         for (ordinal in phaseSumsMs.indices) {
@@ -51,9 +51,9 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
         droppedReports += count
     }
 
-    fun frameBudgetMs(): Int? {
-        val (budget, counted) = framesPerBudgetMs.maxByOrNull { it.value.frames } ?: return null
-        return budget.takeIf { counted.frames >= totals.count * DOMINANT_BUDGET_SHARE }
+    fun frameBudgetMs(): Float? {
+        val dominant = framesPerBudgetMs.values.maxByOrNull { it.frames } ?: return null
+        return dominant.meanMs().takeIf { dominant.frames >= totals.count * DOMINANT_BUDGET_SHARE }
     }
 
     fun addThermalLevel(level: ThermalLevel) = confidence.addThermalLevel(level)
@@ -73,11 +73,11 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
         collectingSinceMs = null
     }
 
-    fun stats(): IntervalStats {
+    fun stats(durationMs: Long = collectedDurationMs()): IntervalStats {
         val frames = totals.count
-        return IntervalStats(
+        return IntervalStats.of(
             frames = frames,
-            durationMs = collectedDurationMs(),
+            durationMs = durationMs,
             p50FrameMs = totals.percentile(P50),
             p95FrameMs = totals.percentile(P95),
             p99FrameMs = totals.percentile(P99),
@@ -121,8 +121,17 @@ internal class SessionAccumulator(private val clock: MetricsClock, isEmulator: B
     private fun collectedDurationMs(): Long =
         collectedMs + (collectingSinceMs?.let { clock.elapsedRealtimeMs() - it } ?: 0L)
 
-    private class FrameCount {
+    private class BudgetFrames {
         var frames = 0
+            private set
+        private var sumMs = 0.0
+
+        fun add(budgetMs: Float) {
+            frames++
+            sumMs += budgetMs
+        }
+
+        fun meanMs(): Float = (sumMs / frames).toFloat()
     }
 
     private companion object {

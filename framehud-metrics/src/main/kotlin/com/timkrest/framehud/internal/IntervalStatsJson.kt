@@ -23,7 +23,7 @@ internal fun JsonObjectScope.putIntervalStats(stats: IntervalStats) {
 }
 
 internal fun JsonValue.intervalStats(): IntervalStats? = readOrNull {
-    IntervalStats(
+    IntervalStats.of(
         frames = int(FRAMES) ?: return@readOrNull null,
         durationMs = long(DURATION_MS) ?: return@readOrNull null,
         p50FrameMs = float(P50_MS) ?: return@readOrNull null,

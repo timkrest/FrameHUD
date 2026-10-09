@@ -204,7 +204,7 @@ internal class FrameAggregator(
                 p95FrameMs = frameWindow.totalPercentile(P95),
                 worstFrameMs = frameWindow.worstTotalMs(),
                 frameBudgetMs = judgedBudgetMs,
-                history = history,
+                frames = history,
             ),
             session = accumulators.sessionStats(),
             display = display,
@@ -213,7 +213,7 @@ internal class FrameAggregator(
         if (fps == 0) isDrainingToIdle = false
     }
 
-    private fun budgetInForceMs(): Float = accumulators.activeBudgetMs?.toFloat() ?: display.frameBudgetMs
+    private fun budgetInForceMs(): Float = accumulators.activeBudgetMs ?: display.frameBudgetMs
 
     private fun isMeasuredScreen(screen: String?): Boolean = screen == accumulators.screenName
 

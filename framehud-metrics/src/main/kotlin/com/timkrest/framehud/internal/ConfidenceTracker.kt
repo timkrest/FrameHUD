@@ -47,18 +47,18 @@ internal class ConfidenceTracker(private val isEmulator: Boolean) {
         lowestBatteryPercent = min(level, lowestBatteryPercent ?: level)
     }
 
-    fun confidence(frames: Int, droppedReports: Int): MeasurementConfidence = MeasurementConfidence(
+    fun confidence(frames: Int, droppedReports: Int): MeasurementConfidence = MeasurementConfidence.of(
         buildList {
-            if (droppedReports > 0) add(ConfidenceIssue.DroppedReports(droppedReports))
-            longestListenerCallMs?.let { add(ConfidenceIssue.SlowListener(it)) }
-            worstThrottlingLevel?.let { add(ConfidenceIssue.ThermalThrottling(it)) }
+            if (droppedReports > 0) add(ConfidenceIssue.DroppedReports.of(droppedReports))
+            longestListenerCallMs?.let { add(ConfidenceIssue.SlowListener.of(it)) }
+            worstThrottlingLevel?.let { add(ConfidenceIssue.ThermalThrottling.of(it)) }
             val lowest = lowestBatteryPercent
             if (sawPowerSaveMode || (lowest != null && lowest <= SYSTEM_LOW_BATTERY_WARNING_PERCENT)) {
-                add(ConfidenceIssue.LowBattery(powerSaveMode = sawPowerSaveMode, levelPercent = lowest))
+                add(ConfidenceIssue.LowBattery.of(powerSaveMode = sawPowerSaveMode, levelPercent = lowest))
             }
-            if (refreshRatesSeen > 1) add(ConfidenceIssue.RefreshRateChanged(refreshRatesSeenHz()))
+            if (refreshRatesSeen > 1) add(ConfidenceIssue.RefreshRateChanged.of(refreshRatesSeenHz()))
             if (isEmulator) add(ConfidenceIssue.Emulator)
-            if (frames < ConfidenceIssue.ShortSample.MIN_FRAMES_P99) add(ConfidenceIssue.ShortSample(frames))
+            if (frames < ConfidenceIssue.ShortSample.MIN_FRAMES_P99) add(ConfidenceIssue.ShortSample.of(frames))
         },
     )
 

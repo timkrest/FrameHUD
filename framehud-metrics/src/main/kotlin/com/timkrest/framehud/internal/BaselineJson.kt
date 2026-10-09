@@ -6,8 +6,8 @@ import com.timkrest.framehud.Baseline
 import com.timkrest.framehud.BaselineEntry
 import com.timkrest.framehud.BaselineTrust
 import com.timkrest.framehud.BudgetCandidate
+import com.timkrest.framehud.IntervalFigure
 import com.timkrest.framehud.IntervalId
-import com.timkrest.framehud.MeasuredMetric
 
 internal const val BASELINE_SCHEMA_VERSION = 2
 
@@ -27,7 +27,7 @@ internal fun Baseline.toJson(): String = buildJsonObject {
                 put(FROZEN_PERCENT, entry.frozenPercent)
                 if (entry.trust.cleanRuns.isNotEmpty()) {
                     putObject(CLEAN_RUNS) {
-                        for ((metric, count) in entry.trust.cleanRuns) put(metric.name, count)
+                        for ((figure, count) in entry.trust.cleanRuns) put(figure.name, count)
                     }
                 }
                 entry.trust.gpuRuns?.let { put(GPU_RUNS, it) }
@@ -67,7 +67,7 @@ private fun JsonValue.entry(): BaselineEntry? = readOrNull {
     val candidateBudget = when (val candidate = member(CANDIDATE_BUDGET)) {
         null -> null
         is JsonValue.Obj -> BudgetCandidate(
-            budgetMs = candidate.int(BUDGET_MS) ?: return@readOrNull null,
+            budgetMs = candidate.float(BUDGET_MS) ?: return@readOrNull null,
             runs = candidate.int(RUNS) ?: return@readOrNull null,
         )
         else -> return@readOrNull null
@@ -81,7 +81,7 @@ private fun JsonValue.entry(): BaselineEntry? = readOrNull {
         lostTimeMsPerFrame = float(LOST_TIME_MS_PER_FRAME) ?: return@readOrNull null,
         frozenPercent = float(FROZEN_PERCENT) ?: return@readOrNull null,
         phases = obj(PHASES)?.phaseAverages() ?: return@readOrNull null,
-        frameBudgetMs = optionalInt(FRAME_BUDGET_MS),
+        frameBudgetMs = optionalFloat(FRAME_BUDGET_MS),
         trust = BaselineTrust(
             cleanRuns = cleanRuns() ?: return@readOrNull null,
             gpuRuns = optionalInt(GPU_RUNS),
@@ -90,18 +90,23 @@ private fun JsonValue.entry(): BaselineEntry? = readOrNull {
     )
 }
 
+private fun JsonValue.optionalFloat(name: String): Float? {
+    if (member(name) == null) return null
+    return requireNotNull(float(name)) { "$name holds no number" }
+}
+
 private fun JsonValue.optionalInt(name: String): Int? {
     if (member(name) == null) return null
     return requireNotNull(int(name)) { "$name holds no whole number" }
 }
 
-private fun JsonValue.cleanRuns(): Map<MeasuredMetric, Int>? {
+private fun JsonValue.cleanRuns(): Map<IntervalFigure, Int>? {
     val listed = member(CLEAN_RUNS) ?: return emptyMap()
     if (listed !is JsonValue.Obj) return null
     return buildMap {
         for (name in listed.members.keys) {
-            val metric = enumNamed<MeasuredMetric>(name) ?: return null
-            put(metric, listed.int(name) ?: return null)
+            val figure = enumNamed<IntervalFigure>(name) ?: return null
+            put(figure, listed.int(name) ?: return null)
         }
     }
 }

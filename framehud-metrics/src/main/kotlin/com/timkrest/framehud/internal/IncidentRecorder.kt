@@ -98,7 +98,7 @@ internal class IncidentRecorder(
             IncidentWindow.of(
                 trigger = pending.trigger,
                 triggeredAtEpochMs = pending.triggeredAtEpochMs,
-                stats = measured.stats().copy(durationMs = frames.durationMs()),
+                stats = measured.stats(durationMs = frames.durationMs()),
                 frames = frames.history(),
                 framesBeforeTrigger = frames.size - pending.framesAfterTrigger,
                 memory = readings.memory,
@@ -189,8 +189,8 @@ private fun FrameHudEvent.IncidentTrigger.groupKey() = IncidentKey(
 
 private fun JankCause.withoutReadings(): JankCause = when (this) {
     JankCause.None, is JankCause.Thermal -> this
-    is JankCause.Gc -> JankCause.Gc(timePercent = 0f)
-    is JankCause.VsyncStarvation -> JankCause.VsyncStarvation(ticksPerSecond = 0, refreshRateHz = 0f)
-    is JankCause.LateStart -> JankCause.LateStart(delayMs = 0f)
-    is JankCause.Stage -> JankCause.Stage(stage = stage, averageMs = 0f)
+    is JankCause.Gc -> JankCause.Gc.of(timePercent = 0f)
+    is JankCause.VsyncStarvation -> JankCause.VsyncStarvation.of(ticksPerSecond = 0, refreshRateHz = 0f)
+    is JankCause.LateStart -> JankCause.LateStart.of(delayMs = 0f)
+    is JankCause.Stage -> JankCause.Stage.of(stage = stage, averageMs = 0f)
 }

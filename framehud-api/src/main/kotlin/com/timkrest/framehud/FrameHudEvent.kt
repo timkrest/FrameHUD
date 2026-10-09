@@ -27,16 +27,30 @@ public sealed interface FrameHudEvent {
      * that callback and the end of the first frame. The frame itself is not included in rolling or
      * session stats.
      */
-    public data class FirstFrame(
+    @ConsistentCopyVisibility
+    public data class FirstFrame private constructor(
         val timeToDisplayMs: Float,
         override val screen: String?,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : FrameHudEvent {
 
         /** Always null. */
         override val mark: String? get() = null
 
         override val summary: String get() = formatInvariant("%s: first frame in %.1f ms", origin(), timeToDisplayMs)
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                timeToDisplayMs: Float,
+                screen: String?,
+                context: Map<String, String> = emptyMap(),
+            ): FirstFrame = FirstFrame(
+                timeToDisplayMs = timeToDisplayMs,
+                screen = screen,
+                context = context,
+            )
+        }
     }
 
     /**
@@ -46,77 +60,169 @@ public sealed interface FrameHudEvent {
      * `super.onCreate` below, any other screen when its measurement began. The frame counts in
      * rolling and session stats unless it is also the first draw, which does not.
      */
-    public data class UsableFrame(
+    @ConsistentCopyVisibility
+    public data class UsableFrame private constructor(
         val timeToUsableMs: Float,
         override val screen: String?,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : FrameHudEvent {
 
         /** Always null. */
         override val mark: String? get() = null
 
         override val summary: String get() = formatInvariant("%s: usable in %.1f ms", origin(), timeToUsableMs)
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                timeToUsableMs: Float,
+                screen: String?,
+                context: Map<String, String> = emptyMap(),
+            ): UsableFrame = UsableFrame(
+                timeToUsableMs = timeToUsableMs,
+                screen = screen,
+                context = context,
+            )
+        }
     }
 
     public sealed interface IncidentTrigger : FrameHudEvent
 
     /** The rolling window crossed [JankSeverity.WARNING]. Sent once per burst, not per frame. */
-    public data class JankBurst(
+    @ConsistentCopyVisibility
+    public data class JankBurst private constructor(
         val diagnosis: JankDiagnosis,
         override val screen: String?,
         override val mark: String?,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : IncidentTrigger {
         override val summary: String get() = "${origin()}: ${diagnosis.summary}"
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                diagnosis: JankDiagnosis,
+                screen: String?,
+                mark: String?,
+                context: Map<String, String> = emptyMap(),
+            ): JankBurst = JankBurst(
+                diagnosis = diagnosis,
+                screen = screen,
+                mark = mark,
+                context = context,
+            )
+        }
     }
 
     /** Frames over [IntervalStats.FROZEN_FRAME_MS] seen since the previous sample. */
-    public data class FrozenFrames(
+    @ConsistentCopyVisibility
+    public data class FrozenFrames private constructor(
         val count: Int,
         override val screen: String?,
         override val mark: String?,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : IncidentTrigger {
         override val summary: String get() = "${origin()}: $count frozen frame(s)"
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                count: Int,
+                screen: String?,
+                mark: String?,
+                context: Map<String, String> = emptyMap(),
+            ): FrozenFrames = FrozenFrames(
+                count = count,
+                screen = screen,
+                mark = mark,
+                context = context,
+            )
+        }
     }
 
-    public data class ThermalChanged(
+    @ConsistentCopyVisibility
+    public data class ThermalChanged private constructor(
         val level: ThermalLevel,
         override val screen: String?,
         override val mark: String?,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : FrameHudEvent {
         override val summary: String
             get() = "${origin()}: thermal status is now ${level.name.lowercase(Locale.US)}"
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                level: ThermalLevel,
+                screen: String?,
+                mark: String?,
+                context: Map<String, String> = emptyMap(),
+            ): ThermalChanged = ThermalChanged(
+                level = level,
+                screen = screen,
+                mark = mark,
+                context = context,
+            )
+        }
     }
 
     /**
      * Collection ended because the screen paused, was replaced, renamed, or FrameHud was disabled.
      * [stats] cover only the frames drawn on that screen.
      */
-    public data class ScreenEnded(
+    @ConsistentCopyVisibility
+    public data class ScreenEnded private constructor(
         val stats: IntervalStats,
         override val screen: String?,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : FrameHudEvent {
 
         /** Always null. */
         override val mark: String? get() = null
 
         override val summary: String get() = stats.summarize(origin())
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                stats: IntervalStats,
+                screen: String?,
+                context: Map<String, String> = emptyMap(),
+            ): ScreenEnded = ScreenEnded(
+                stats = stats,
+                screen = screen,
+                context = context,
+            )
+        }
     }
 
     /**
      * An interaction ended because `FrameHud.mark` was cleared or its screen went away. [stats]
      * contain only frames drawn while the mark was active.
      */
-    public data class MarkEnded(
+    @ConsistentCopyVisibility
+    public data class MarkEnded private constructor(
         val stats: IntervalStats,
         override val screen: String?,
         override val mark: String,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : FrameHudEvent {
         override val summary: String get() = stats.summarize(origin())
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                stats: IntervalStats,
+                screen: String?,
+                mark: String,
+                context: Map<String, String> = emptyMap(),
+            ): MarkEnded = MarkEnded(
+                stats = stats,
+                screen = screen,
+                mark = mark,
+                context = context,
+            )
+        }
     }
 
     /**
@@ -124,14 +230,32 @@ public sealed interface FrameHudEvent {
      * whatever that call would have given. Emitted once per [what] until `FrameHud.reset()`; the
      * stack trace reaches logcat every time, where it happened.
      */
-    public data class InternalFailure(
+    @ConsistentCopyVisibility
+    public data class InternalFailure private constructor(
         val what: String,
         val error: Throwable,
         override val screen: String?,
         override val mark: String?,
-        override val context: Map<String, String> = emptyMap(),
+        override val context: Map<String, String>,
     ) : FrameHudEvent {
         override val summary: String get() = "${origin()}: FrameHUD failed while $what ($error)"
+
+        public companion object {
+            @InternalFrameHudApi
+            public fun of(
+                what: String,
+                error: Throwable,
+                screen: String?,
+                mark: String?,
+                context: Map<String, String> = emptyMap(),
+            ): InternalFailure = InternalFailure(
+                what = what,
+                error = error,
+                screen = screen,
+                mark = mark,
+                context = context,
+            )
+        }
     }
 }
 

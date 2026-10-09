@@ -69,7 +69,7 @@ internal fun sessionSnapshotFixture(
 )
 
 internal fun incidentFixture(
-    trigger: FrameHudEvent.IncidentTrigger = FrameHudEvent.FrozenFrames(count = 1, screen = "cart", mark = null),
+    trigger: FrameHudEvent.IncidentTrigger = FrameHudEvent.FrozenFrames.of(count = 1, screen = "cart", mark = null),
     stats: IntervalStats = IntervalStats.EMPTY,
     frames: FrameHistory = FrameHistory.of(floatArrayOf(10f, 40f), floatArrayOf(16f, 16f)),
     framesBeforeTrigger: Int = 1,
@@ -102,7 +102,7 @@ internal fun windowOf(totalsMs: FloatArray, deadlinesMs: FloatArray) = FrameWind
     p95FrameMs = totalsMs.max(),
     worstFrameMs = totalsMs.max(),
     frameBudgetMs = deadlinesMs.last(),
-    history = FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs),
+    frames = FrameHistory.of(totalsMs = totalsMs, deadlinesMs = deadlinesMs),
 )
 
 internal const val TAKEN_AT_EPOCH_MS = 1_700_000_000_000L
@@ -118,7 +118,7 @@ internal fun comparisonFixture(): BaselineComparison = Baseline(
     intervals = listOf(IntervalReport.of(IntervalId.Session, runStats(p95FrameMs = 12f, layoutMs = 7f))),
 )
 
-private fun runStats(p95FrameMs: Float, layoutMs: Float) = IntervalStats.EMPTY.copy(
+private fun runStats(p95FrameMs: Float, layoutMs: Float) = IntervalStats.of(
     frames = 300,
     p95FrameMs = p95FrameMs,
     phases = PhaseAverages.of(layout = layoutMs),

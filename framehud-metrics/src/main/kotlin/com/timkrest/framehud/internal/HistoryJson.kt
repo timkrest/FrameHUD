@@ -71,7 +71,7 @@ private fun JsonValue.report(): IntervalReport? = readOrNull {
         stats = intervalStats() ?: return@readOrNull null,
         frameBudgetMs = when (member(FRAME_BUDGET_MS)) {
             null -> null
-            else -> int(FRAME_BUDGET_MS) ?: return@readOrNull null
+            else -> float(FRAME_BUDGET_MS) ?: return@readOrNull null
         },
     )
 }

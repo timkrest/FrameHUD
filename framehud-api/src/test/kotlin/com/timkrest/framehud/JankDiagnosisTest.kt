@@ -36,7 +36,7 @@ class JankDiagnosisTest {
             thermal = ThermalStats.of(level = ThermalLevel.SEVERE, headroom = null),
             choreographerTicksPerSecond = 10,
         )
-        assertEquals(JankCause.Thermal(ThermalLevel.SEVERE), diagnosis.cause)
+        assertEquals(JankCause.Thermal.of(ThermalLevel.SEVERE), diagnosis.cause)
     }
 
     @Test
@@ -67,13 +67,13 @@ class JankDiagnosisTest {
             metrics = metrics(jankPercent = 30f, busiestStageMs = 12f),
             choreographerTicksPerSecond = 30,
         )
-        assertEquals(JankCause.VsyncStarvation(ticksPerSecond = 30, refreshRateHz = 60f), diagnosis.cause)
+        assertEquals(JankCause.VsyncStarvation.of(ticksPerSecond = 30, refreshRateHz = 60f), diagnosis.cause)
     }
 
     @Test
     fun `late start beats the busiest stage`() {
         val diagnosis = diagnose(metrics = metrics(jankPercent = 30f, unknownDelayMs = 14f, busiestStageMs = 9f))
-        assertEquals(JankCause.LateStart(delayMs = 14f), diagnosis.cause)
+        assertEquals(JankCause.LateStart.of(delayMs = 14f), diagnosis.cause)
     }
 
     @Test
@@ -86,7 +86,7 @@ class JankDiagnosisTest {
                 bottleneckStage = PipelineStage.GPU,
             ),
         )
-        assertEquals(JankCause.Stage(stage = PipelineStage.GPU, averageMs = 11f), diagnosis.cause)
+        assertEquals(JankCause.Stage.of(stage = PipelineStage.GPU, averageMs = 11f), diagnosis.cause)
     }
 
     private fun diagnose(
@@ -118,7 +118,7 @@ class JankDiagnosisTest {
                 PipelineStage.GPU -> FramePhases.of(unknownDelay = unknownDelay, gpu = busiestStage)
             },
             window = FrameWindowStats.of(jankPercent = jankPercent, frameBudgetMs = frameBudgetMs),
-            session = IntervalStats.EMPTY.copy(durationMs = sessionDurationMs),
+            session = IntervalStats.of(durationMs = sessionDurationMs),
             display = DisplayInfo.of(refreshRateHz = 60f),
         )
     }

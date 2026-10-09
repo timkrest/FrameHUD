@@ -22,13 +22,13 @@ public enum class BaselineMetric {
     ;
 
     @InternalFrameHudApi
-    public val confidenceMetric: MeasuredMetric
+    public val figure: IntervalFigure
         get() = when (this) {
-            P50_MS -> MeasuredMetric.P50
-            P95_MS -> MeasuredMetric.P95
-            P99_MS -> MeasuredMetric.P99
-            JANK_PERCENT -> MeasuredMetric.JANK_PERCENT
-            LOST_TIME_MS_PER_FRAME -> MeasuredMetric.LOST_TIME
-            FROZEN_PERCENT -> MeasuredMetric.FROZEN_FRAMES
+            P50_MS -> IntervalFigure.P50
+            P95_MS -> IntervalFigure.P95
+            P99_MS -> IntervalFigure.P99
+            JANK_PERCENT -> IntervalFigure.JANK_PERCENT
+            LOST_TIME_MS_PER_FRAME -> IntervalFigure.LOST_TIME
+            FROZEN_PERCENT -> IntervalFigure.FROZEN_FRAMES
         }
 }
