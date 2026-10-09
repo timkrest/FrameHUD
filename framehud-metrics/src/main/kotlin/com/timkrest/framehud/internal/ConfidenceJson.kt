@@ -56,7 +56,7 @@ private fun JsonValue.issue(): ConfidenceIssue? = readOrNull {
     when (string(TYPE)) {
         DROPPED_REPORTS -> int(COUNT)?.let(ConfidenceIssue::DroppedReports)
         SLOW_LISTENER -> float(LONGEST_CALL_MS)?.let(ConfidenceIssue::SlowListener)
-        THERMAL_THROTTLING -> thermalLevel(string(WORST_LEVEL))?.let(ConfidenceIssue::ThermalThrottling)
+        THERMAL_THROTTLING -> enumNamed<ThermalLevel>(string(WORST_LEVEL))?.let(ConfidenceIssue::ThermalThrottling)
         LOW_BATTERY -> bool(POWER_SAVE_MODE)?.let { powerSaveMode ->
             ConfidenceIssue.LowBattery(powerSaveMode = powerSaveMode, levelPercent = int(LEVEL_PERCENT))
         }
@@ -74,8 +74,6 @@ private fun JsonValue.ratesHz(): Set<Int>? {
         number.toInt().takeIf { it.toDouble() == number } ?: return null
     }
 }
-
-private fun thermalLevel(name: String?): ThermalLevel? = ThermalLevel.entries.firstOrNull { it.name == name }
 
 private const val SUSPECT = "suspect"
 private const val ISSUES = "issues"

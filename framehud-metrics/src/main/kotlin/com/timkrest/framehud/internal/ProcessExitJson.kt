@@ -18,7 +18,7 @@ internal fun JsonObjectScope.putProcessExit(exit: ProcessExit) {
 
 internal fun JsonValue.processExit(): ProcessExit? = readOrNull {
     ProcessExit.of(
-        reason = string(REASON)?.let(::exitReasonNamed) ?: return@readOrNull null,
+        reason = string(REASON)?.let { enumNamed(it) ?: ExitReason.UNKNOWN } ?: return@readOrNull null,
         description = string(DESCRIPTION),
         endedAtEpochMs = long(ENDED_AT_MS) ?: return@readOrNull null,
         screen = string(SCREEN),
@@ -26,8 +26,6 @@ internal fun JsonValue.processExit(): ProcessExit? = readOrNull {
         mainThreadStack = items(MAIN_THREAD_STACK).map { (it as? JsonValue.Str)?.value ?: return@readOrNull null },
     )
 }
-
-private fun exitReasonNamed(name: String): ExitReason = ExitReason.entries.firstOrNull { it.name == name } ?: ExitReason.UNKNOWN
 
 private const val REASON = "reason"
 private const val DESCRIPTION = "description"

@@ -100,13 +100,11 @@ private fun JsonValue.cleanRuns(): Map<MeasuredMetric, Int>? {
     if (listed !is JsonValue.Obj) return null
     return buildMap {
         for (name in listed.members.keys) {
-            val metric = measuredMetric(name) ?: return null
+            val metric = enumNamed<MeasuredMetric>(name) ?: return null
             put(metric, listed.int(name) ?: return null)
         }
     }
 }
-
-private fun measuredMetric(name: String?): MeasuredMetric? = MeasuredMetric.entries.firstOrNull { it.name == name }
 
 private const val SCHEMA = "schema"
 private const val ENVIRONMENT = "environment"

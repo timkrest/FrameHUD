@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.framehud.internal
 
+import kotlin.enums.enumEntries
+
 internal sealed interface JsonValue {
 
     data class Obj(val members: Map<String, JsonValue>) : JsonValue
@@ -45,6 +47,8 @@ internal fun JsonValue?.long(name: String): Long? {
 }
 
 internal fun JsonValue?.bool(name: String): Boolean? = (member(name) as? JsonValue.Bool)?.value
+
+internal inline fun <reified E : Enum<E>> enumNamed(name: String?): E? = enumEntries<E>().firstOrNull { it.name == name }
 
 internal inline fun <T : Any> readOrNull(read: () -> T?): T? = try {
     read()

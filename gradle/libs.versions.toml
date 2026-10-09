@@ -69,7 +69,6 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 
 framehud-android-application = { id = "framehud.android.application" }
 framehud-android-library = { id = "framehud.android.library" }

@@ -28,8 +28,7 @@ public fun BaselineMetric.format(value: Float): String = when (this) {
 @InternalFrameHudApi
 public fun formatChangePercent(percent: Float): String = formatInvariant("(%+.0f%%)", percent)
 
-@InternalFrameHudApi
-public fun ComparisonGap.reason(): String = when (this) {
+internal fun ComparisonGap.reason(): String = when (this) {
     ComparisonGap.BASELINE_HAS_NONE -> "has no baseline run to compare against"
     ComparisonGap.RUN_UNTRUSTED -> "was measured with a confidence issue"
     ComparisonGap.OTHER_FRAME_BUDGET -> "was judged under another frame budget"
