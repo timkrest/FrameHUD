@@ -732,8 +732,9 @@ comes up with the next resumed activity, so a call made later skips the screen a
 
 Three tabs over one run.
 
-**Load** is a 300-row list with six toggles: blocking the main thread, overdrawing, allocating per
-row, nesting layouts, churning garbage, decoding in the background. Each moves a different metric,
+**Load** is a 300-row list with seven toggles: blocking the main thread, freezing it past 700 ms
+every few seconds, overdrawing, allocating per row, nesting layouts, churning garbage, decoding in
+the background. Each moves a different metric,
 and whichever ones you pick travel with every event and every incident as measurement context. The
 switch above the list judges frames by a budget instead of the display deadline, 16 ms for the
 session and 8 ms while the list scrolls. Scrolling is marked. A row opens as a screen named

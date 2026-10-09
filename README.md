@@ -114,7 +114,7 @@ of earlier runs on the same device.
 ./gradlew :sample:installDebug
 ```
 
-**Load** stresses the frame pipeline with six toggles, **Readouts** shows every reading taken from
+**Load** stresses the frame pipeline with seven toggles, **Readouts** shows every reading taken from
 the flows instead of the panel, and **Session** is what a QA run ends with: baselines, past runs,
 incidents, export.
 
